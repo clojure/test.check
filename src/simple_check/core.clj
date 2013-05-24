@@ -182,11 +182,21 @@
 
 ;; Sample tests  --------------------------------------------------------------
 
+(defn first-is-gone
+  [l]
+  (not (some #{(first l)} (vec (rest l)))))
+
+(defn bad-remove-test
+  [num-times]
+  (let [g (gen-int 100)
+        v (gen-vec g 100)]
+    (quick-check num-times first-is-gone v)))
+
 (defn bad-reverse-test
   [num-times]
   (let [g (gen-int 100)
         v (gen-vec g 100)]
-    (quick-check 100 #(= (reverse %) %) v)))
+    (quick-check num-times #(= (reverse %) %) v)))
 
 (defn reverse-equal?
   [l]
@@ -198,5 +208,15 @@
   [num-times]
   (let [g (gen-int 100)
         v (gen-vec g 100)]
-    (quick-check 100 reverse-equal? v)))
+    (quick-check num-times reverse-equal? v)))
 
+(defn plus-prime-forms-a-monoid
+  [a b c]
+  (and (= (+ 0 a) a)
+       (= (+ a 0) a)
+       (= (+ a (+ b c)) (+ (+ a b) c))))
+
+(defn plus-prime-forms-a-monoid-test
+  [num-times]
+  (let [a (gen-int Integer/MAX_VALUE)]
+    (quick-check num-times plus-prime-forms-a-monoid a a a)))
