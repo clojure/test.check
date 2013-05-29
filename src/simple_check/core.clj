@@ -13,7 +13,9 @@
 (defn- run-test
   [property args]
   (let [vars (map arbitrary args)
-        result (apply property vars)]
+        result (try
+                 (apply property vars)
+                 (catch Throwable t t))]
     [result vars]))
 
 (declare shrink-loop)
@@ -25,14 +27,20 @@
     (if (= so-far num-tests)
       {:result true :num-tests so-far}
       (let [[result vars] (run-test property-fun args)]
-        (if result
-          (recur (inc so-far))
-          {:result false
-           :num-tests so-far
-           :fail (vec vars)
-           :shrunk (shrink-loop property-fun
-                                (tuple args)
-                                (vec vars))})))))
+        (cond
+          (instance? Throwable result) {:result result
+                                        :num-tests so-far
+                                        :fail (vec vars)
+                                        :shrunk (shrink-loop property-fun
+                                                             (tuple args)
+                                                             (vec vars))}
+          result (recur (inc so-far))
+          :default {:result false
+                    :num-tests so-far
+                    :fail (vec vars)
+                    :shrunk (shrink-loop property-fun
+                                         (tuple args)
+                                         (vec vars))})))))
 
 (defmacro forall [bindings expr]
   `(let [~@bindings]
@@ -62,7 +70,12 @@
          :depth depth
          :smallest f}
         (let [[head & tail] nodes]
-          (if (apply prop head)
+          (if (try
+                (apply prop head)
+                (catch Throwable t
+                  ; assuming that this `t` is of the same type that was
+                  ; originally thrown in quick-check...
+                  false))
             ;; this node passed the test, so now try testing it's right-siblings
             (recur tail f (inc total-nodes-visited) depth can-set-new-best?)
             ;; this node failed the test, so check if it has children,
