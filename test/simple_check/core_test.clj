@@ -27,7 +27,7 @@
          (= (seq l) (rseq r)))))
 
 (deftest reverse-equal?
-  (testing ""
+  (testing "For all lists L, reverse(reverse(L)) == L"
            (is (let [g (sc/gen-int 100)
                      v (sc/gen-vec g 100)]
                  (:result (sc/quick-check 100 reverse-equal?-helper v))))))
@@ -36,7 +36,7 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest bad-reverse-test
-  (testing "bad reverse implementation fails"
+  (testing "For all lists L, L == reverse(L). Not true"
            (is (false?
                   (let [g (sc/gen-int 100)
                         v (sc/gen-vec g 100)]
@@ -50,7 +50,8 @@
   (not (some #{(first l)} (vec (rest l)))))
 
 (deftest bad-remove
-  (testing "foo"
+  (testing "For all lists L, if we remove the first element E, E should not
+           longer be in the list. (This is a false assumption)"
            (is (false?
                   (let [g (sc/gen-int 100)
                         v (sc/gen-vec g 100)]
