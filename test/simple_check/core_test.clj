@@ -37,7 +37,7 @@
 
 (deftest bad-reverse-test
   (testing "bad reverse implementation fails"
-           (is (= false
+           (is (false?
                   (let [g (sc/gen-int 100)
                         v (sc/gen-vec g 100)]
                     (:result (sc/quick-check 100 #(= (reverse %) %) v)))))))
@@ -51,7 +51,7 @@
 
 (deftest bad-remove
   (testing "foo"
-           (is (= false
+           (is (false?
                   (let [g (sc/gen-int 100)
                         v (sc/gen-vec g 100)]
                     (:result (sc/quick-check 100 first-is-gone v)))))))
