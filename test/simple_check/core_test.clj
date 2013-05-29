@@ -56,3 +56,20 @@
                   (let [g (sc/gen-int 100)
                         v (sc/gen-vec g 100)]
                     (:result (sc/quick-check 100 first-is-gone v)))))))
+
+;; exceptions shrink and return as result
+;; ---------------------------------------------------------------------------
+
+(def exception (Exception. "I get caught"))
+
+(defn exception-thrower
+  [& args]
+  (throw exception))
+
+(deftest exceptions-are-caught
+  (testing "Exceptions during testing are caught. They're also shrunk as long
+           as they continue to throw."
+           (is (= [exception [0]]
+                  (let [i (sc/gen-int 100)
+                        result (sc/quick-check 100 exception-thrower i)]
+                    [(:result result) (get-in result [:shrunk :smallest])])))))
