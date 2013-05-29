@@ -1,35 +1,5 @@
 (ns simple-check.core)
 
-(comment
-  (defn prop
-    []
-    (let [a (gen/int)
-          b (gen/bool)]
-      (quick-check test-fun a b))))
-
-(comment
-  (defn prop-2
-    []
-    (forall [a (gen/int)
-             b (gen/bool)]
-            (test-fun a b))))
-
-(comment
-  (for-all [l [int]]
-    (= l (reverse (reverse l)))))
-
-(defn make-acc-fun
-  [num-in-row]
-  (fn [[bail? cnt last-seen] elem]
-    (if bail?
-      [true cnt last-seen]
-      (if (= last-seen elem)
-        (let [new-cnt (inc cnt)]
-          (if (= new-cnt num-in-row)
-            [true new-cnt elem]
-            [false new-cnt elem]))
-        [false 0 elem]))))
-
 (defprotocol Generator
   (arbitrary [this] [this rand-seed size])
   (shrink [this value]))
