@@ -84,7 +84,7 @@
   [generators]
   (reify Generator
     (arbitrary [this]
-      (into [] (map arbitrary generators)))
+      (vec (map arbitrary generators)))
     (shrink [this value]
       (mapcat (partial apply shrink-index value)
               (map-indexed vector generators)))))
@@ -115,8 +115,7 @@
   [gen max-size]
   (reify Generator
     (arbitrary [this]
-      (vec (take (rand-int max-size)
-                 (repeatedly #(arbitrary gen)))))
+      (vec (repeatedly (rand-int max-size) #(arbitrary gen))))
     (shrink [this v]
       (map vec (shrink-seq gen v)))))
 
@@ -145,6 +144,6 @@
   [key-gen val-gen max-num-keys]
   (reify Generator
     (arbitrary [this]
-      (into {} (take (rand-int max-num-keys)
-                     (repeatedly (fn [] [(arbitrary key-gen)
-                                         (arbitrary val-gen)])))))))
+      (into {} (repeatedly (rand-int max-num-keys)
+                           (fn [] [(arbitrary key-gen)
+                                   (arbitrary val-gen)]))))))
