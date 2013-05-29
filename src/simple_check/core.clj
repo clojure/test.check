@@ -10,7 +10,7 @@
   ([generator num-samples]
    (take num-samples (sample generator))))
 
-(defn run-test
+(defn- run-test
   [property args]
   (let [vars (map arbitrary args)
         result (apply property vars)]
@@ -38,7 +38,7 @@
   `(let [~@bindings]
      ~expr))
 
-(defn shrink-loop
+(defn- shrink-loop
   "Shrinking a value produces a sequence of smaller values of the same type.
   Each of these values can then be shrunk. Think of this as a tree. We do a
   modified depth-first search of the tree:
@@ -148,45 +148,3 @@
       (into {} (take (rand-int max-num-keys)
                      (repeatedly (fn [] [(arbitrary key-gen)
                                          (arbitrary val-gen)])))))))
-
-
-;; Sample tests  --------------------------------------------------------------
-
-(defn first-is-gone
-  [l]
-  (not (some #{(first l)} (vec (rest l)))))
-
-(defn bad-remove-test
-  [num-times]
-  (let [g (gen-int 100)
-        v (gen-vec g 100)]
-    (quick-check num-times first-is-gone v)))
-
-(defn bad-reverse-test
-  [num-times]
-  (let [g (gen-int 100)
-        v (gen-vec g 100)]
-    (quick-check num-times #(= (reverse %) %) v)))
-
-(defn reverse-equal?
-  [l]
-  (let [r (vec (reverse l))]
-    (and (= (count l) (count r))
-         (= (seq l) (rseq r)))))
-
-(defn reverse-equal?-test
-  [num-times]
-  (let [g (gen-int 100)
-        v (gen-vec g 100)]
-    (quick-check num-times reverse-equal? v)))
-
-(defn plus-prime-forms-a-monoid
-  [a b c]
-  (and (= (+ 0 a) a)
-       (= (+ a 0) a)
-       (= (+ a (+ b c)) (+ (+ a b) c))))
-
-(defn plus-prime-forms-a-monoid-test
-  [num-times]
-  (let [a (gen-int Integer/MAX_VALUE)]
-    (quick-check num-times plus-prime-forms-a-monoid a a a)))
