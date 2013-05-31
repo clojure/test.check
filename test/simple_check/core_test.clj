@@ -1,6 +1,7 @@
 (ns simple-check.core-test
-  (:use clojure.test
-        [simple-check.core :as sc]))
+  (:use clojure.test)
+  (:require [simple-check.core       :as sc]
+            [simple-check.generators :as gen]))
 
 ;; plus and 0 form a monoid
 ;; ---------------------------------------------------------------------------
@@ -13,7 +14,7 @@
 
 (deftest plus-and-0-are-a-monoid
   (testing "+ and 0 form a monoid"
-           (is (let [a (sc/gen-int Integer/MAX_VALUE)]
+           (is (let [a (gen/int Integer/MAX_VALUE)]
                  (:result
                    (sc/quick-check 100 passes-monoid-properties a a a))))))
 
@@ -28,8 +29,8 @@
 
 (deftest reverse-equal?
   (testing "For all lists L, reverse(reverse(L)) == L"
-           (is (let [g (sc/gen-int 100)
-                     v (sc/gen-vec g 100)]
+           (is (let [g (gen/int 100)
+                     v (gen/vector g 100)]
                  (:result (sc/quick-check 100 reverse-equal?-helper v))))))
 
 ;; failing reverse
@@ -38,9 +39,9 @@
 (deftest bad-reverse-test
   (testing "For all lists L, L == reverse(L). Not true"
            (is (false?
-                  (let [g (sc/gen-int 100)
-                        v (sc/gen-vec g 100)]
-                    (:result (sc/quick-check 100 #(= (reverse %) %) v)))))))
+                 (let [g (gen/int 100)
+                       v (gen/vector g 100)]
+                   (:result (sc/quick-check 100 #(= (reverse %) %) v)))))))
 
 ;; failing element remove
 ;; ---------------------------------------------------------------------------
@@ -53,9 +54,9 @@
   (testing "For all lists L, if we remove the first element E, E should not
            longer be in the list. (This is a false assumption)"
            (is (false?
-                  (let [g (sc/gen-int 100)
-                        v (sc/gen-vec g 100)]
-                    (:result (sc/quick-check 100 first-is-gone v)))))))
+                 (let [g (gen/int 100)
+                       v (gen/vector g 100)]
+                   (:result (sc/quick-check 100 first-is-gone v)))))))
 
 ;; exceptions shrink and return as result
 ;; ---------------------------------------------------------------------------
@@ -70,6 +71,6 @@
   (testing "Exceptions during testing are caught. They're also shrunk as long
            as they continue to throw."
            (is (= [exception [0]]
-                  (let [i (sc/gen-int 100)
+                  (let [i (gen/int 100)
                         result (sc/quick-check 100 exception-thrower i)]
                     [(:result result) (get-in result [:shrunk :smallest])])))))
