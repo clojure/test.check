@@ -1,5 +1,9 @@
 # simple-check
 
+## Build Status
+
+[![Build Status](https://secure.travis-ci.org/reiddraper/simple-check.png)](http://travis-ci.org/reiddraper/simple-check)
+
 A Clojure property-based testing tool inspired by QuickCheck. It has a feature
 called 'shrinking', which will reduce failing tests to 'smaller', easier to
 comprehend counter-examples. It is mostly likely only usable by the author
