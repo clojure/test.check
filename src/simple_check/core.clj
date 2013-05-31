@@ -1,25 +1,15 @@
-(ns simple-check.core)
-
-(defprotocol Generator
-  (arbitrary [this] [this rand-seed size])
-  (shrink [this value]))
-
-(defn sample
-  ([generator]
-   (repeatedly #(arbitrary generator)))
-  ([generator num-samples]
-   (take num-samples (sample generator))))
+(ns simple-check.core
+  (:require [simple-check.generators :as gen]))
 
 (defn- run-test
   [property args]
-  (let [vars (map arbitrary args)
+  (let [vars (map gen/arbitrary args)
         result (try
                  (apply property vars)
                  (catch Throwable t t))]
     [result vars]))
 
 (declare shrink-loop)
-(declare tuple)
 
 (defn quick-check
   [num-tests property-fun & args]
@@ -32,14 +22,14 @@
                                         :num-tests so-far
                                         :fail (vec vars)
                                         :shrunk (shrink-loop property-fun
-                                                             (tuple args)
+                                                             (gen/tuple args)
                                                              (vec vars))}
           result (recur (inc so-far))
           :default {:result false
                     :num-tests so-far
                     :fail (vec vars)
                     :shrunk (shrink-loop property-fun
-                                         (tuple args)
+                                         (gen/tuple args)
                                          (vec vars))})))))
 
 (defmacro forall [bindings expr]
@@ -59,7 +49,7 @@
   The value returned is the left-most failing example at the depth where a
   passing example was found."
   [prop gen failing]
-  (let [shrinks (shrink gen failing)]
+  (let [shrinks (gen/shrink gen failing)]
     (loop [nodes shrinks
            f failing
            total-nodes-visited 0
@@ -82,81 +72,10 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (shrink gen head)]
+            (let [children (gen/shrink gen head)]
               (if (empty? children)
                 (recur tail head (inc total-nodes-visited) depth false)
                 (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
 
 ;; Generators -----------------------------------------------------------------
 
-(defn shrink-index
-  [tuple index generator]
-  (map (partial assoc tuple index) (shrink generator (tuple index))))
-
-(defn tuple
-  [generators]
-  (reify Generator
-    (arbitrary [this]
-      (vec (map arbitrary generators)))
-    (shrink [this value]
-      (mapcat (partial apply shrink-index value)
-              (map-indexed vector generators)))))
-
-(defn- halfs
-  [n]
-  (take-while (partial not= 0) (iterate #(quot % 2) n)))
-
-(defn gen-int
-  [max-int]
-  (reify Generator
-    (arbitrary [this]
-      (rand-int max-int))
-    (shrink [this integer]
-      (map (partial - integer) (halfs integer)))))
-
-(defn shrink-seq
-  [gen s]
-  (if (empty? s)
-    s
-    (let [head (first s)
-          tail (rest s)]
-      (concat [tail]
-              (for [x (shrink-seq gen tail)] (cons head x))
-              (for [y (shrink gen head)] (cons y tail))))))
-
-(defn gen-vec
-  [gen max-size]
-  (reify Generator
-    (arbitrary [this]
-      (vec (repeatedly (rand-int max-size) #(arbitrary gen))))
-    (shrink [this v]
-      (map vec (shrink-seq gen v)))))
-
-(defn subvecs
-  [v]
-  (for [index (range 1 (count v))]
-    (subvec v index)))
-
-(defn shrink-vecs
-  [vs inner-gen]
-  (map #(map
-          (fn [v]
-            (->> v
-              (shrink inner-gen)
-              first))
-          %)
-       vs))
-
-(defn safe-first
-  [s]
-  (if (seq? s)
-    (first s)
-    []))
-
-(defn map-gen
-  [key-gen val-gen max-num-keys]
-  (reify Generator
-    (arbitrary [this]
-      (into {} (repeatedly (rand-int max-num-keys)
-                           (fn [] [(arbitrary key-gen)
-                                   (arbitrary val-gen)]))))))
