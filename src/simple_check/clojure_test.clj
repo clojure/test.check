@@ -1,6 +1,13 @@
 (ns simple-check.clojure-test
   (:require [clojure.test :as ct]))
 
+(defn- assert-check
+  [{:keys [result] :as m}]
+  (println m)
+  (if (instance? Throwable result)
+    (throw result)
+    (ct/is result)))
+
 (defmacro defspec
   "Defines a new clojure.test test var that uses `quick-check` to verify
   [property] with the given [args] (should be a sequence of generators),
@@ -15,7 +22,7 @@
      ; integration with another test framework is attempted.
      (require 'simple-check.core)
      (defn ~(vary-meta name assoc :test
-                       `(fn [] (println (assoc (~name) :test-var (str '~name)))))
+                       `#(#'assert-check (assoc (~name) :test-var (str '~name))))
        ([] (~name ~default-times))
        ([times#]
         (simple-check.core/quick-check
