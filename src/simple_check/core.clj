@@ -72,6 +72,20 @@
                 (recur tail head (inc total-nodes-visited) depth false)
                 (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
 
+(defmacro defspec
+  "Defines a new clojure.test test var that uses `quick-check` to verify
+  [property] with the given [args] (should be a sequence of generators),
+  [default-times] times by default.  You can call the function defined as [name]
+  with no arguments to trigger this test directly (i.e.  without starting a
+  wider clojure.test run), or with a single argument that will override
+  [default-times]."
+  [name default-times property & args]
+  `(defn ~(vary-meta name assoc :test
+                     `(fn [] (println (assoc (~name ~default-times) :test-var (str '~name)))))
+     ([] (~name ~default-times))
+     ([times#]
+      (qc/quick-check times# (vary-meta ~property assoc :name (str '~property)) ~@args))))
+
 (defn- report-trial
   [property-fun so-far num-tests]
   (ct/report {:type ::trial
