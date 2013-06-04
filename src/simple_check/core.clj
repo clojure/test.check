@@ -1,5 +1,6 @@
 (ns simple-check.core
-  (:require [simple-check.generators :as gen]))
+  (:require [simple-check.generators :as gen]
+            [simple-check.clojure-test :as ct]))
 
 (defn- run-test
   [property args]
@@ -9,28 +10,22 @@
                  (catch Throwable t t))]
     [result vars]))
 
-(declare shrink-loop)
+(declare shrink-loop failure)
 
 (defn quick-check
   [num-tests property-fun & args]
   (loop [so-far 0]
-    (if (= so-far num-tests)
-      {:result true :num-tests so-far}
+    (if (== so-far num-tests)
+      (do
+        (ct/report-trial property-fun so-far num-tests)
+        {:result true :num-tests so-far})
       (let [[result vars] (run-test property-fun args)]
         (cond
-          (instance? Throwable result) {:result result
-                                        :num-tests so-far
-                                        :fail (vec vars)
-                                        :shrunk (shrink-loop property-fun
-                                                             (gen/tuple args)
-                                                             (vec vars))}
-          result (recur (inc so-far))
-          :default {:result false
-                    :num-tests so-far
-                    :fail (vec vars)
-                    :shrunk (shrink-loop property-fun
-                                         (gen/tuple args)
-                                         (vec vars))})))))
+          (instance? Throwable result) (failure property-fun result so-far args vars)
+          result (do
+                   (ct/report-trial property-fun so-far num-tests)
+                   (recur (inc so-far)))
+          :default (failure property-fun result so-far args vars))))))
 
 (defmacro forall [bindings expr]
   `(let [~@bindings]
@@ -77,5 +72,13 @@
                 (recur tail head (inc total-nodes-visited) depth false)
                 (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
 
-;; Generators -----------------------------------------------------------------
+(defn- failure
+  [property-fun result trial-number args failing-params] 
+  (ct/report-failure property-fun result trial-number args failing-params)
+  {:result result
+   :num-tests trial-number
+   :fail (vec failing-params)
+   :shrunk (shrink-loop property-fun
+                        (gen/tuple args)
+                        (vec failing-params))})
 
