@@ -102,7 +102,7 @@
 (defmethod ct/report ::shrinking [m]
   (when *report-shrinking*
     (ct/with-test-out
-      (println "Shrinking" (get-property-name m) "starting with parameters" (::params m)))))
+      (println "Shrinking" (get-property-name m) "starting with parameters" (pr-str (::params m))))))
 
 (defn report-trial
   [property-fun so-far num-tests]
