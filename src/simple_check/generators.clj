@@ -1,84 +1,89 @@
 (ns simple-check.generators
+  (:require [simple-check.util :as util])
   (:refer-clojure :exclude [int vector map]))
 
-(defprotocol Generator
-  (arbitrary [this] [this rand-seed size])
-  (shrink [this value]))
+(defprotocol Shrink
+  (shrink [this]))
 
 (defn sample
   ([generator]
-   (repeatedly #(arbitrary generator)))
+   (repeatedly #(util/nullary-apply generator)))
   ([generator num-samples]
    (take num-samples (sample generator))))
 
-(defn- shrink-index
-  [coll index generator]
-  (clojure.core/map (partial assoc coll index) (shrink generator (coll index))))
+(defn shrink-index
+  [coll index]
+  (clojure.core/map (partial assoc coll index) (shrink (coll index))))
 
 (defn tuple
   [generators]
-  (reify Generator
-    (arbitrary [this]
-      (vec (clojure.core/map arbitrary generators)))
-    (shrink [this value]
-      (mapcat (partial apply shrink-index value)
-              (map-indexed clojure.core/vector generators)))))
+  (fn [rand-seed size]
+    (vec (clojure.core/map util/nullary-apply generators))))
 
-(defn- halfs
+(defn shrink-tuple
+  [value]
+  (mapcat (partial shrink-index value) (range (count value))))
+
+(defn halfs
   [n]
   (take-while (partial not= 0) (iterate #(quot % 2) n)))
 
 (defn int
-  [max-int]
-  (reify Generator
-    (arbitrary [this]
-      (rand-int max-int))
-    (shrink [this integer]
-      (clojure.core/map (partial - integer) (halfs integer)))))
+  ([] (int :fake 10000))
+  ([rand-seed size]
+  (rand-int size)))
+
+(defn shrink-int
+  [integer]
+  (clojure.core/map (partial - integer) (halfs integer)))
 
 (defn shrink-seq
-  [gen s]
-  (if (empty? s)
-    s
-    (let [head (first s)
-          tail (rest s)]
+  [coll]
+  (if (empty? coll)
+    coll
+    (let [head (first coll)
+          tail (rest coll)]
       (concat [tail]
-              (for [x (shrink-seq gen tail)] (cons head x))
-              (for [y (shrink gen head)] (cons y tail))))))
+              (for [x (shrink-seq tail)] (cons head x))
+              (for [y (shrink head)] (cons y tail))))))
 
 (defn vector
-  [gen max-size]
-  (reify Generator
-    (arbitrary [this]
-      (vec (repeatedly (rand-int max-size) #(arbitrary gen))))
-    (shrink [this v]
-      (clojure.core/map vec (shrink-seq gen v)))))
+  [gen]
+  (fn [rand-seed size]
+    (vec (repeatedly (rand-int size) #(util/nullary-apply gen)))))
 
-(defn- subvecs
-  [v]
-  (for [index (range 1 (count v))]
-    (subvec v index)))
-
-(defn- shrink-vecs
-  [vs inner-gen]
-  (clojure.core/map #(clojure.core/map
-          (fn [v]
-            (->> v
-              (shrink inner-gen)
-              first))
-          %)
-       vs))
-
-(defn- safe-first
-  [s]
-  (if (seq? s)
-    (first s)
-    []))
+(defn shrink-vector
+  [value]
+  (clojure.core/map vec (shrink-seq value)))
 
 (defn map
-  [key-gen val-gen max-num-keys]
-  (reify Generator
-    (arbitrary [this]
-      (into {} (repeatedly (rand-int max-num-keys)
-                           (fn [] [(arbitrary key-gen)
-                                   (arbitrary val-gen)]))))))
+  [key-gen val-gen]
+  (fn [rand-seed size]
+    (into {} (repeatedly (rand-int size)
+                         (fn [] [(util/nullary-apply key-gen)
+                                 (util/nullary-apply val-gen)])))))
+
+(defn shrink-map
+  [value]
+  [])
+
+;; Instances
+;; ---------------------------------------------------------------------------
+
+(extend java.lang.Number
+  Shrink
+  ;; TODO:
+  ;; this shrink goes into an infinite loop with floats
+  {:shrink shrink-int})
+
+(extend clojure.lang.IPersistentVector
+  Shrink
+  ;; TODO:
+  ;; this shrink goes into an infinite loop with floats
+  {:shrink shrink-seq})
+
+(extend clojure.lang.IPersistentMap
+  Shrink
+  ;; TODO:
+  ;; this shrink goes into an infinite loop with floats
+  {:shrink shrink-map})

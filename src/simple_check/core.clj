@@ -1,10 +1,17 @@
 (ns simple-check.core
   (:require [simple-check.generators :as gen]
-            [simple-check.clojure-test :as ct]))
+            [simple-check.clojure-test :as ct]
+            [simple-check.util :as util]))
+
+(defn shrinks
+  [{shrink-fn :shrink} value]
+  (if shrink-fn
+    (shrink-fn value)
+    (gen/shrink value)))
 
 (defn- run-test
   [property args]
-  (let [vars (map gen/arbitrary args)
+  (let [vars (map util/nullary-apply args)
         result (try
                  (apply property vars)
                  (catch Throwable t t))]
@@ -44,8 +51,8 @@
   The value returned is the left-most failing example at the depth where a
   passing example was found."
   [prop gen failing]
-  (let [shrinks (gen/shrink gen failing)]
-    (loop [nodes shrinks
+  (let [shrinks-this-depth (gen/shrink-tuple  failing)]
+    (loop [nodes shrinks-this-depth
            f failing
            total-nodes-visited 0
            depth 0
@@ -67,13 +74,13 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (gen/shrink gen head)]
+            (let [children (gen/shrink-tuple head)]
               (if (empty? children)
                 (recur tail head (inc total-nodes-visited) depth false)
                 (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
 
 (defn- failure
-  [property-fun result trial-number args failing-params] 
+  [property-fun result trial-number args failing-params]
   (ct/report-failure property-fun result trial-number args failing-params)
   {:result result
    :num-tests trial-number
