@@ -1,9 +1,40 @@
 (ns simple-check.generators
   (:require [simple-check.util :as util])
+  (:import java.util.Random)
   (:refer-clojure :exclude [int vector map]))
+
+(defn random
+  ([] (java.util.Random.))
+  ([seed] (java.util.Random. seed)))
 
 (defprotocol Shrink
   (shrink [this]))
+
+(defn fmap
+  [f gen]
+  (fn [rand-seed size]
+    (f (gen rand-seed size))))
+
+(defn bind
+  [gen k]
+  (fn [rand-seed size]
+    (let [value (gen rand-seed size)]
+      ((k value) rand-seed size))))
+
+(defn diff
+  [min-range max-range]
+  (case [(neg? min-range) (neg? max-range)]
+    [true true] (Math/abs (- max-range min-range))
+    ;; default
+    (- )))
+
+(defn choose
+  [min-range max-range]
+  (let [diff (Math/abs (- max-range min-range))]
+    (fn [rand-seed _size]
+      (if (zero? diff)
+        min-range
+        (+ (.nextInt rand-seed (inc diff)) min-range)))))
 
 (defn sample
   ([generator]
@@ -29,9 +60,11 @@
   (take-while (partial not= 0) (iterate #(quot % 2) n)))
 
 (defn int
-  ([] (int :fake 10000))
+  ([] (int (random) 10000))
+  ([rand-seed] (int rand-seed 10000))
   ([rand-seed size]
-  (rand-int size)))
+   ((choose (- 0 size) size)
+      rand-seed size)))
 
 (defn shrink-int
   [integer]
@@ -50,7 +83,8 @@
 (defn vector
   [gen]
   (fn [rand-seed size]
-    (vec (repeatedly (rand-int size) #(util/nullary-apply gen)))))
+    (let [num-elements (Math/abs (int rand-seed size))]
+      (vec (repeatedly num-elements #(gen rand-seed size))))))
 
 (defn shrink-vector
   [value]
@@ -66,6 +100,14 @@
 (defn shrink-map
   [value]
   [])
+
+;; Combinators
+;; ---------------------------------------------------------------------------
+
+(defn one-of
+  [generators]
+  (bind (choose 0 (dec (count generators)))
+        #(nth generators %)))
 
 ;; Instances
 ;; ---------------------------------------------------------------------------

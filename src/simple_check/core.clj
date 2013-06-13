@@ -3,6 +3,8 @@
             [simple-check.clojure-test :as ct]
             [simple-check.util :as util]))
 
+;; TODO: this isn't used now, but might be useful
+;; once we allow for overriding shrinking
 (defn shrinks
   [{shrink-fn :shrink} value]
   (if shrink-fn
