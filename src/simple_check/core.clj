@@ -21,15 +21,17 @@
 
 (declare shrink-loop failure)
 
-(defn make-seed
+(defn make-rng
+  ;; TODO: this should handle rng and longs being passed in,
+  ;; and if it makes a new random object, it should return the seed
   [s]
   (if s
     s
     (gen/random)))
 
 (defn quick-check
-  [num-tests property-fun args {seed :random-seed}]
-  (let [random-seed (make-seed seed)]
+  [num-tests property-fun args {rng :rng}]
+  (let [random-seed (make-rng rng)]
     (loop [so-far 0]
     (if (== so-far num-tests)
       (do
