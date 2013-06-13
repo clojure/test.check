@@ -12,8 +12,8 @@
     (gen/shrink value)))
 
 (defn- run-test
-  [property args]
-  (let [vars (map util/nullary-apply args)
+  [property seed args]
+  (let [vars (map #(% seed 100) args)
         result (try
                  (apply property vars)
                  (catch Throwable t t))]
@@ -21,20 +21,27 @@
 
 (declare shrink-loop failure)
 
+(defn make-seed
+  [s]
+  (if s
+    s
+    (gen/random)))
+
 (defn quick-check
-  [num-tests property-fun & args]
-  (loop [so-far 0]
+  [num-tests property-fun args {seed :random-seed}]
+  (let [random-seed (make-seed seed)]
+    (loop [so-far 0]
     (if (== so-far num-tests)
       (do
         (ct/report-trial property-fun so-far num-tests)
         {:result true :num-tests so-far})
-      (let [[result vars] (run-test property-fun args)]
+      (let [[result vars] (run-test property-fun random-seed args)]
         (cond
           (instance? Throwable result) (failure property-fun result so-far args vars)
           result (do
                    (ct/report-trial property-fun so-far num-tests)
                    (recur (inc so-far)))
-          :default (failure property-fun result so-far args vars))))))
+          :default (failure property-fun result so-far args vars)))))))
 
 (defmacro forall [bindings expr]
   `(let [~@bindings]
