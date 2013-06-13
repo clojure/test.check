@@ -109,6 +109,14 @@
   (bind (choose 0 (dec (count generators)))
         #(nth generators %)))
 
+(defn such-that
+  [gen f]
+  (fn [rand-seed size]
+    (let [value (gen rand-seed size)]
+      (if (f value)
+        value
+        (recur rand-seed size)))))
+
 ;; Instances
 ;; ---------------------------------------------------------------------------
 
