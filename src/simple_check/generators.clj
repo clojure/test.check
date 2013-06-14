@@ -76,9 +76,9 @@
     coll
     (let [head (first coll)
           tail (rest coll)]
-      (concat [(vec tail)]
-              (for [x (shrink-seq tail)] (vec (cons head x)))
-              (for [y (shrink head)] (vec (cons y tail)))))))
+      (concat [tail]
+              (for [x (shrink-seq tail)] (cons head x))
+              (for [y (shrink head)] (cons y tail))))))
 
 (defn vector
   [gen]
@@ -130,7 +130,13 @@
   Shrink
   ;; TODO:
   ;; this shrink goes into an infinite loop with floats
-  {:shrink shrink-seq})
+  {:shrink (comp (partial clojure.core/map vec) shrink-seq)})
+
+(extend clojure.lang.PersistentList
+  Shrink
+  ;; TODO:
+  ;; this shrink goes into an infinite loop with floats
+  {:shrink (comp (partial clojure.core/map (partial apply list)) shrink-seq)})
 
 (extend clojure.lang.IPersistentMap
   Shrink

@@ -12,8 +12,8 @@
     (gen/shrink value)))
 
 (defn- run-test
-  [property rng args]
-  (let [vars (vec (map #(% rng 50) args))
+  [property rng size args]
+  (let [vars (vec (map #(% rng size) args))
         result (try
                  (apply property vars)
                  (catch Throwable t t))]
@@ -28,21 +28,27 @@
     (let [non-nil-seed (System/currentTimeMillis)]
       [non-nil-seed (gen/random non-nil-seed)])))
 
+(defn make-size-range-seq
+  [max-size]
+  (cycle (range 1 max-size)))
+
 (defn quick-check
-  [num-tests property-fun args {seed :seed}]
+  [num-tests property-fun args {:keys [seed max-size] :or {max-size 200}}]
   (let [[created-seed rng] (make-rng seed)]
-    (loop [so-far 0]
+    (loop [so-far 0
+           size-seq (make-size-range-seq max-size)]
     (if (== so-far num-tests)
       (do
         (ct/report-trial property-fun so-far num-tests)
         {:result true :num-tests so-far :seed created-seed})
-      (let [[result vars] (run-test property-fun rng args)]
+      (let [[size & rest-size-seq] size-seq
+            [result vars] (run-test property-fun rng size args)]
         (cond
-          (instance? Throwable result) (failure property-fun result so-far args vars)
+          (instance? Throwable result) (failure property-fun result so-far size args vars)
           result (do
                    (ct/report-trial property-fun so-far num-tests)
-                   (recur (inc so-far)))
-          :default (failure property-fun result so-far args vars)))))))
+                   (recur (inc so-far) rest-size-seq))
+          :default (failure property-fun result so-far size args vars)))))))
 
 (defmacro forall [bindings expr]
   `(let [~@bindings]
@@ -91,9 +97,10 @@
                 (recur children head (inc total-nodes-visited) (inc depth) true))))))))))
 
 (defn- failure
-  [property-fun result trial-number args failing-params]
+  [property-fun result trial-number size args failing-params]
   (ct/report-failure property-fun result trial-number args failing-params)
   {:result result
+   :failing-size size
    :num-tests trial-number
    :fail (vec failing-params)
    :shrunk (shrink-loop property-fun
