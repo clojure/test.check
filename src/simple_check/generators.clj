@@ -76,9 +76,9 @@
     coll
     (let [head (first coll)
           tail (rest coll)]
-      (concat [tail]
-              (for [x (shrink-seq tail)] (cons head x))
-              (for [y (shrink head)] (cons y tail))))))
+      (concat [(vec tail)]
+              (for [x (shrink-seq tail)] (vec (cons head x)))
+              (for [y (shrink head)] (vec (cons y tail)))))))
 
 (defn vector
   [gen]

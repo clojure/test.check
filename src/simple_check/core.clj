@@ -12,8 +12,8 @@
     (gen/shrink value)))
 
 (defn- run-test
-  [property seed args]
-  (let [vars (map #(% seed 100) args)
+  [property rng args]
+  (let [vars (vec (map #(% rng 50) args))
         result (try
                  (apply property vars)
                  (catch Throwable t t))]
@@ -22,22 +22,21 @@
 (declare shrink-loop failure)
 
 (defn make-rng
-  ;; TODO: this should handle rng and longs being passed in,
-  ;; and if it makes a new random object, it should return the seed
-  [s]
-  (if s
-    s
-    (gen/random)))
+  [seed]
+  (if seed
+    [seed (gen/random seed)]
+    (let [non-nil-seed (System/currentTimeMillis)]
+      [non-nil-seed (gen/random non-nil-seed)])))
 
 (defn quick-check
-  [num-tests property-fun args {rng :rng}]
-  (let [random-seed (make-rng rng)]
+  [num-tests property-fun args {seed :seed}]
+  (let [[created-seed rng] (make-rng seed)]
     (loop [so-far 0]
     (if (== so-far num-tests)
       (do
         (ct/report-trial property-fun so-far num-tests)
-        {:result true :num-tests so-far})
-      (let [[result vars] (run-test property-fun random-seed args)]
+        {:result true :num-tests so-far :seed created-seed})
+      (let [[result vars] (run-test property-fun rng args)]
         (cond
           (instance? Throwable result) (failure property-fun result so-far args vars)
           result (do
@@ -61,7 +60,7 @@
   * If a node fails the property, search it's children
   The value returned is the left-most failing example at the depth where a
   passing example was found."
-  [prop gen failing]
+  [prop failing]
   (let [shrinks-this-depth (gen/shrink-tuple  failing)]
     (loop [nodes shrinks-this-depth
            f failing
@@ -85,10 +84,11 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (gen/shrink-tuple head)]
+            (do
+              (let [children (gen/shrink-tuple head)]
               (if (empty? children)
                 (recur tail head (inc total-nodes-visited) depth false)
-                (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
+                (recur children head (inc total-nodes-visited) (inc depth) true))))))))))
 
 (defn- failure
   [property-fun result trial-number args failing-params]
@@ -97,6 +97,5 @@
    :num-tests trial-number
    :fail (vec failing-params)
    :shrunk (shrink-loop property-fun
-                        (gen/tuple args)
                         (vec failing-params))})
 
