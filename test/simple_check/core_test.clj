@@ -105,6 +105,20 @@
           (sc/quick-check 1000 interpose-twice-the-length
                           [(gen/vector gen/int)])))))
 
+;; Sorting
+;; ---------------------------------------------------------------------------
+
+(defn elements-are-in-order-after-sorting
+  [v]
+  (every? identity (map <= (partition 2 1 (sort v)))))
+
+(deftest sorting
+  (testing
+    ""
+    (is (:result
+          (sc/quick-check 1000 elements-are-in-order-after-sorting
+                          [(gen/vector gen/int)])))))
+
 ;; Tests are deterministic
 ;; ---------------------------------------------------------------------------
 
