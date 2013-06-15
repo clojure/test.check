@@ -71,6 +71,21 @@
                   (let [result (sc/quick-check 100 exception-thrower [gen/int])]
                     [(:result result) (get-in result [:shrunk :smallest])])))))
 
+;; Count and concat work as expected
+;; ---------------------------------------------------------------------------
+
+(defn concat-counts-correct
+  [a b]
+  (= (count (concat a b))
+     (+ (count a) (count b))))
+
+(deftest count-and-concat
+  (testing "For all vectors A and B:
+           length(A + B) == length(A) + length(B)"
+           (is (:result
+                 (let [v (gen/vector gen/int)]
+                   (sc/quick-check 1000 concat-counts-correct [v v]))))))
+
 ;; Tests are deterministic
 ;; ---------------------------------------------------------------------------
 
