@@ -90,11 +90,10 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (do
-              (let [children (gen/shrink-tuple head)]
+            (let [children (gen/shrink-tuple head)]
               (if (empty? children)
                 (recur tail head (inc total-nodes-visited) depth false)
-                (recur children head (inc total-nodes-visited) (inc depth) true))))))))))
+                (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
 
 (defn- failure
   [property-fun result trial-number size args failing-params]
