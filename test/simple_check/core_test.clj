@@ -86,19 +86,24 @@
                  (let [v (gen/vector gen/int)]
                    (sc/quick-check 1000 concat-counts-correct [v v]))))))
 
-;; Interpose
+;; Interpose (Count)
 ;; ---------------------------------------------------------------------------
 
-(defn interpose-twice-the-length
+(defn interpose-twice-the-length ;; (or one less)
   [v]
-  (= (count (interpose :i v))
-     (* 2 (count v))))
+  (let [interpose-count (count (interpose :i v))]
+    (or
+      (= (* 2 interpose-count))
+      (= (dec (* 2 interpose-count))))))
+
 
 (deftest interpose-creates-sequence-twice-the-length
-  (is "Interposing a collection with a value makes it's count
-      twice the original collection"
-      (:result
-        (sc/quick-check 1000 interpose-twice-the-length [(gen/vector gen/int)]))))
+  (testing
+    "Interposing a collection with a value makes it's count
+    twice the original collection, or ones less."
+    (is (:result
+          (sc/quick-check 1000 interpose-twice-the-length
+                          [(gen/vector gen/int)])))))
 
 ;; Tests are deterministic
 ;; ---------------------------------------------------------------------------
