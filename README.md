@@ -9,6 +9,24 @@ called 'shrinking', which will reduce failing tests to 'smaller', easier to
 comprehend counter-examples. It is mostly likely only usable by the author
 at this point. Will break without notice.
 
+## Installation
+
+### Leiningen
+
+```
+[reiddraper/simple-check "0.1.0-SNAPSHOT"]
+```
+
+### Maven
+
+```
+<dependency>
+  <groupId>reiddraper</groupId>
+  <artifactId>simple-check</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
 ## Usage
 
 ```clojure
