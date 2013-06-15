@@ -32,27 +32,45 @@
   [max-size]
   (cycle (range 1 max-size)))
 
+(defn- complete
+  [property-fun num-trials seed]
+  (ct/report-trial property-fun num-trials num-trials)
+  {:result true :num-tests num-trials :seed seed})
+
 (defn quick-check
   [num-tests property-fun args & {:keys [seed max-size] :or {max-size 200}}]
-  (let [[created-seed rng] (make-rng seed)]
+  (let [[created-seed rng] (make-rng seed)
+        size-seq (make-size-range-seq max-size)]
     (loop [so-far 0
-           size-seq (make-size-range-seq max-size)]
-    (if (== so-far num-tests)
-      (do
-        (ct/report-trial property-fun so-far num-tests)
-        {:result true :num-tests so-far :seed created-seed})
-      (let [[size & rest-size-seq] size-seq
-            [result vars] (run-test property-fun rng size args)]
-        (cond
-          (instance? Throwable result) (failure property-fun result so-far size args vars)
-          result (do
-                   (ct/report-trial property-fun so-far num-tests)
-                   (recur (inc so-far) rest-size-seq))
-          :default (failure property-fun result so-far size args vars)))))))
+           size-seq size-seq]
+      (if (= so-far num-tests)
+        (complete property-fun num-tests created-seed)
+        (let [[size & rest-size-seq] size-seq
+              [result vars] (run-test property-fun rng size args)]
+          (cond
+            (instance? Throwable result) (failure property-fun result so-far size args vars)
+            result (do
+                     (ct/report-trial property-fun so-far num-tests)
+                     (recur (inc so-far) rest-size-seq))
+            :default (failure property-fun result so-far size args vars)))))))
 
 (defmacro forall [bindings expr]
   `(let [~@bindings]
      ~expr))
+
+(defn- smallest-shrink
+  [total-nodes-visited depth smallest-args]
+  {:total-nodes-visited total-nodes-visited
+   :depth depth
+   :smallest smallest-args})
+
+(defn- safe-apply-props
+  [prop args]
+  (try (apply prop args)
+    (catch Throwable t
+      ; assuming that this `t` is of the same type that was
+      ; originally thrown in quick-check...
+      false)))
 
 (defn- shrink-loop
   "Shrinking a value produces a sequence of smaller values of the same type.
@@ -74,16 +92,9 @@
            depth 0
            can-set-new-best? true]
       (if (empty? nodes)
-        {:total-nodes-visited total-nodes-visited
-         :depth depth
-         :smallest f}
+        (smallest-shrink total-nodes-visited depth f)
         (let [[head & tail] nodes]
-          (if (try
-                (apply prop head)
-                (catch Throwable t
-                  ; assuming that this `t` is of the same type that was
-                  ; originally thrown in quick-check...
-                  false))
+          (if (safe-apply-props prop head)
             ;; this node passed the test, so now try testing it's right-siblings
             (recur tail f (inc total-nodes-visited) depth can-set-new-best?)
             ;; this node failed the test, so check if it has children,
