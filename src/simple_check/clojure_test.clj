@@ -33,16 +33,16 @@
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
   Valid values include:
-  
+
   * false - no reporting of trials (default)
   * a function - will be passed a clojure.test/report-style map containing
-      :simple-check.core/property and :simple-check.core/trial slots
+  :simple-check.core/property and :simple-check.core/trial slots
   * true - provides quickcheck-style trial reporting (dots) via
-      `trial-report-dots`
+  `trial-report-dots`
 
   (Note that all reporting requires running `quick-check` within the scope of a
   clojure.test run (via `test-ns`, `test-all-vars`, etc.)
-  
+
   Reporting functions offered by simple-check include `trial-report-dots` and
   `trial-report-periodic` (which prints more verbose trial progress information
   every `*trial-report-period*` milliseconds."
@@ -72,7 +72,7 @@
 (defn trial-report-periodic
   "Intended to be bound as the value of `*report-trials*`; will emit a verbose
   status every `*trial-report-period*` milliseconds, like this one:
-  
+
   Passing trial 3286 / 5000 for (your-test-var-name-here) (:)"
   [m]
   (let [t (System/currentTimeMillis)]
@@ -115,12 +115,12 @@
   ;; TODO this is wrong, makes it impossible to clojure.test quickchecks that
   ;; should fail...
   #_(ct/report (if (instance? Throwable result)
-               {:type :error
-                :message (.getMessage result)
-                :actual result}
-               {:type :fail
-                :expected true
-                :actual result}))
+                 {:type :error
+                  :message (.getMessage result)
+                  :actual result}
+                 {:type :fail
+                  :expected true
+                  :actual result}))
   (ct/report {:type ::shrinking
               ::property property-fun
               ::params (vec failing-params)}))
