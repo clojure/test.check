@@ -13,13 +13,13 @@ at this point. Will break without notice.
 
 ### Leiningen
 
-```
+```clojure
 [reiddraper/simple-check "0.1.0-SNAPSHOT"]
 ```
 
 ### Maven
 
-```
+```xml
 <dependency>
   <groupId>reiddraper</groupId>
   <artifactId>simple-check</artifactId>
