@@ -13,20 +13,20 @@ at this point. Will break without notice.
 
 ```clojure
 (require '[simple-check.core :as sc])
+(require '[simple-check.generators :as gen])
 
 ;; a passing test
-(let [i (sc/gen-int 100)
-      v (sc/gen-vec i 100)]
-   (sc/quick-check 100 #(= % (reverse (reverse %))) v))
-;; {:result true, :num-tests 100}
+(let [v (gen/vector gen/int)]
+   (sc/quick-check 100 #(= % (reverse (reverse %))) [v]))
+;; {:result true, :num-tests 100 :seed 1371257283560}
 
 ;; a failing test
-(let [i (sc/gen-int 100)]
-  (sc/quick-check 100 #(> (+ %1 %2) %) i i))
+(sc/quick-check 100 #(> (+ %1 %2) %) [gen/int gen/int])
 ;; {:result false,
-;;  :num-tests 25,
-;;  :fail [11 0],
-;;  :shrunk {:total-nodes-visited 9, :depth 4, :smallest [0 0]}}
+;;  :failing-size 4,
+;;  :num-tests 3,
+;;  :fail [-2 -4],
+;;  :shrunk {:total-nodes-visited 6, depth 3, :smallest [0 0]}}
 ```
 
 See more examples in [core_test.clj](test/simple_check/core_test.clj).

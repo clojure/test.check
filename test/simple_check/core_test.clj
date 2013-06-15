@@ -14,9 +14,9 @@
 
 (deftest plus-and-0-are-a-monoid
   (testing "+ and 0 form a monoid"
-           (is (let [a (gen/int Integer/MAX_VALUE)]
+           (is (let [a gen/int]
                  (:result
-                   (sc/quick-check 100 passes-monoid-properties a a a))))))
+                   (sc/quick-check 1000 passes-monoid-properties [a a a]))))))
 
 ;; reverse
 ;; ---------------------------------------------------------------------------
@@ -29,9 +29,8 @@
 
 (deftest reverse-equal?
   (testing "For all lists L, reverse(reverse(L)) == L"
-           (is (let [g (gen/int 100)
-                     v (gen/vector g 100)]
-                 (:result (sc/quick-check 100 reverse-equal?-helper v))))))
+           (is (let [v (gen/vector gen/int)]
+                 (:result (sc/quick-check 1000 reverse-equal?-helper [v]))))))
 
 ;; failing reverse
 ;; ---------------------------------------------------------------------------
@@ -39,9 +38,8 @@
 (deftest bad-reverse-test
   (testing "For all lists L, L == reverse(L). Not true"
            (is (false?
-                 (let [g (gen/int 100)
-                       v (gen/vector g 100)]
-                   (:result (sc/quick-check 100 #(= (reverse %) %) v)))))))
+                 (let [v (gen/vector gen/int)]
+                   (:result (sc/quick-check 1000 #(= (reverse %) %) [v])))))))
 
 ;; failing element remove
 ;; ---------------------------------------------------------------------------
@@ -54,9 +52,8 @@
   (testing "For all lists L, if we remove the first element E, E should not
            longer be in the list. (This is a false assumption)"
            (is (false?
-                 (let [g (gen/int 100)
-                       v (gen/vector g 100)]
-                   (:result (sc/quick-check 100 first-is-gone v)))))))
+                 (let [v (gen/vector gen/int)]
+                   (:result (sc/quick-check 1000 first-is-gone [v])))))))
 
 ;; exceptions shrink and return as result
 ;; ---------------------------------------------------------------------------
@@ -71,6 +68,75 @@
   (testing "Exceptions during testing are caught. They're also shrunk as long
            as they continue to throw."
            (is (= [exception [0]]
-                  (let [i (gen/int 100)
-                        result (sc/quick-check 100 exception-thrower i)]
+                  (let [result (sc/quick-check 1000 exception-thrower [gen/int])]
                     [(:result result) (get-in result [:shrunk :smallest])])))))
+
+;; Count and concat work as expected
+;; ---------------------------------------------------------------------------
+
+(defn concat-counts-correct
+  [a b]
+  (= (count (concat a b))
+     (+ (count a) (count b))))
+
+(deftest count-and-concat
+  (testing "For all vectors A and B:
+           length(A + B) == length(A) + length(B)"
+           (is (:result
+                 (let [v (gen/vector gen/int)]
+                   (sc/quick-check 1000 concat-counts-correct [v v]))))))
+
+;; Interpose (Count)
+;; ---------------------------------------------------------------------------
+
+(defn interpose-twice-the-length ;; (or one less)
+  [v]
+  (let [interpose-count (count (interpose :i v))]
+    (or
+      (= (* 2 interpose-count))
+      (= (dec (* 2 interpose-count))))))
+
+
+(deftest interpose-creates-sequence-twice-the-length
+  (testing
+    "Interposing a collection with a value makes it's count
+    twice the original collection, or ones less."
+    (is (:result
+          (sc/quick-check 1000 interpose-twice-the-length
+                          [(gen/vector gen/int)])))))
+
+;; Sorting
+;; ---------------------------------------------------------------------------
+
+(defn elements-are-in-order-after-sorting
+  [v]
+  (every? identity (map <= (partition 2 1 (sort v)))))
+
+(deftest sorting
+  (testing
+    ""
+    (is (:result
+          (sc/quick-check 1000 elements-are-in-order-after-sorting
+                          [(gen/vector gen/int)])))))
+
+;; Tests are deterministic
+;; ---------------------------------------------------------------------------
+
+(defn vector-elements-are-unique
+  [v]
+  (== (count v) (count (distinct v))))
+
+(defn unique-test
+  [seed]
+  (sc/quick-check 1000 vector-elements-are-unique
+                  [(gen/vector gen/int)] :seed seed))
+
+(defn equiv-runs
+  [seed]
+  (= (unique-test seed) (unique-test seed)))
+
+(deftest tests-are-deterministic
+  (testing "If two runs are started with the same seed, they should
+           return the same results."
+           (is (:result
+                 (sc/quick-check 1000 equiv-runs [gen/int])))))

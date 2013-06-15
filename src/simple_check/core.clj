@@ -1,10 +1,19 @@
 (ns simple-check.core
   (:require [simple-check.generators :as gen]
-            [simple-check.clojure-test :as ct]))
+            [simple-check.clojure-test :as ct]
+            [simple-check.util :as util]))
+
+;; TODO: this isn't used now, but might be useful
+;; once we allow for overriding shrinking
+(defn shrinks
+  [{shrink-fn :shrink} value]
+  (if shrink-fn
+    (shrink-fn value)
+    (gen/shrink value)))
 
 (defn- run-test
-  [property args]
-  (let [vars (map gen/arbitrary args)
+  [property rng size args]
+  (let [vars (vec (map #(% rng size) args))
         result (try
                  (apply property vars)
                  (catch Throwable t t))]
@@ -12,20 +21,34 @@
 
 (declare shrink-loop failure)
 
+(defn make-rng
+  [seed]
+  (if seed
+    [seed (gen/random seed)]
+    (let [non-nil-seed (System/currentTimeMillis)]
+      [non-nil-seed (gen/random non-nil-seed)])))
+
+(defn make-size-range-seq
+  [max-size]
+  (cycle (range 1 max-size)))
+
 (defn quick-check
-  [num-tests property-fun & args]
-  (loop [so-far 0]
+  [num-tests property-fun args & {:keys [seed max-size] :or {max-size 200}}]
+  (let [[created-seed rng] (make-rng seed)]
+    (loop [so-far 0
+           size-seq (make-size-range-seq max-size)]
     (if (== so-far num-tests)
       (do
         (ct/report-trial property-fun so-far num-tests)
-        {:result true :num-tests so-far})
-      (let [[result vars] (run-test property-fun args)]
+        {:result true :num-tests so-far :seed created-seed})
+      (let [[size & rest-size-seq] size-seq
+            [result vars] (run-test property-fun rng size args)]
         (cond
-          (instance? Throwable result) (failure property-fun result so-far args vars)
+          (instance? Throwable result) (failure property-fun result so-far size args vars)
           result (do
                    (ct/report-trial property-fun so-far num-tests)
-                   (recur (inc so-far)))
-          :default (failure property-fun result so-far args vars))))))
+                   (recur (inc so-far) rest-size-seq))
+          :default (failure property-fun result so-far size args vars)))))))
 
 (defmacro forall [bindings expr]
   `(let [~@bindings]
@@ -43,9 +66,9 @@
   * If a node fails the property, search it's children
   The value returned is the left-most failing example at the depth where a
   passing example was found."
-  [prop gen failing]
-  (let [shrinks (gen/shrink gen failing)]
-    (loop [nodes shrinks
+  [prop failing]
+  (let [shrinks-this-depth (gen/shrink-tuple  failing)]
+    (loop [nodes shrinks-this-depth
            f failing
            total-nodes-visited 0
            depth 0
@@ -67,18 +90,18 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (gen/shrink gen head)]
+            (let [children (gen/shrink-tuple head)]
               (if (empty? children)
                 (recur tail head (inc total-nodes-visited) depth false)
                 (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
 
 (defn- failure
-  [property-fun result trial-number args failing-params] 
+  [property-fun result trial-number size args failing-params]
   (ct/report-failure property-fun result trial-number args failing-params)
   {:result result
+   :failing-size size
    :num-tests trial-number
    :fail (vec failing-params)
    :shrunk (shrink-loop property-fun
-                        (gen/tuple args)
                         (vec failing-params))})
 
