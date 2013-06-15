@@ -114,7 +114,7 @@
 
 (deftest sorting
   (testing
-    ""
+    "For all vectors V, sorted(V) should have the elements in order"
     (is (:result
           (sc/quick-check 1000 elements-are-in-order-after-sorting
                           [(gen/vector gen/int)])))))
