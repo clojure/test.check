@@ -29,7 +29,7 @@ at this point. Will break without notice.
 ;;  :shrunk {:total-nodes-visited 6, depth 3, :smallest [0 0]}}
 ```
 
-See more examples in [core_test.clj](test/simple_check/core_test.clj).
+See more examples in [`core_test.clj`](test/simple_check/core_test.clj).
 
 ## License
 
