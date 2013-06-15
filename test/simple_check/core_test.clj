@@ -16,7 +16,7 @@
   (testing "+ and 0 form a monoid"
            (is (let [a gen/int]
                  (:result
-                   (sc/quick-check 100 passes-monoid-properties [a a a]))))))
+                   (sc/quick-check 1000 passes-monoid-properties [a a a]))))))
 
 ;; reverse
 ;; ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@
 (deftest reverse-equal?
   (testing "For all lists L, reverse(reverse(L)) == L"
            (is (let [v (gen/vector gen/int)]
-                 (:result (sc/quick-check 100 reverse-equal?-helper [v]))))))
+                 (:result (sc/quick-check 1000 reverse-equal?-helper [v]))))))
 
 ;; failing reverse
 ;; ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@
   (testing "For all lists L, L == reverse(L). Not true"
            (is (false?
                  (let [v (gen/vector gen/int)]
-                   (:result (sc/quick-check 100 #(= (reverse %) %) [v])))))))
+                   (:result (sc/quick-check 1000 #(= (reverse %) %) [v])))))))
 
 ;; failing element remove
 ;; ---------------------------------------------------------------------------
@@ -53,7 +53,7 @@
            longer be in the list. (This is a false assumption)"
            (is (false?
                  (let [v (gen/vector gen/int)]
-                   (:result (sc/quick-check 100 first-is-gone [v])))))))
+                   (:result (sc/quick-check 1000 first-is-gone [v])))))))
 
 ;; exceptions shrink and return as result
 ;; ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@
   (testing "Exceptions during testing are caught. They're also shrunk as long
            as they continue to throw."
            (is (= [exception [0]]
-                  (let [result (sc/quick-check 100 exception-thrower [gen/int])]
+                  (let [result (sc/quick-check 1000 exception-thrower [gen/int])]
                     [(:result result) (get-in result [:shrunk :smallest])])))))
 
 ;; Count and concat work as expected
@@ -128,7 +128,7 @@
 
 (defn unique-test
   [seed]
-  (sc/quick-check 100 vector-elements-are-unique
+  (sc/quick-check 1000 vector-elements-are-unique
                   [(gen/vector gen/int)] :seed seed))
 
 (defn equiv-runs
@@ -139,4 +139,4 @@
   (testing "If two runs are started with the same seed, they should
            return the same results."
            (is (:result
-                 (sc/quick-check 100 equiv-runs [gen/int])))))
+                 (sc/quick-check 1000 equiv-runs [gen/int])))))
