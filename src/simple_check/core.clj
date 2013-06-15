@@ -33,7 +33,7 @@
   (cycle (range 1 max-size)))
 
 (defn quick-check
-  [num-tests property-fun args {:keys [seed max-size] :or {max-size 200}}]
+  [num-tests property-fun args & {:keys [seed max-size] :or {max-size 200}}]
   (let [[created-seed rng] (make-rng seed)]
     (loop [so-far 0
            size-seq (make-size-range-seq max-size)]

@@ -3,17 +3,17 @@
   (:require [simple-check.generators :as gen]
             [simple-check.clojure-test :as ct :refer (defspec)]))
 
-(defspec trial-counts 5000 (constantly true))
+(defspec trial-counts 5000 (constantly true) [])
 
-(defspec long-running-spec 1000 #(do (Thread/sleep 1) true))
+#_(defspec long-running-spec 1000 #(do (Thread/sleep 1) true) [])
 
 (defn- vector-elements-are-unique
   [v]
   (== (count v) (count (distinct v))))
 
-(defspec failing-spec 1000 vector-elements-are-unique (gen/vector (gen/int 100) 10))
+#_(defspec failing-spec 1000 vector-elements-are-unique [(gen/vector gen/int)])
 
-(defn test-ns-hook
+#_(defn test-ns-hook
   []
   (is (= "{:test-var trial-counts, :result true, :num-tests 5000}\n"
          (with-out-str (binding [*test-out* *out*] (test-var #'trial-counts)))))

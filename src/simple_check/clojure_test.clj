@@ -15,7 +15,7 @@
   with no arguments to trigger this test directly (i.e.  without starting a
   wider clojure.test run), or with a single argument that will override
   [default-times]."
-  [name default-times property & args]
+  [name default-times property args]
   `(do
      ; consider my shame for introducing a cyclical dependency like this...
      ; Don't think we'll know what the solution is until simple-check
@@ -28,7 +28,7 @@
         (simple-check.core/quick-check
           times#
           (vary-meta ~property assoc :name (str '~property))
-          ~@args)))))
+          ~args)))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
