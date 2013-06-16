@@ -1,7 +1,7 @@
 (ns simple-check.generators
   (:require [simple-check.util :as util])
   (:import java.util.Random)
-  (:refer-clojure :exclude [int vector map]))
+  (:refer-clojure :exclude [int vector map keyword char]))
 
 (defn random
   ([] (java.util.Random.))
@@ -21,7 +21,33 @@
     (let [value (gen rand-seed size)]
       ((k value) rand-seed size))))
 
-(defn diff
+;; Combinators
+;; ---------------------------------------------------------------------------
+
+(declare choose)
+
+(defn one-of
+  [generators]
+  (bind (choose 0 (dec (count generators)))
+        #(nth generators %)))
+
+(defn elements
+  [coll]
+  (fmap #(nth coll %)
+        (choose 0 (dec (count coll)))))
+
+(defn such-that
+  [gen f]
+  (fn [rand-seed size]
+    (let [value (gen rand-seed size)]
+      (if (f value)
+        value
+        (recur rand-seed size)))))
+
+;; Generators
+;; ---------------------------------------------------------------------------
+
+(defn- diff
   [min-range max-range]
   (case [(neg? min-range) (neg? max-range)]
     [true true] (Math/abs (- max-range min-range))
@@ -36,6 +62,12 @@
         min-range
         (+ (.nextInt rand-seed (inc diff)) min-range)))))
 
+(defn pair
+  [a b]
+  (fn [rand-seed size]
+    [(a rand-seed size)
+     (b rand-seed size)]))
+
 (defn sample
   ([generator]
    (repeatedly #(util/nullary-apply generator)))
@@ -49,7 +81,7 @@
 (defn tuple
   [generators]
   (fn [rand-seed size]
-    (vec (clojure.core/map util/nullary-apply generators))))
+    (vec (clojure.core/map #(% rand-seed size) generators))))
 
 (defn shrink-tuple
   [value]
@@ -86,36 +118,39 @@
     (let [num-elements (Math/abs (int rand-seed size))]
       (vec (repeatedly num-elements #(gen rand-seed size))))))
 
-(defn shrink-vector
-  [value]
-  (clojure.core/map vec (shrink-seq value)))
-
 (defn map
   [key-gen val-gen]
   (fn [rand-seed size]
-    (into {} (repeatedly (rand-int size)
-                         (fn [] [(util/nullary-apply key-gen)
-                                 (util/nullary-apply val-gen)])))))
+    (let [map-size ((choose 0 size) rand-seed size)
+          pair (pair key-gen val-gen)]
+      (into {} (repeatedly map-size #(pair rand-seed size))))))
+
+(def char (fmap clojure.core/char (choose 0 255)))
+
+(def char-ascii (fmap clojure.core/char (choose 32 126)))
+
+(def char-alpha-numeric (fmap clojure.core/char
+                              (one-of [(choose 48 57)
+                                      (choose 65 90)
+                                      (choose 97 122)])))
+
+(defn string
+  [rand-seed size]
+  (apply str (repeatedly size #(char rand-seed size))))
+
+(defn string-ascii
+  [rand-seed size]
+  (apply str (repeatedly size #(char-ascii rand-seed size))))
+
+(defn string-alpha-numeric
+  [rand-seed size]
+  (apply str (repeatedly size #(char-alpha-numeric rand-seed size))))
+
+(def keyword (fmap clojure.core/keyword string-alpha-numeric))
 
 (defn shrink-map
   [value]
   [])
-
-;; Combinators
-;; ---------------------------------------------------------------------------
-
-(defn one-of
-  [generators]
-  (bind (choose 0 (dec (count generators)))
-        #(nth generators %)))
-
-(defn such-that
-  [gen f]
-  (fn [rand-seed size]
-    (let [value (gen rand-seed size)]
-      (if (f value)
-        value
-        (recur rand-seed size)))))
 
 ;; Instances
 ;; ---------------------------------------------------------------------------
@@ -140,6 +175,4 @@
 
 (extend clojure.lang.IPersistentMap
   Shrink
-  ;; TODO:
-  ;; this shrink goes into an infinite loop with floats
   {:shrink shrink-map})
