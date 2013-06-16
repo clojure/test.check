@@ -260,6 +260,8 @@
 ;; String
 ;; ---------------------------------------------------------------------------
 
+;; TODO: make strings use the full utf-8 range
+
 (defn string
   [rand-seed size]
   (clojure.string/join (repeatedly size #(char rand-seed size))))
