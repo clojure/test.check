@@ -1,7 +1,6 @@
 (ns simple-check.core
   (:require [simple-check.generators :as gen]
-            [simple-check.clojure-test :as ct]
-            [simple-check.util :as util]))
+            [simple-check.clojure-test :as ct]))
 
 ;; TODO: this isn't used now, but might be useful
 ;; once we allow for overriding shrinking
@@ -28,10 +27,6 @@
     (let [non-nil-seed (System/currentTimeMillis)]
       [non-nil-seed (gen/random non-nil-seed)])))
 
-(defn make-size-range-seq
-  [max-size]
-  (cycle (range 1 max-size)))
-
 (defn- complete
   [property-fun num-trials seed]
   (ct/report-trial property-fun num-trials num-trials)
@@ -40,7 +35,7 @@
 (defn quick-check
   [num-tests property-fun args & {:keys [seed max-size] :or {max-size 200}}]
   (let [[created-seed rng] (make-rng seed)
-        size-seq (make-size-range-seq max-size)]
+        size-seq (gen/make-size-range-seq max-size)]
     (loop [so-far 0
            size-seq size-seq]
       (if (= so-far num-tests)

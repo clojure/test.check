@@ -1,5 +1,4 @@
 (ns simple-check.generators
-  (:require [simple-check.util :as util])
   (:import java.util.Random)
   (:refer-clojure :exclude [int vector list map keyword char boolean]))
 
@@ -10,13 +9,16 @@
   ([] (java.util.Random.))
   ([seed] (java.util.Random. seed)))
 
+(defn make-size-range-seq
+  [max-size]
+  (cycle (range 1 max-size)))
+
 (defn sample-seq
-  ;; TODO: don't hardcode 10 here, this should be
-  ;; a size seq, like we do in testing.
-  ([generator] (sample-seq generator 10))
-  ([generator size]
-   (let [r (random)]
-     (repeatedly #(generator r size)))))
+  ([generator] (sample-seq generator 100))
+  ([generator max-size]
+   (let [r (random)
+         size-seq (make-size-range-seq max-size)]
+     (clojure.core/map (partial generator r) size-seq))))
 
 (defn sample
   ([generator]
