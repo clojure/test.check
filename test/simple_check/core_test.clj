@@ -139,6 +139,19 @@
           (sc/quick-check 1000 keyword-string-roundtrip-equiv
                           [gen/keyword])))))
 
+;; Boolean and/or
+;; ---------------------------------------------------------------------------
+
+(deftest boolean-or
+  (testing
+    "`or` with true and anything else should be true"
+    (is (:result (sc/quick-check 1000 #(or % true) [gen/boolean])))))
+
+(deftest boolean-and
+  (testing
+    "`and` with false and anything else should be false"
+    (is (:result (sc/quick-check 1000 #(not (and % false)) [gen/boolean])))))
+
 ;; Sorting
 ;; ---------------------------------------------------------------------------
 

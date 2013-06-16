@@ -1,7 +1,7 @@
 (ns simple-check.generators
   (:require [simple-check.util :as util])
   (:import java.util.Random)
-  (:refer-clojure :exclude [int vector list map keyword char]))
+  (:refer-clojure :exclude [int vector list map keyword char boolean]))
 
 ;; Helpers
 ;; ---------------------------------------------------------------------------
@@ -108,6 +108,19 @@
 (defn halfs
   [n]
   (take-while (partial not= 0) (iterate #(quot % 2) n)))
+
+;; Boolean
+;; ---------------------------------------------------------------------------
+
+(def boolean (elements [true false]))
+
+(defn shrink-boolean
+  [b]
+  (if b [false] []))
+
+(extend java.lang.Boolean
+  Shrink
+  {:shrink shrink-boolean})
 
 ;; Number
 ;; ---------------------------------------------------------------------------
