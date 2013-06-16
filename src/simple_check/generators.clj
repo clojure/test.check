@@ -132,6 +132,9 @@
    ((choose (- 0 size) size)
       rand-seed size)))
 
+(def pos-int (fmap #(Math/abs %) int))
+(def neg-int (fmap (partial * -1) pos-int))
+
 (defn shrink-int
   [integer]
   (clojure.core/map (partial - integer) (halfs integer)))
