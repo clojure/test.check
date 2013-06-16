@@ -11,6 +11,8 @@
   (shrink [this]))
 
 (defn fmap
+  "NOTE: since `gen` is a function, this is just equivalent
+  to `comp`. Perhaps using fmap will be more confusing to people?"
   [f gen]
   (fn [rand-seed size]
     (f (gen rand-seed size))))
@@ -134,6 +136,31 @@
                                       (choose 65 90)
                                       (choose 97 122)])))
 
+(defn- stamp
+  [c]
+  [(not (Character/isLowerCase c))
+   (not (Character/isUpperCase c))
+   (not (Character/isDigit c))
+   (not= \space c)
+   c])
+
+(defn- <-stamp
+  [a b]
+  (neg? (compare (stamp a) (stamp b))))
+
+(defn shrink-char
+  [c]
+  (filter #(<-stamp % c)
+          (concat [\a \b \c]
+                  (for [x [c] :while #(Character/isUpperCase %)]
+                    (Character/toLowerCase x))
+                  [\A \B \C
+                   \1 \2 \3
+                   ;; TODO: should newline be here? It will make ascii chars
+                   ;; shrink incorrectly. But it's also useful for finding bugs...
+                   ;; \newline
+                   \space])))
+
 (defn string
   [rand-seed size]
   (apply str (repeatedly size #(char rand-seed size))))
@@ -145,6 +172,10 @@
 (defn string-alpha-numeric
   [rand-seed size]
   (apply str (repeatedly size #(char-alpha-numeric rand-seed size))))
+
+(defn shrink-string
+  [s]
+  (clojure.core/map (partial apply str) (shrink-seq s)))
 
 (def keyword (fmap clojure.core/keyword string-alpha-numeric))
 
@@ -176,3 +207,19 @@
 (extend clojure.lang.IPersistentMap
   Shrink
   {:shrink shrink-map})
+
+(extend java.lang.Character
+  Shrink
+  {:shrink shrink-char})
+
+(extend java.lang.String
+  Shrink
+  {:shrink shrink-string})
+
+(extend clojure.lang.Keyword
+  Shrink
+  {:shrink (comp
+             (partial clojure.core/map clojure.core/keyword)
+             shrink-string
+             #(apply str (rest %))
+             str)})
