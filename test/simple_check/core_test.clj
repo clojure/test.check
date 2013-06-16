@@ -28,7 +28,7 @@
          (= (seq l) (rseq r)))))
 
 (deftest reverse-equal?
-  (testing "For all lists L, reverse(reverse(L)) == L"
+  (testing "For all vectors L, reverse(reverse(L)) == L"
            (is (let [v (gen/vector gen/int)]
                  (:result (sc/quick-check 1000 reverse-equal?-helper [v]))))))
 
@@ -36,7 +36,7 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest bad-reverse-test
-  (testing "For all lists L, L == reverse(L). Not true"
+  (testing "For all vectors L, L == reverse(L). Not true"
            (is (false?
                  (let [v (gen/vector gen/int)]
                    (:result (sc/quick-check 1000 #(= (reverse %) %) [v])))))))
@@ -49,7 +49,7 @@
   (not (some #{(first l)} (vec (rest l)))))
 
 (deftest bad-remove
-  (testing "For all lists L, if we remove the first element E, E should not
+  (testing "For all vectors L, if we remove the first element E, E should not
            longer be in the list. (This is a false assumption)"
            (is (false?
                  (let [v (gen/vector gen/int)]
@@ -104,6 +104,40 @@
     (is (:result
           (sc/quick-check 1000 interpose-twice-the-length
                           [(gen/vector gen/int)])))))
+
+;; Lists and vectors are equivalent with seq abstraction
+;; ---------------------------------------------------------------------------
+
+(defn list-vector-round-trip-equiv
+  [a]
+  ;; NOTE: can't use `(into '() ...)` here because that
+  ;; puts the list in reverse order. simple-check found that bug
+  ;; pretty quickly...
+  (= a (apply list (vec a))))
+
+(deftest list-and-vector-round-trip
+  (testing
+    ""
+    (is (:result
+          (sc/quick-check 1000 list-vector-round-trip-equiv
+                          [(gen/list gen/int)])))))
+
+;; keyword->string->keyword roundtrip
+;; ---------------------------------------------------------------------------
+
+(def keyword->string->keyword (comp keyword clojure.string/join rest str))
+
+(defn keyword-string-roundtrip-equiv
+  [k]
+  (= k (keyword->string->keyword k)))
+
+(deftest keyword-string-roundtrip
+  (testing
+    "For all keywords, turning them into a string and back is equivalent
+    to the original string (save for the `:` bit)"
+    (is (:result
+          (sc/quick-check 1000 keyword-string-roundtrip-equiv
+                          [gen/keyword])))))
 
 ;; Sorting
 ;; ---------------------------------------------------------------------------
