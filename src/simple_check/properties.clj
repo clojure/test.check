@@ -20,7 +20,7 @@
   (fn [args]
     (fn [random-seed size]
       ;; since we need to capture the arguments for shrinking and reporting
-      ;; purposes, perhaps here is were we could do that. Return a single-run
+      ;; purposes, perhaps here is where we could do that. Return a single-run
       ;; `result` map that contains something like:
       ;; {:pass true
       ;;  :args [0 false]}
