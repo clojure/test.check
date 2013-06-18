@@ -71,6 +71,19 @@
   (bind (choose 0 (dec (count generators)))
         #(nth generators %)))
 
+(defn- pick
+  [[h & tail] n]
+  (let [[chance gen] h]
+    (if (<= n chance)
+      gen
+      (recur tail (- n chance)))))
+
+(defn frequency
+  [pairs]
+  (let [total (apply + (clojure.core/map first pairs))]
+    (bind (choose 1 total)
+          (partial pick pairs))))
+
 (defn elements
   [coll]
   (fmap #(nth coll %)
