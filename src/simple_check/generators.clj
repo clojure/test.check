@@ -9,6 +9,10 @@
   ([] (java.util.Random.))
   ([seed] (java.util.Random. seed)))
 
+(defn call-gen
+  [[tag generator-fn] rand-seed size]
+  (generator-fn rand-seed size))
+
 (defn make-size-range-seq
   [max-size]
   (cycle (range 1 max-size)))
@@ -18,7 +22,7 @@
   ([generator max-size]
    (let [r (random)
          size-seq (make-size-range-seq max-size)]
-     (clojure.core/map (partial generator r) size-seq))))
+     (clojure.core/map (partial call-gen generator r) size-seq))))
 
 (defn sample
   ([generator]
@@ -36,14 +40,14 @@
   "NOTE: since `gen` is a function, this is just equivalent
   to `comp`. Perhaps using fmap will be more confusing to people?"
   [f gen]
-  (fn [rand-seed size]
-    (f (gen rand-seed size))))
+  [:gen (fn [rand-seed size]
+          (f (call-gen gen rand-seed size)))])
 
 (defn bind
   [gen k]
-  (fn [rand-seed size]
-    (let [value (gen rand-seed size)]
-      ((k value) rand-seed size))))
+  [:gen (fn [rand-seed size]
+          (let [value (call-gen gen rand-seed size)]
+            (call-gen (k value) rand-seed size)))])
 
 (def return constantly)
 
@@ -60,10 +64,10 @@
 (defn choose
   [min-range max-range]
   (let [diff (Math/abs (- max-range min-range))]
-    (fn [rand-seed _size]
+    [:gen (fn [rand-seed _size]
       (if (zero? diff)
         min-range
-        (+ (.nextInt rand-seed (inc diff)) min-range)))))
+        (+ (.nextInt rand-seed (inc diff)) min-range)))]))
 
 
 (defn one-of
@@ -91,20 +95,20 @@
 
 (defn such-that
   [gen f]
-  (fn [rand-seed size]
-    (let [value (gen rand-seed size)]
+  [:gen (fn [rand-seed size]
+    (let [value (call-gen gen rand-seed size)]
       (if (f value)
         value
-        (recur rand-seed size)))))
+        (recur rand-seed size))))])
 
 ;; Generic generators and helpers
 ;; ---------------------------------------------------------------------------
 
 (defn pair
   [a b]
-  (fn [rand-seed size]
-    [(a rand-seed size)
-     (b rand-seed size)]))
+  [:gen (fn [rand-seed size]
+    [(call-gen a rand-seed size)
+     (call-gen b rand-seed size)])])
 
 (defn shrink-index
   [coll index]
@@ -140,12 +144,12 @@
 ;; Number
 ;; ---------------------------------------------------------------------------
 
-(defn int
-  ([] (int (random) 10000))
-  ([rand-seed] (int rand-seed 10000))
+(defn int-gen
   ([rand-seed size]
-   ((choose (- 0 size) size)
+   (call-gen (choose (- 0 size) size)
       rand-seed size)))
+
+(def int [:gen int-gen])
 
 (def pos-int (fmap #(Math/abs %) int))
 (def neg-int (fmap (partial * -1) pos-int))
@@ -165,8 +169,8 @@
 
 (defn tuple
   [generators]
-  (fn [rand-seed size]
-    (vec (clojure.core/map #(% rand-seed size) generators))))
+  [:gen (fn [rand-seed size]
+    (vec (clojure.core/map #(call-gen % rand-seed size) generators)))])
 
 (defn shrink-tuple
   [value]
@@ -181,9 +185,9 @@
 
 (defn vector
   [gen]
-  (fn [rand-seed size]
-    (let [num-elements (Math/abs (int rand-seed size))]
-      (vec (repeatedly num-elements #(gen rand-seed size))))))
+  [:gen (fn [rand-seed size]
+    (let [num-elements (Math/abs (call-gen int rand-seed size))]
+      (vec (repeatedly num-elements #(call-gen gen rand-seed size)))))])
 
 (extend clojure.lang.IPersistentVector
   Shrink
@@ -196,9 +200,9 @@
 
 (defn list
   [gen]
-  (fn [rand-seed size]
-    (let [num-elements (Math/abs (int rand-seed size))]
-      (into '() (repeatedly num-elements #(gen rand-seed size))))))
+  [:gen (fn [rand-seed size]
+    (let [num-elements (Math/abs (call-gen int rand-seed size))]
+      (into '() (repeatedly num-elements #(call-gen gen rand-seed size)))))])
 
 (defn shrink-list
   [l]
@@ -215,10 +219,10 @@
 
 (defn map
   [key-gen val-gen]
-  (fn [rand-seed size]
-    (let [map-size ((choose 0 size) rand-seed size)
-          pair (pair key-gen val-gen)]
-      (into {} (repeatedly map-size #(pair rand-seed size))))))
+  [:gen (fn [rand-seed size]
+    (let [map-size (call-gen (choose 0 size) rand-seed size)
+          p (pair key-gen val-gen)]
+      (into {} (repeatedly map-size #(call-gen p rand-seed size)))))])
 
 (defn shrink-map
   [value]
@@ -275,17 +279,23 @@
 
 ;; TODO: make strings use the full utf-8 range
 
-(defn string
+(defn string-gen
   [rand-seed size]
-  (clojure.string/join (repeatedly size #(char rand-seed size))))
+  (clojure.string/join (repeatedly size #(call-gen char rand-seed size))))
 
-(defn string-ascii
-  [rand-seed size]
-  (clojure.string/join (repeatedly size #(char-ascii rand-seed size))))
+(def string [:gen string-gen])
 
-(defn string-alpha-numeric
+(defn string-ascii-gen
   [rand-seed size]
-  (clojure.string/join (repeatedly size #(char-alpha-numeric rand-seed size))))
+  (clojure.string/join (repeatedly size #(call-gen char-ascii rand-seed size))))
+
+(def string-ascii [:gen string-ascii-gen])
+
+(defn string-alpha-numeric-gen
+  [rand-seed size]
+  (clojure.string/join (repeatedly size #(call-gen char-alpha-numeric rand-seed size))))
+
+(def string-alpha-numeric [:gen string-alpha-numeric-gen])
 
 (defn shrink-string
   [s]

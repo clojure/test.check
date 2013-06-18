@@ -12,7 +12,7 @@
 
 (defn- run-test
   [property rng size args]
-  (let [vars (vec (map #(% rng size) args))
+  (let [vars (vec (map #(gen/call-gen % rng size) args))
         result (try
                  (apply property vars)
                  (catch Throwable t t))]

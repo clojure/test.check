@@ -18,15 +18,23 @@
 (defn apply-gen
   [function]
   (fn [args]
-    (fn [random-seed size]
+    [:gen (fn [random-seed size]
       ;; since we need to capture the arguments for shrinking and reporting
       ;; purposes, perhaps here is where we could do that. Return a single-run
       ;; `result` map that contains something like:
       ;; {:pass true
       ;;  :args [0 false]}
-      (apply function args))))
+      (let [result (apply function args)]
+        {:result result
+         :args args}))]))
 
-(defn forall
+(defn for-all
   [args function]
   (gen/bind (gen/tuple args)
             (apply-gen function)))
+
+(def p (for-all [(gen/vector gen/int)]
+         (fn [coll]
+           (for-all [(gen/elements coll)]
+                    (fn [e]
+                      (boolean (some #{e} coll)))))))
