@@ -49,7 +49,9 @@
           (let [value (call-gen gen rand-seed size)]
             (call-gen (k value) rand-seed size)))])
 
-(def return constantly)
+(defn return
+  [val]
+  [:gen (fn [rand-seed size] val)])
 
 ;; Combinators
 ;; ---------------------------------------------------------------------------

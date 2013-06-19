@@ -176,6 +176,18 @@
             (prop/for-all
               [(gen/vector gen/int)] elements-are-in-order-after-sorting))))))
 
+;; Constant generators
+;; ---------------------------------------------------------------------------
+
+(deftest constant-generators
+  (testing
+    "A constant generator always returns its created value"
+    (is (:result
+          (sc/quick-check
+            1000
+            (prop/for-all
+              [(gen/return 42)] (partial = 42)))))))
+
 ;; Tests are deterministic
 ;; ---------------------------------------------------------------------------
 
