@@ -11,12 +11,10 @@
     (gen/shrink value)))
 
 (defn- run-test
-  [property rng size args]
-  (let [vars (vec (map #(gen/call-gen % rng size) args))
-        result (try
-                 (apply property vars)
-                 (catch Throwable t t))]
-    [result vars]))
+  [property rng size]
+  (try
+    (gen/call-gen property rng size)
+    (catch Throwable t t)))
 
 (declare shrink-loop failure)
 
@@ -33,21 +31,23 @@
   {:result true :num-tests num-trials :seed seed})
 
 (defn quick-check
-  [num-tests property-fun args & {:keys [seed max-size] :or {max-size 200}}]
+  [num-tests property & {:keys [seed max-size] :or {max-size 200}}]
   (let [[created-seed rng] (make-rng seed)
         size-seq (gen/make-size-range-seq max-size)]
     (loop [so-far 0
            size-seq size-seq]
       (if (= so-far num-tests)
-        (complete property-fun num-tests created-seed)
+        (complete property num-tests created-seed)
         (let [[size & rest-size-seq] size-seq
-              [result vars] (run-test property-fun rng size args)]
+              result-map (run-test property rng size)
+              result (:result result-map)
+              args (:args result-map)]
           (cond
-            (instance? Throwable result) (failure property-fun result so-far size args vars)
+            (instance? Throwable result) (failure (:function result-map) result so-far size args)
             result (do
-                     (ct/report-trial property-fun so-far num-tests)
+                     (ct/report-trial (:function result-map) so-far num-tests)
                      (recur (inc so-far) rest-size-seq))
-            :default (failure property-fun result so-far size args vars)))))))
+            :default (failure (:function result-map) result so-far size args)))))))
 
 (defmacro forall [bindings expr]
   `(let [~@bindings]
@@ -80,7 +80,7 @@
   The value returned is the left-most failing example at the depth where a
   passing example was found."
   [prop failing]
-  (let [shrinks-this-depth (gen/shrink-tuple  failing)]
+  (let [shrinks-this-depth (gen/shrink-tuple failing)]
     (loop [nodes shrinks-this-depth
            f failing
            total-nodes-visited 0
@@ -102,8 +102,8 @@
                 (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
 
 (defn- failure
-  [property-fun result trial-number size args failing-params]
-  (ct/report-failure property-fun result trial-number args failing-params)
+  [property-fun result trial-number size failing-params]
+  (ct/report-failure property-fun result trial-number failing-params)
   {:result result
    :failing-size size
    :num-tests trial-number

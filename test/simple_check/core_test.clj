@@ -1,7 +1,8 @@
 (ns simple-check.core-test
   (:use clojure.test)
   (:require [simple-check.core       :as sc]
-            [simple-check.generators :as gen]))
+            [simple-check.generators :as gen]
+            [simple-check.properties :as prop]))
 
 ;; plus and 0 form a monoid
 ;; ---------------------------------------------------------------------------
@@ -14,9 +15,9 @@
 
 (deftest plus-and-0-are-a-monoid
   (testing "+ and 0 form a monoid"
-           (is (let [a gen/int]
+           (is (let [p (prop/for-all [gen/int gen/int gen/int] passes-monoid-properties)]
                  (:result
-                   (sc/quick-check 1000 passes-monoid-properties [a a a]))))))
+                   (sc/quick-check 1000 p))))))
 
 ;; reverse
 ;; ---------------------------------------------------------------------------
@@ -29,8 +30,8 @@
 
 (deftest reverse-equal?
   (testing "For all vectors L, reverse(reverse(L)) == L"
-           (is (let [v (gen/vector gen/int)]
-                 (:result (sc/quick-check 1000 reverse-equal?-helper [v]))))))
+           (is (let [p (prop/for-all [(gen/vector gen/int)] reverse-equal?-helper)]
+                 (:result (sc/quick-check 1000 p))))))
 
 ;; failing reverse
 ;; ---------------------------------------------------------------------------
@@ -38,8 +39,8 @@
 (deftest bad-reverse-test
   (testing "For all vectors L, L == reverse(L). Not true"
            (is (false?
-                 (let [v (gen/vector gen/int)]
-                   (:result (sc/quick-check 1000 #(= (reverse %) %) [v])))))))
+                 (let [p (prop/for-all [(gen/vector gen/int)] #(= (reverse %) %))]
+                   (:result (sc/quick-check 1000 p)))))))
 
 ;; failing element remove
 ;; ---------------------------------------------------------------------------
@@ -52,8 +53,8 @@
   (testing "For all vectors L, if we remove the first element E, E should not
            longer be in the list. (This is a false assumption)"
            (is (false?
-                 (let [v (gen/vector gen/int)]
-                   (:result (sc/quick-check 1000 first-is-gone [v])))))))
+                 (let [p (prop/for-all [(gen/vector gen/int)] first-is-gone)]
+                   (:result (sc/quick-check 1000 p)))))))
 
 ;; exceptions shrink and return as result
 ;; ---------------------------------------------------------------------------
@@ -68,7 +69,9 @@
   (testing "Exceptions during testing are caught. They're also shrunk as long
            as they continue to throw."
            (is (= [exception [0]]
-                  (let [result (sc/quick-check 1000 exception-thrower [gen/int])]
+                  (let [result
+                        (sc/quick-check
+                          1000 (prop/for-all [gen/int] exception-thrower))]
                     [(:result result) (get-in result [:shrunk :smallest])])))))
 
 ;; Count and concat work as expected
@@ -83,8 +86,9 @@
   (testing "For all vectors A and B:
            length(A + B) == length(A) + length(B)"
            (is (:result
-                 (let [v (gen/vector gen/int)]
-                   (sc/quick-check 1000 concat-counts-correct [v v]))))))
+                 (let [p (prop/for-all [(gen/vector gen/int)
+                                        (gen/vector gen/int)] concat-counts-correct)]
+                   (sc/quick-check 1000 p))))))
 
 ;; Interpose (Count)
 ;; ---------------------------------------------------------------------------
@@ -102,8 +106,7 @@
     "Interposing a collection with a value makes it's count
     twice the original collection, or ones less."
     (is (:result
-          (sc/quick-check 1000 interpose-twice-the-length
-                          [(gen/vector gen/int)])))))
+          (sc/quick-check 1000 (prop/for-all [(gen/vector gen/int)] interpose-twice-the-length))))))
 
 ;; Lists and vectors are equivalent with seq abstraction
 ;; ---------------------------------------------------------------------------
@@ -119,8 +122,9 @@
   (testing
     ""
     (is (:result
-          (sc/quick-check 1000 list-vector-round-trip-equiv
-                          [(gen/list gen/int)])))))
+          (sc/quick-check
+            1000 (prop/for-all
+                   [(gen/list gen/int)] list-vector-round-trip-equiv))))))
 
 ;; keyword->string->keyword roundtrip
 ;; ---------------------------------------------------------------------------
@@ -136,8 +140,8 @@
     "For all keywords, turning them into a string and back is equivalent
     to the original string (save for the `:` bit)"
     (is (:result
-          (sc/quick-check 1000 keyword-string-roundtrip-equiv
-                          [gen/keyword])))))
+          (sc/quick-check 1000 (prop/for-all
+                                [gen/keyword] keyword-string-roundtrip-equiv))))))
 
 ;; Boolean and/or
 ;; ---------------------------------------------------------------------------
@@ -145,12 +149,16 @@
 (deftest boolean-or
   (testing
     "`or` with true and anything else should be true"
-    (is (:result (sc/quick-check 1000 #(or % true) [gen/boolean])))))
+    (is (:result (sc/quick-check
+                   1000 (prop/for-all
+                          [gen/boolean] #(or % true)))))))
 
 (deftest boolean-and
   (testing
     "`and` with false and anything else should be false"
-    (is (:result (sc/quick-check 1000 #(not (and % false)) [gen/boolean])))))
+    (is (:result (sc/quick-check
+                   1000 (prop/for-all
+                          [gen/boolean] #(not (and % false))))))))
 
 ;; Sorting
 ;; ---------------------------------------------------------------------------
@@ -163,8 +171,10 @@
   (testing
     "For all vectors V, sorted(V) should have the elements in order"
     (is (:result
-          (sc/quick-check 1000 elements-are-in-order-after-sorting
-                          [(gen/vector gen/int)])))))
+          (sc/quick-check
+            1000
+            (prop/for-all
+              [(gen/vector gen/int)] elements-are-in-order-after-sorting))))))
 
 ;; Tests are deterministic
 ;; ---------------------------------------------------------------------------
@@ -175,8 +185,10 @@
 
 (defn unique-test
   [seed]
-  (sc/quick-check 1000 vector-elements-are-unique
-                  [(gen/vector gen/int)] :seed seed))
+  (sc/quick-check 1000
+                  (prop/for-all
+                    [(gen/vector gen/int)] vector-elements-are-unique)
+                  :seed seed))
 
 (defn equiv-runs
   [seed]
@@ -186,4 +198,4 @@
   (testing "If two runs are started with the same seed, they should
            return the same results."
            (is (:result
-                 (sc/quick-check 1000 equiv-runs [gen/int])))))
+                 (sc/quick-check 1000 (prop/for-all [gen/int] equiv-runs))))))

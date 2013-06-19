@@ -24,8 +24,10 @@
       ;; `result` map that contains something like:
       ;; {:pass true
       ;;  :args [0 false]}
-      (let [result (apply function args)]
+      (let [result (try (apply function args) (catch Throwable t t))]
         {:result result
+         :shrink gen/shrink-tuple
+         :function function
          :args args}))]))
 
 (defn for-all
@@ -33,7 +35,7 @@
   (gen/bind (gen/tuple args)
             (apply-gen function)))
 
-(def p (for-all [(gen/vector gen/int)]
+#_(def p (for-all [(gen/vector gen/int)]
          (fn [coll]
            (for-all [(gen/elements coll)]
                     (fn [e]

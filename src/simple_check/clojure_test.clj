@@ -111,7 +111,7 @@
               ::trial [so-far num-tests]}))
 
 (defn report-failure
-  [property-fun result trial-number args failing-params]
+  [property-fun result trial-number failing-params]
   ;; TODO this is wrong, makes it impossible to clojure.test quickchecks that
   ;; should fail...
   #_(ct/report (if (instance? Throwable result)
