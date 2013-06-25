@@ -3,7 +3,7 @@
   (:require [simple-check.generators :as gen]
             [simple-check.clojure-test :as ct :refer (defspec)]))
 
-(defspec trial-counts 5000 (constantly true) [])
+#_(defspec trial-counts 5000 (prop/for-all [gen/int] (constantly true)))
 
 #_(defspec long-running-spec 1000 #(do (Thread/sleep 1) true) [])
 
