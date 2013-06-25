@@ -86,7 +86,7 @@
            total-nodes-visited 0
            depth 0
            can-set-new-best? true]
-      (if (empty? nodes)
+      (if (or (empty? nodes) (>= total-nodes-visited 10000))
         (smallest-shrink total-nodes-visited depth f)
         (let [[head & tail] nodes]
           (if (safe-apply-props prop head)
