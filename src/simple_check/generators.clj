@@ -2,6 +2,9 @@
   (:import java.util.Random)
   (:refer-clojure :exclude [int vector list map keyword char boolean]))
 
+
+;; TODO: namespace the :gen tag
+
 ;; Helpers
 ;; ---------------------------------------------------------------------------
 
@@ -148,7 +151,7 @@
 
 (defn int-gen
   ([rand-seed size]
-   (call-gen (choose (- 0 size) size)
+   (call-gen (choose (- size) size)
       rand-seed size)))
 
 (def int [:gen int-gen])
