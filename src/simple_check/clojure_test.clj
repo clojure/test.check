@@ -15,7 +15,7 @@
   with no arguments to trigger this test directly (i.e.  without starting a
   wider clojure.test run), or with a single argument that will override
   [default-times]."
-  [name default-times property args]
+  [name property default-times]
   `(do
      ; consider my shame for introducing a cyclical dependency like this...
      ; Don't think we'll know what the solution is until simple-check
@@ -24,11 +24,12 @@
      (defn ~(vary-meta name assoc :test
                        `#(#'assert-check (assoc (~name) :test-var (str '~name))))
        ([] (~name ~default-times))
-       ([times#]
-        (simple-check.core/quick-check
+       ([times# & {:keys [seed# max-size#] :as quick-check-opts#}]
+        (apply
+          simple-check.core/quick-check
           times#
           (vary-meta ~property assoc :name (str '~property))
-          ~args)))))
+          (flatten (seq quick-check-opts#)))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
@@ -102,7 +103,8 @@
 (defmethod ct/report ::shrinking [m]
   (when *report-shrinking*
     (ct/with-test-out
-      (println "Shrinking" (get-property-name m) "starting with parameters" (pr-str (::params m))))))
+      (println "Shrinking" (get-property-name m)
+               "starting with parameters" (pr-str (::params m))))))
 
 (defn report-trial
   [property-fun so-far num-tests]

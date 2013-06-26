@@ -1,30 +1,45 @@
 (ns simple-check.clojure-test-test
   (:use clojure.test)
   (:require [simple-check.generators :as gen]
+            [simple-check.properties :as prop]
             [simple-check.clojure-test :as ct :refer (defspec)]))
 
-#_(defspec trial-counts 5000 (prop/for-all [gen/int] (constantly true)))
+(defspec trial-counts
+  (prop/for-all [gen/int] (constantly true))
+  5000)
 
-#_(defspec long-running-spec 1000 #(do (Thread/sleep 1) true) [])
+(defspec long-running-spec
+  (prop/for-all [] #(do (Thread/sleep 1) true))
+  1000)
 
-(defn- vector-elements-are-unique
+(defn- vector-elements-are-unique*
   [v]
   (== (count v) (count (distinct v))))
 
-#_(defspec failing-spec 1000 vector-elements-are-unique [(gen/vector gen/int)])
+(def ^:private vector-elements-are-unique
+  (prop/for-all
+    [(gen/vector gen/int)]
+    vector-elements-are-unique*))
 
-#_(defn test-ns-hook
+(defspec failing-spec vector-elements-are-unique 100)
+
+(defn test-ns-hook
   []
-  (is (= "{:test-var trial-counts, :result true, :num-tests 5000}\n"
-         (with-out-str (binding [*test-out* *out*] (test-var #'trial-counts)))))
+  (is (-> (with-out-str (binding [*test-out* *out*] (test-var #'trial-counts)))
+             read-string
+             (select-keys [:test-var :result :num-tests])
+             (= {:test-var 'trial-counts, :result true, :num-tests 5000})))
+  
   (binding [ct/*report-trials* true]
-     (is (= ".....\n{:test-var trial-counts, :result true, :num-tests 5000}\n"
-            (with-out-str (test-var #'trial-counts)))))
+     (let [output (with-out-str (test-var #'trial-counts))]
+       (is (re-matches #"(?s)\.{5}.+" output))))
+
   (binding [ct/*report-trials* ct/trial-report-periodic
             ct/*trial-report-period* 500]
     (is (re-seq
-          #"(Passing trial \d{3} / 1000 for \(fn\* \[\] \(do \(Thread/sleep 1\) true\)\)\n)+"
+          #"(Passing trial \d{3} / 1000 for .+\n)+"
            (with-out-str (binding [*test-out* *out*] (test-var #'long-running-spec))))))
+
   (let [[report-counters stdout]
         (binding [ct/*report-shrinking* true
                   ; need to keep the failure of failing-spec from affecting the
@@ -34,6 +49,6 @@
            (with-out-str (binding [*test-out* *out*] (test-var #'failing-spec)))])]
     (is (== 1 (:fail @report-counters)))
     (is (re-seq
-          #"Shrinking vector-elements-are-unique starting with parameters \[\[.+"
+          #"(?s)Shrinking vector-elements-are-unique starting with parameters \[\[.+"
           stdout))))
 
