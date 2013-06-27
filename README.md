@@ -7,7 +7,7 @@
 A Clojure property-based testing tool inspired by QuickCheck. It has a feature
 called 'shrinking', which will reduce failing tests to 'smaller', easier to
 comprehend counter-examples. It is mostly likely only usable by the author
-at this point. Will break without notice.
+at this point, but I'm getting close to a stable API.
 
 ## Installation
 
