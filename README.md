@@ -32,14 +32,18 @@ at this point. Will break without notice.
 ```clojure
 (require '[simple-check.core :as sc])
 (require '[simple-check.generators :as gen])
+(require '[simple-check.properties :as prop])
 
 ;; a passing test
-(let [v (gen/vector gen/int)]
-   (sc/quick-check 100 #(= % (reverse (reverse %))) [v]))
+(sc/quick-check 100
+  (prop/for-all [(gen/vector gen/int)]
+                #(= % (reverse (reverse %)))))
 ;; {:result true, :num-tests 100 :seed 1371257283560}
 
 ;; a failing test
-(sc/quick-check 100 #(> (+ %1 %2) %) [gen/int gen/int])
+(sc/quick-check 100
+  (prop/for-all [gen/int gen/int]
+                #(> (+ %1 %2) %)))
 ;; {:result false,
 ;;  :failing-size 4,
 ;;  :num-tests 3,
