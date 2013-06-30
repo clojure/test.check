@@ -53,6 +53,29 @@ at this point, but I'm getting close to a stable API.
 
 See more examples in [`core_test.clj`](test/simple_check/core_test.clj).
 
+## TODO
+
+* __Nested properties__ allow you to write properties that depend on values
+  generated in an outer property. For example:
+
+  ```clojure
+  (for-all [(gen/vector gen/int)]
+    (fn [v]
+      (for-all [(gen/elements v)]
+        (fn [e] (some #{e} v)))))
+  ```
+
+* __for-all macro__: right now you need to provide a function to `for-all` that
+  takes n-arguments. A macro would allow you bind names to generated values,
+  and provide an expression that uses those names, rather than a function. For
+  example:
+
+  ```clojure
+  (for-all [a gen/int
+            b gen/int]
+    (>= (+ a b) a))
+  ```
+
 ## License
 
 Copyright © 2013 Reid Draper
