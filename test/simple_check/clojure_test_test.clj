@@ -5,11 +5,11 @@
             [simple-check.clojure-test :as ct :refer (defspec)]))
 
 (defspec trial-counts
-  (prop/for-all [gen/int] (constantly true))
+  (prop/for-all* [gen/int] (constantly true))
   5000)
 
 (defspec long-running-spec
-  (prop/for-all [] #(do (Thread/sleep 1) true))
+  (prop/for-all* [] #(do (Thread/sleep 1) true))
   1000)
 
 (defn- vector-elements-are-unique*
@@ -17,7 +17,7 @@
   (== (count v) (count (distinct v))))
 
 (def ^:private vector-elements-are-unique
-  (prop/for-all
+  (prop/for-all*
     [(gen/vector gen/int)]
     vector-elements-are-unique*))
 
