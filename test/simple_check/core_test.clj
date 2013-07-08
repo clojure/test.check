@@ -2,7 +2,8 @@
   (:use clojure.test)
   (:require [simple-check.core       :as sc]
             [simple-check.generators :as gen]
-            [simple-check.properties :as prop]))
+            [simple-check.properties :as prop]
+            [simple-check.clojure-test :as ct :refer (defspec)]))
 
 ;; plus and 0 form a monoid
 ;; ---------------------------------------------------------------------------
@@ -179,14 +180,11 @@
 ;; Constant generators
 ;; ---------------------------------------------------------------------------
 
-(deftest constant-generators
-  (testing
-    "A constant generator always returns its created value"
-    (is (:result
-          (sc/quick-check
-            1000
-            (prop/for-all*
-              [(gen/return 42)] (partial = 42)))))))
+;; A constant generator always returns its created value
+(defspec constant-generators
+  (prop/for-all [a (gen/return 42)]
+                (= a 42))
+  100)
 
 ;; Tests are deterministic
 ;; ---------------------------------------------------------------------------
