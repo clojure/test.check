@@ -19,24 +19,27 @@
   [function]
   (fn [args]
     [:gen (fn [random-seed size]
-      ;; since we need to capture the arguments for shrinking and reporting
-      ;; purposes, perhaps here is where we could do that. Return a single-run
-      ;; `result` map that contains something like:
-      ;; {:pass true
-      ;;  :args [0 false]}
       (let [result (try (apply function args) (catch Throwable t t))]
         {:result result
          :shrink gen/shrink-tuple
          :function function
          :args args}))]))
 
-(defn for-all
+(defn for-all*
   [args function]
   (gen/bind (gen/tuple args)
             (apply-gen function)))
 
-#_(def p (for-all [(gen/vector gen/int)]
-         (fn [coll]
-           (for-all [(gen/elements coll)]
-                    (fn [e]
-                      (boolean (some #{e} coll)))))))
+(defn binding-vars
+  [bindings]
+  (map first (partition 2 bindings)))
+
+(defn binding-gens
+  [bindings]
+  (map second (partition 2 bindings)))
+
+(defmacro for-all
+  [bindings expr]
+  `(for-all* ~(vec (binding-gens bindings))
+             (fn [~@(binding-vars bindings)]
+               ~expr)))

@@ -15,7 +15,7 @@
 
 (deftest plus-and-0-are-a-monoid
   (testing "+ and 0 form a monoid"
-           (is (let [p (prop/for-all [gen/int gen/int gen/int] passes-monoid-properties)]
+           (is (let [p (prop/for-all* [gen/int gen/int gen/int] passes-monoid-properties)]
                  (:result
                    (sc/quick-check 1000 p))))))
 
@@ -30,7 +30,7 @@
 
 (deftest reverse-equal?
   (testing "For all vectors L, reverse(reverse(L)) == L"
-           (is (let [p (prop/for-all [(gen/vector gen/int)] reverse-equal?-helper)]
+           (is (let [p (prop/for-all* [(gen/vector gen/int)] reverse-equal?-helper)]
                  (:result (sc/quick-check 1000 p))))))
 
 ;; failing reverse
@@ -39,7 +39,7 @@
 (deftest bad-reverse-test
   (testing "For all vectors L, L == reverse(L). Not true"
            (is (false?
-                 (let [p (prop/for-all [(gen/vector gen/int)] #(= (reverse %) %))]
+                 (let [p (prop/for-all* [(gen/vector gen/int)] #(= (reverse %) %))]
                    (:result (sc/quick-check 1000 p)))))))
 
 ;; failing element remove
@@ -53,7 +53,7 @@
   (testing "For all vectors L, if we remove the first element E, E should not
            longer be in the list. (This is a false assumption)"
            (is (false?
-                 (let [p (prop/for-all [(gen/vector gen/int)] first-is-gone)]
+                 (let [p (prop/for-all* [(gen/vector gen/int)] first-is-gone)]
                    (:result (sc/quick-check 1000 p)))))))
 
 ;; exceptions shrink and return as result
@@ -71,7 +71,7 @@
            (is (= [exception [0]]
                   (let [result
                         (sc/quick-check
-                          1000 (prop/for-all [gen/int] exception-thrower))]
+                          1000 (prop/for-all* [gen/int] exception-thrower))]
                     [(:result result) (get-in result [:shrunk :smallest])])))))
 
 ;; Count and concat work as expected
@@ -86,7 +86,7 @@
   (testing "For all vectors A and B:
            length(A + B) == length(A) + length(B)"
            (is (:result
-                 (let [p (prop/for-all [(gen/vector gen/int)
+                 (let [p (prop/for-all* [(gen/vector gen/int)
                                         (gen/vector gen/int)] concat-counts-correct)]
                    (sc/quick-check 1000 p))))))
 
@@ -106,7 +106,7 @@
     "Interposing a collection with a value makes it's count
     twice the original collection, or ones less."
     (is (:result
-          (sc/quick-check 1000 (prop/for-all [(gen/vector gen/int)] interpose-twice-the-length))))))
+          (sc/quick-check 1000 (prop/for-all* [(gen/vector gen/int)] interpose-twice-the-length))))))
 
 ;; Lists and vectors are equivalent with seq abstraction
 ;; ---------------------------------------------------------------------------
@@ -123,7 +123,7 @@
     ""
     (is (:result
           (sc/quick-check
-            1000 (prop/for-all
+            1000 (prop/for-all*
                    [(gen/list gen/int)] list-vector-round-trip-equiv))))))
 
 ;; keyword->string->keyword roundtrip
@@ -140,7 +140,7 @@
     "For all keywords, turning them into a string and back is equivalent
     to the original string (save for the `:` bit)"
     (is (:result
-          (sc/quick-check 1000 (prop/for-all
+          (sc/quick-check 1000 (prop/for-all*
                                 [gen/keyword] keyword-string-roundtrip-equiv))))))
 
 ;; Boolean and/or
@@ -150,14 +150,14 @@
   (testing
     "`or` with true and anything else should be true"
     (is (:result (sc/quick-check
-                   1000 (prop/for-all
+                   1000 (prop/for-all*
                           [gen/boolean] #(or % true)))))))
 
 (deftest boolean-and
   (testing
     "`and` with false and anything else should be false"
     (is (:result (sc/quick-check
-                   1000 (prop/for-all
+                   1000 (prop/for-all*
                           [gen/boolean] #(not (and % false))))))))
 
 ;; Sorting
@@ -173,7 +173,7 @@
     (is (:result
           (sc/quick-check
             1000
-            (prop/for-all
+            (prop/for-all*
               [(gen/vector gen/int)] elements-are-in-order-after-sorting))))))
 
 ;; Constant generators
@@ -185,7 +185,7 @@
     (is (:result
           (sc/quick-check
             1000
-            (prop/for-all
+            (prop/for-all*
               [(gen/return 42)] (partial = 42)))))))
 
 ;; Tests are deterministic
@@ -198,7 +198,7 @@
 (defn unique-test
   [seed]
   (sc/quick-check 1000
-                  (prop/for-all
+                  (prop/for-all*
                     [(gen/vector gen/int)] vector-elements-are-unique)
                   :seed seed))
 
@@ -210,4 +210,4 @@
   (testing "If two runs are started with the same seed, they should
            return the same results."
            (is (:result
-                 (sc/quick-check 1000 (prop/for-all [gen/int] equiv-runs))))))
+                 (sc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
