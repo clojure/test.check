@@ -31,6 +31,13 @@
   {:result true :num-tests num-trials :seed seed})
 
 (defn quick-check
+  "Tests `property` `num-tests` times.
+
+  Examples:
+
+    (def p (for-all [a gen/pos-int] (> (* a a) a)))
+    (quick-check 100 p)
+  "
   [num-tests property & {:keys [seed max-size] :or {max-size 200}}]
   (let [[created-seed rng] (make-rng seed)
         size-seq (gen/make-size-range-seq max-size)]
