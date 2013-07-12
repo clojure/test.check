@@ -4,10 +4,19 @@
 
 [![Build Status](https://secure.travis-ci.org/reiddraper/simple-check.png)](http://travis-ci.org/reiddraper/simple-check)
 
-A Clojure property-based testing tool inspired by QuickCheck. It has a feature
-called 'shrinking', which will reduce failing tests to 'smaller', easier to
-comprehend counter-examples. It is mostly likely only usable by the author
-at this point, but I'm getting close to a stable API.
+_simple-check_ is a Clojure property-based testing tool inspired by QuickCheck.
+The core idea of _simple-check_ (and QuickCheck) is that instead of enumerating
+expected input and output for unit tests, you write properties about your
+function that should hold true all input. For example, for all lists L,
+the count of L should equal the count of the reverse of L. Furthermore,
+reversing the list twice should equal the original list. To write
+_simple-check_ tests, you'll do two things: use and create generators that
+generate random input for your function, and test that your function behaves
+well under these input. When a property fails, by returning something false or
+nil, _simple-check_ will try and find 'smaller' input for which the test still
+fails. This feature is called shrinking. You can find [API documentation
+here](reiddraper.github.io/simple-check), and some example usage
+[below](https://github.com/reiddraper/simple-check#usage).
 
 ## Installation
 
@@ -63,17 +72,6 @@ See more examples in [`core_test.clj`](test/simple_check/core_test.clj).
     (fn [v]
       (for-all [(gen/elements v)]
         (fn [e] (some #{e} v)))))
-  ```
-
-* __for-all macro__: right now you need to provide a function to `for-all` that
-  takes n-arguments. A macro would allow you bind names to generated values,
-  and provide an expression that uses those names, rather than a function. For
-  example:
-
-  ```clojure
-  (for-all [a gen/int
-            b gen/int]
-    (>= (+ a b) a))
   ```
 
 ## License
