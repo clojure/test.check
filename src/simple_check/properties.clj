@@ -59,7 +59,7 @@
               b gen/int]
       (>= (+ a b) a))
   "
-  [bindings expr]
+  [bindings & body]
   `(for-all* ~(vec (binding-gens bindings))
              (fn [~@(binding-vars bindings)]
-               ~expr)))
+               ~@body)))
