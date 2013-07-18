@@ -4,13 +4,11 @@
             [simple-check.properties :as prop]
             [simple-check.clojure-test :as ct :refer (defspec)]))
 
-(defspec trial-counts
-  (prop/for-all* [gen/int] (constantly true))
-  5000)
+(defspec trial-counts 5000
+  (prop/for-all* [gen/int] (constantly true)))
 
-(defspec long-running-spec
-  (prop/for-all* [] #(do (Thread/sleep 1) true))
-  1000)
+(defspec long-running-spec 1000
+  (prop/for-all* [] #(do (Thread/sleep 1) true)))
 
 (defn- vector-elements-are-unique*
   [v]
@@ -21,7 +19,7 @@
     [(gen/vector gen/int)]
     vector-elements-are-unique*))
 
-(defspec failing-spec vector-elements-are-unique 100)
+(defspec failing-spec 100 vector-elements-are-unique)
 
 (defn test-ns-hook
   []
