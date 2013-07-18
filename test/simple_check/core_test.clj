@@ -183,6 +183,7 @@
 ;; A constant generator always returns its created value
 (defspec constant-generators
   (prop/for-all [a (gen/return 42)]
+                (print "")
                 (= a 42)))
 
 ;; Tests are deterministic
