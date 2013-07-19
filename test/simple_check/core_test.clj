@@ -181,7 +181,7 @@
 ;; ---------------------------------------------------------------------------
 
 ;; A constant generator always returns its created value
-(defspec constant-generators
+(defspec constant-generators 100
   (prop/for-all [a (gen/return 42)]
                 (print "")
                 (= a 42)))
