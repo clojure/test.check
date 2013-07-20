@@ -139,8 +139,8 @@
   Examples:
 
     ;; generate non-empty vectors of integers
-    (such-that (gen/vector gen/int) not-empty)"
-  [gen f]
+    (such-that not-empty (gen/vector gen/int))"
+  [f gen]
   [:gen (fn [rand-seed size]
     (let [value (call-gen gen rand-seed size)]
       (if (f value)
@@ -397,8 +397,9 @@
 
 (def keyword
   "Generate keywords"
-  (fmap clojure.core/keyword
-        (such-that string-alpha-numeric #(not= "" %))))
+  (->> string-alpha-numeric
+       (such-that #(not= "" %))
+       (fmap clojure.core/keyword)))
 
 (defn shrink-keyword
   [k]
