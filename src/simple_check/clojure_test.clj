@@ -21,8 +21,9 @@
      ;; Don't think we'll know what the solution is until simple-check
      ;; integration with another test framework is attempted.
      (require 'simple-check.core)
-     (defn ~(vary-meta name assoc :test
-                       `#(#'assert-check (assoc (~name) :test-var (str '~name))))
+     (defn ~(vary-meta name assoc
+                       ::defspec true
+                       :test `#(#'assert-check (assoc (~name) :test-var (str '~name))))
        ([] (~name ~default-times))
        ([times# & {:keys [seed# max-size#] :as quick-check-opts#}]
           (apply
