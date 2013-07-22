@@ -279,7 +279,7 @@
 
 (defn shrink-list
   [l]
-  (clojure.core/map (partial apply clojure.core/list) (shrink-seq l)))
+  (clojure.core/map list* (shrink-seq l)))
 
 (extend clojure.lang.PersistentList
   Shrink
