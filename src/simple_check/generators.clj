@@ -1,6 +1,7 @@
 (ns simple-check.generators
   (:import java.util.Random)
-  (:refer-clojure :exclude [int vector list map keyword char boolean]))
+  (:refer-clojure :exclude [int vector list map keyword
+                            char boolean byte bytes]))
 
 
 ;; TODO: namespace the :gen tag?
@@ -286,6 +287,31 @@
   ;; TODO:
   ;; this shrink goes into an infinite loop with floats
   {:shrink shrink-list})
+
+;; Bytes
+;; ---------------------------------------------------------------------------
+
+(def byte (fmap clojure.core/byte (choose 0 127)))
+
+(def bytes (fmap clojure.core/byte-array (vector byte)))
+
+(defn shrink-byte
+  [b]
+  (let [i (clojure.core/int b)]
+    (clojure.core/map clojure.core/byte (shrink i))))
+
+(defn shrink-bytes
+  [bs]
+  (let [vbs (vec bs)]
+    (clojure.core/map clojure.core/byte-array (shrink vbs))))
+
+(extend java.lang.Byte
+  Shrink
+  {:shrink shrink-byte})
+
+(extend (Class/forName "[B")
+  Shrink
+  {:shrink shrink-bytes})
 
 ;; Map
 ;; ---------------------------------------------------------------------------
