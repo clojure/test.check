@@ -23,7 +23,7 @@ here](reiddraper.github.io/simple-check), and some example usage
 ### Leiningen
 
 ```clojure
-[reiddraper/simple-check "0.1.0"]
+[reiddraper/simple-check "0.2.0"]
 ```
 
 ### Maven
