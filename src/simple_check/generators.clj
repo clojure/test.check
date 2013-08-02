@@ -10,8 +10,8 @@
 ;; ---------------------------------------------------------------------------
 
 (defn random
-  ([] (java.util.Random.))
-  ([seed] (java.util.Random. seed)))
+  ([] (Random.))
+  ([seed] (Random. seed)))
 
 (defn call-gen
   [[tag generator-fn] rand-seed size]
@@ -69,22 +69,15 @@
 ;; Combinators
 ;; ---------------------------------------------------------------------------
 
-(defn- diff
-  [min-range max-range]
-  (case [(neg? min-range) (neg? max-range)]
-    [true true] (Math/abs (- max-range min-range))
-    ;; default
-    (- )))
-
 (defn choose
   "Create a generator that returns numbers in the range
   `min-range` to `max-range`"
   [min-range max-range]
-  (let [diff (Math/abs (- max-range min-range))]
-    [:gen (fn [rand-seed _size]
-      (if (zero? diff)
-        min-range
-        (+ (.nextInt rand-seed (inc diff)) min-range)))]))
+  (let [diff (Math/abs (long (- max-range min-range)))]
+    [:gen (fn [^Random rand-seed _size]
+            (if (zero? diff)
+              min-range
+              (+ (.nextInt rand-seed (inc diff)) min-range)))]))
 
 
 (defn one-of
@@ -210,7 +203,7 @@
 
 (def pos-int
   "Generate positive integers bounded by the generator's `size` paramter."
-  (fmap #(Math/abs %) int))
+  (fmap #(Math/abs (long %)) int))
 (def neg-int
   "Generate negative integers bounded by the generator's `size` paramter."
   (fmap (partial * -1) pos-int))
@@ -259,7 +252,7 @@
   vector will be bounded by the `size` generator parameter."
   [gen]
   [:gen (fn [rand-seed size]
-    (let [num-elements (Math/abs (call-gen int rand-seed size))]
+    (let [num-elements (Math/abs (long (call-gen int rand-seed size)))]
       (vec (repeatedly num-elements #(call-gen gen rand-seed size)))))])
 
 (extend clojure.lang.IPersistentVector
@@ -275,7 +268,7 @@
   "Like `vector`, but generators lists."
   [gen]
   [:gen (fn [rand-seed size]
-    (let [num-elements (Math/abs (call-gen int rand-seed size))]
+    (let [num-elements (Math/abs (long (call-gen int rand-seed size)))]
       (into '() (repeatedly num-elements #(call-gen gen rand-seed size)))))])
 
 (defn shrink-list
@@ -352,7 +345,7 @@
                  (choose 97 122)])))
 
 (defn- stamp
-  [c]
+  [^Character c]
   [(not (Character/isLowerCase c))
    (not (Character/isUpperCase c))
    (not (Character/isDigit c))
@@ -368,7 +361,7 @@
   (filter
     #(<-stamp % c)
     (concat [\a \b \c]
-            (for [x [c] :while #(Character/isUpperCase %)]
+            (for [^Character x [c] :while #(Character/isUpperCase ^Character %)]
               (Character/toLowerCase x))
             [\A \B \C
              \1 \2 \3
