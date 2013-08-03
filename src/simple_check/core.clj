@@ -43,7 +43,7 @@
         size-seq (gen/make-size-range-seq max-size)]
     (loop [so-far 0
            size-seq size-seq]
-      (if (= so-far num-tests)
+      (if (== so-far num-tests)
         (complete property num-tests created-seed)
         (let [[size & rest-size-seq] size-seq
               result-map (run-test property rng size)
