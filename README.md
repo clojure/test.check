@@ -7,15 +7,16 @@
 _simple-check_ is a Clojure property-based testing tool inspired by QuickCheck.
 The core idea of _simple-check_ (and QuickCheck) is that instead of enumerating
 expected input and output for unit tests, you write properties about your
-function that should hold true all input. For example, for all lists L,
+function that should hold true for all inputs. For example, for all lists L,
 the count of L should equal the count of the reverse of L. Furthermore,
-reversing the list twice should equal the original list. To write
-_simple-check_ tests, you'll do two things: use and create generators that
-generate random input for your function, and test that your function behaves
-well under these input. When a property fails, by returning something false or
-nil, _simple-check_ will try and find 'smaller' input for which the test still
-fails. This feature is called shrinking. You can find [API documentation
-here](reiddraper.github.io/simple-check), and some example usage
+reversing the list twice should equal the original list.
+
+To write _simple-check_ tests, you'll do two things: use and create generators
+that generate random input for your function, and test that your function
+behaves well under these input. When a property fails, by returning something
+false or nil, _simple-check_ will try and find 'smaller' input for which the
+test still fails. This feature is called shrinking. You can find [API
+documentation here](reiddraper.github.io/simple-check), and some example usage
 [below](https://github.com/reiddraper/simple-check#usage).
 
 ## Installation
