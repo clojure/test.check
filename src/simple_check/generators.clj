@@ -211,9 +211,7 @@
 (def s-pos-int
   "Generate strictly positive integers bounded by the generator's `size`
    parameter."
-  [:gen (fn [rand-seed size]
-          (call-gen (choose 1 (inc size))
-                    rand-seed size))])
+  (fmap inc pos-int))
 (def s-neg-int
   "Generate strictly negative integers bounded by the generator's `size`
    parameter."
@@ -267,7 +265,13 @@
        (vec (repeatedly num-elements #(call-gen gen rand-seed size)))))])
   ([gen num-elements]
    [:gen (fn [rand-seed size]
-     (vec (repeatedly num-elements #(call-gen gen rand-seed size))))]))
+     (vec (repeatedly num-elements #(call-gen gen rand-seed size))))])
+  ([gen min-elements max-elements]
+   [:gen (fn [rand-seed size]
+     (let [max-translated (- max-elements min-elements 1)
+           num-translated (long (call-gen pos-int rand-seed max-translated))
+           num-elements (+ min-elements num-translated)]
+       (vec (repeatedly num-elements #(call-gen gen rand-seed size)))))]))
 
 (extend clojure.lang.IPersistentVector
   Shrink
