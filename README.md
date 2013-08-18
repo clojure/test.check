@@ -61,7 +61,7 @@ documentation here](reiddraper.github.io/simple-check), and some example usage
 ;;  :shrunk {:total-nodes-visited 6, depth 3, :smallest [0 0]}}
 ```
 
-## `clojure.test` Integration
+### `clojure.test` Integration
 
 There is a macro called `defspec` that allows you to succinctly write
 properties that run under the `clojure.test` runner, for example:
