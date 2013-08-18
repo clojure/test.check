@@ -61,6 +61,19 @@ documentation here](reiddraper.github.io/simple-check), and some example usage
 ;;  :shrunk {:total-nodes-visited 6, depth 3, :smallest [0 0]}}
 ```
 
+## `clojure.test` Integration
+
+There is a macro called `defspec` that allows you to succinctly write
+properties that run under the `clojure.test` runner, for example:
+
+```clojure
+(defspec first-element-is-min-after-sorting ;; the name of the test
+         100 ;; the number of iterations for simple-check to test
+         (prop/for-all [v (such-that not-empty (gen/vector gen/int))]
+           (= (apply min v)
+              (first (sorted v)))))
+```
+
 See more examples in [`core_test.clj`](test/simple_check/core_test.clj).
 
 ## TODO
