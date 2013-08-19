@@ -268,7 +268,7 @@
      (vec (repeatedly num-elements #(call-gen gen rand-seed size))))])
   ([gen min-elements max-elements]
    [:gen (fn [rand-seed size]
-     (let [max-translated (- max-elements min-elements 1)
+     (let [max-translated (- max-elements min-elements)
            num-translated (long (call-gen pos-int rand-seed max-translated))
            num-elements (+ min-elements num-translated)]
        (vec (repeatedly num-elements #(call-gen gen rand-seed size)))))]))

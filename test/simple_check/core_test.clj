@@ -222,8 +222,18 @@
 
 (deftest proper-matrix-test
   (testing
-    "we can generate proper matrices"
+    "can generate proper matrices"
     (is (:result (sc/quick-check
                   100 (prop/for-all
                        [mtx (gen/vector (gen/vector gen/int 3) 3)]
                        (proper-matrix? mtx)))))))
+
+(deftest proper-vector-test
+  (testing
+    "can generate vectors with sizes in a provided range"
+    (is (:result (sc/quick-check
+                  100 (prop/for-all
+                       [v (gen/vector gen/int 3 10)]
+                       (let [c (count v)]
+                         (and (<= c 10)
+                              (>= c 3)))))))))
