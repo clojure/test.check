@@ -209,3 +209,31 @@
            return the same results."
            (is (:result
                  (sc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
+
+;; Generating proper matrices
+;; ---------------------------------------------------------------------------
+
+(defn proper-matrix?
+  "Check if provided nested vectors form a proper matrix — that is, all nested
+   vectors have the same length"
+  [mtx]
+  (let [first-size (count (first mtx))]
+    (every? (partial = first-size) (map count (rest mtx)))))
+
+(deftest proper-matrix-test
+  (testing
+    "can generate proper matrices"
+    (is (:result (sc/quick-check
+                  100 (prop/for-all
+                       [mtx (gen/vector (gen/vector gen/int 3) 3)]
+                       (proper-matrix? mtx)))))))
+
+(deftest proper-vector-test
+  (testing
+    "can generate vectors with sizes in a provided range"
+    (is (:result (sc/quick-check
+                  100 (prop/for-all
+                       [v (gen/vector gen/int 3 10)]
+                       (let [c (count v)]
+                         (and (<= c 10)
+                              (>= c 3)))))))))

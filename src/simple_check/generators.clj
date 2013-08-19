@@ -198,15 +198,24 @@
 
 (def int
   "Generates a positive or negative integer bounded by the generator's
-  `size` paramter."
+  `size` parameter."
   [:gen int-gen])
 
 (def pos-int
-  "Generate positive integers bounded by the generator's `size` paramter."
+  "Generate positive integers bounded by the generator's `size` parameter."
   (fmap #(Math/abs (long %)) int))
 (def neg-int
-  "Generate negative integers bounded by the generator's `size` paramter."
+  "Generate negative integers bounded by the generator's `size` parameter."
   (fmap (partial * -1) pos-int))
+
+(def s-pos-int
+  "Generate strictly positive integers bounded by the generator's `size`
+   parameter."
+  (fmap inc pos-int))
+(def s-neg-int
+  "Generate strictly negative integers bounded by the generator's `size`
+   parameter."
+  (fmap (partial * -1) s-pos-int))
 
 (defn shrink-int
   [integer]
@@ -250,10 +259,19 @@
 (defn vector
   "Create a generator whose elements are chosen from `gen`. The count of the
   vector will be bounded by the `size` generator parameter."
-  [gen]
-  [:gen (fn [rand-seed size]
-    (let [num-elements (Math/abs (long (call-gen int rand-seed size)))]
-      (vec (repeatedly num-elements #(call-gen gen rand-seed size)))))])
+  ([gen]
+   [:gen (fn [rand-seed size]
+     (let [num-elements (Math/abs (long (call-gen int rand-seed size)))]
+       (vec (repeatedly num-elements #(call-gen gen rand-seed size)))))])
+  ([gen num-elements]
+   [:gen (fn [rand-seed size]
+     (vec (repeatedly num-elements #(call-gen gen rand-seed size))))])
+  ([gen min-elements max-elements]
+   [:gen (fn [rand-seed size]
+     (let [max-translated (- max-elements min-elements)
+           num-translated (long (call-gen pos-int rand-seed max-translated))
+           num-elements (+ min-elements num-translated)]
+       (vec (repeatedly num-elements #(call-gen gen rand-seed size)))))]))
 
 (extend clojure.lang.IPersistentVector
   Shrink
