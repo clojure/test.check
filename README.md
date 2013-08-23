@@ -88,6 +88,19 @@ See more examples in [`core_test.clj`](test/simple_check/core_test.clj).
         (fn [e] (some #{e} v)))))
   ```
 
+## See also...
+
+### Other implementations
+
+- [QC for Haskell](http://hackage.haskell.org/package/QuickCheck)
+- [The significantly more advanced QC for
+  Erlang](http://www.quviq.com/index.html)
+
+### Papers
+
+- [QuickCheck: A Lightweight Tool for Random Testing of Haskell
+  Programs](http://www.eecs.northwestern.edu/~robby/courses/395-495-2009-fall/quick.pdf)
+
 ## License
 
 Copyright © 2013 Reid Draper
