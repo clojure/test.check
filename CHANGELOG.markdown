@@ -1,5 +1,10 @@
 # Changelog
 
+* 0.3.0
+    * add strictly-positive and strictly-negative integer generators
+    * allow scientific notation in number of tests parameter
+    * allow specification of number of elements in vector generator
+
 * 0.2.1
     * remove unused `diff` function
     * eliminate reflection warnings
