@@ -3,9 +3,6 @@
   (:refer-clojure :exclude [int vector list map keyword
                             char boolean byte bytes]))
 
-
-;; TODO: namespace the :gen tag?
-
 ;; Helpers
 ;; ---------------------------------------------------------------------------
 
