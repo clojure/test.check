@@ -1,5 +1,6 @@
 (ns simple-check.generators
   (:import java.util.Random)
+  (:require [clj-tuple])
   (:refer-clojure :exclude [int vector list map keyword
                             char boolean byte bytes]))
 
@@ -156,7 +157,7 @@
 
 (defn shrink-index
   [coll index]
-  (clojure.core/map (partial assoc coll index) (shrink (coll index))))
+  (clojure.core/map (partial assoc coll index) (shrink (nth coll index))))
 
 (defn shrink-seq
   [coll]
@@ -238,17 +239,21 @@
     ;; => ([1 true] [2 true] [2 false] [1 false] [0 true] [-2 false] [-6 false]
     ;; =>  [3 true] [-4 false] [9 true]))
   "
-  [generators]
+  [& generators]
   [:gen (fn [rand-seed size]
-    (vec (clojure.core/map #(call-gen % rand-seed size) generators)))])
+    (apply clj-tuple/tuple (clojure.core/map #(call-gen % rand-seed size) generators)))])
 
 (defn shrink-tuple
   [value]
-  (mapcat (partial shrink-index value) (range (count value))))
+  (clojure.core/map (partial apply clj-tuple/tuple)
+    (mapcat (partial shrink-index (vec value)) (range (count value)))))
 
-;; TODO: not sure what to do about `extend` here, maybe we could
-;; make a tuple type with `deftype`? Wish we had something more
-;; akin to Haskell's `newtype` here
+(extend clj_tuple.Tuple1 Shrink {:shrink shrink-tuple})
+(extend clj_tuple.Tuple2 Shrink {:shrink shrink-tuple})
+(extend clj_tuple.Tuple3 Shrink {:shrink shrink-tuple})
+(extend clj_tuple.Tuple4 Shrink {:shrink shrink-tuple})
+(extend clj_tuple.Tuple5 Shrink {:shrink shrink-tuple})
+(extend clj_tuple.Tuple6 Shrink {:shrink shrink-tuple})
 
 ;; Vector
 ;; ---------------------------------------------------------------------------

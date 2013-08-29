@@ -87,7 +87,7 @@
   The value returned is the left-most failing example at the depth where a
   passing example was found."
   [prop failing]
-  (let [shrinks-this-depth (gen/shrink-tuple failing)]
+  (let [shrinks-this-depth (gen/shrink failing)]
     (loop [nodes shrinks-this-depth
            f failing
            total-nodes-visited 0
@@ -104,7 +104,7 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (gen/shrink-tuple head)]
+            (let [children (gen/shrink head)]
               (if (empty? children)
                 (recur tail head (inc total-nodes-visited) depth false)
                 (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
@@ -116,6 +116,5 @@
    :failing-size size
    :num-tests trial-number
    :fail (vec failing-params)
-   :shrunk (shrink-loop property-fun
-                        (vec failing-params))})
+   :shrunk (shrink-loop property-fun failing-params)})
 
