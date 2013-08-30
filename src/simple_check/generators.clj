@@ -234,7 +234,7 @@
 
   Examples:
 
-    (def t (tuple [gen/int gen/boolean]))
+    (def t (tuple gen/int gen/boolean))
     (sample t)
     ;; => ([1 true] [2 true] [2 false] [1 false] [0 true] [-2 false] [-6 false]
     ;; =>  [3 true] [-4 false] [9 true]))
