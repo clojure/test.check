@@ -22,7 +22,7 @@
     [:gen (fn [random-seed size]
       (let [result (try (apply function args) (catch Throwable t t))]
         {:result result
-         :shrink gen/shrink-tuple
+         :shrink gen/shrink
          :function function
          :args args}))]))
 
@@ -37,7 +37,7 @@
     (for-all* [gen/int gen/int] fn [a b] (>= (+ a b) a))
   "
   [args function]
-  (gen/bind (gen/tuple args)
+  (gen/bind (apply gen/tuple args)
             (apply-gen function)))
 
 (defn binding-vars

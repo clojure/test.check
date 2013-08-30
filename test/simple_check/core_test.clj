@@ -229,16 +229,13 @@
                        (proper-matrix? mtx)))))))
 
 (def bounds-and-vector
-  (gen/bind (gen/tuple [gen/s-pos-int gen/s-pos-int])
+  (gen/bind (gen/tuple gen/s-pos-int gen/s-pos-int)
             (fn [[a b]]
               (let [minimum (min a b)
                     maximum (max a b)]
-                (gen/tuple [(gen/return [minimum maximum])
-                           (gen/vector gen/int minimum maximum)])))))
+                (gen/tuple (gen/return [minimum maximum])
+                           (gen/vector gen/int minimum maximum))))))
 
-;; TODO: this test passes, but were it not to, shrinking would
-;; break, because we can't yet shrink tuples (not sure how
-;; to dispatch that they're different)
 (deftest proper-vector-test
   (testing
     "can generate vectors with sizes in a provided range"
