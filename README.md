@@ -16,7 +16,7 @@ that generate random input for your function, and test that your function
 behaves well under these input. When a property fails, by returning something
 false or nil, _simple-check_ will try and find 'smaller' input for which the
 test still fails. This feature is called shrinking. You can find [API
-documentation here](reiddraper.github.io/simple-check), and some example usage
+documentation here](http://reiddraper.github.io/simple-check), and some example usage
 [below](https://github.com/reiddraper/simple-check#usage). Release notes
 for each version are available in [`CHANGELOG.markdown`](CHANGELOG.markdown).
 
