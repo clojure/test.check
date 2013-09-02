@@ -47,7 +47,7 @@
 
 (defn fmap
   "Create a new generator that calls `f` on the generated value before
-  returning it"
+  returning it."
   [f gen]
   [:gen (fn [rand-seed size]
           (f (call-gen gen rand-seed size)))])
@@ -63,7 +63,7 @@
                 ;; this function takes a realized vector,
                 ;; and then returns a new generator which
                 ;; chooses a random element from it
-                (fn [v] (gen/elements v)))
+                gen/elements)
 
   This is equivalent to Haskell QuickCheck's implementation
   of bind (`>>=`) for the generator monad.
@@ -83,7 +83,7 @@
 
 (defn choose
   "Create a generator that returns numbers in the range
-  `min-range` to `max-range`"
+  `min-range` to `max-range`."
   [min-range max-range]
   (let [diff (Math/abs (long (- max-range min-range)))]
     [:gen (fn [^Random rand-seed _size]
@@ -98,7 +98,8 @@
 
   Examples:
 
-    (one-of [gen/int gen/boolean (gen/vector gen/int)])
+      (one-of [gen/int gen/boolean (gen/vector gen/int)])
+
   "
   [generators]
   (bind (choose 0 (dec (count generators)))
@@ -118,7 +119,7 @@
 
   Examples:
 
-    (gen/frequency [[5 gen/int] [3 (gen/vector gen/int)] [2 gen/boolean]])
+      (gen/frequency [[5 gen/int] [3 (gen/vector gen/int)] [2 gen/boolean]])
   "
   [pairs]
   (let [total (apply + (clojure.core/map first pairs))]
@@ -130,7 +131,8 @@
 
   Examples:
 
-    (gen/elements [:foo :bar :baz])"
+      (gen/elements [:foo :bar :baz])
+  "
   [coll]
   (fmap #(nth coll %)
         (choose 0 (dec (count coll)))))
@@ -144,8 +146,9 @@
 
   Examples:
 
-    ;; generate non-empty vectors of integers
-    (such-that not-empty (gen/vector gen/int))"
+      ;; generate non-empty vectors of integers
+      (such-that not-empty (gen/vector gen/int))
+  "
   [f gen]
   [:gen (fn [rand-seed size]
     (let [value (call-gen gen rand-seed size)]
@@ -162,7 +165,7 @@
 
   Examples:
 
-    (pair gen/int gen/int)
+      (pair gen/int gen/int)
   "
   [a b]
   [:gen (fn [rand-seed size]
@@ -248,10 +251,10 @@
 
   Examples:
 
-    (def t (tuple gen/int gen/boolean))
-    (sample t)
-    ;; => ([1 true] [2 true] [2 false] [1 false] [0 true] [-2 false] [-6 false]
-    ;; =>  [3 true] [-4 false] [9 true]))
+      (def t (tuple gen/int gen/boolean))
+      (sample t)
+      ;; => ([1 true] [2 true] [2 false] [1 false] [0 true] [-2 false] [-6 false]
+      ;; =>  [3 true] [-4 false] [9 true]))
   "
   [& generators]
   [:gen (fn [rand-seed size]
@@ -364,15 +367,15 @@
 ;; ---------------------------------------------------------------------------
 
 (def char
-  "Generates character from 0-255"
+  "Generates character from 0-255."
   (fmap clojure.core/char (choose 0 255)))
 
 (def char-ascii
-  "Generate only ascii character"
+  "Generate only ascii character."
   (fmap clojure.core/char (choose 32 126)))
 
 (def char-alpha-numeric
-  "Generate alpha-numeric characters"
+  "Generate alpha-numeric characters."
   (fmap clojure.core/char
         (one-of [(choose 48 57)
                  (choose 65 90)
@@ -418,7 +421,7 @@
   (clojure.string/join (repeatedly size #(call-gen char rand-seed size))))
 
 (def string
-  "Generate strings"
+  "Generate strings."
   [:gen string-gen])
 
 (defn string-ascii-gen
@@ -426,7 +429,7 @@
   (clojure.string/join (repeatedly size #(call-gen char-ascii rand-seed size))))
 
 (def string-ascii
-  "Generate ascii strings"
+  "Generate ascii strings."
   [:gen string-ascii-gen])
 
 (defn string-alpha-numeric-gen
@@ -434,7 +437,7 @@
   (clojure.string/join (repeatedly size #(call-gen char-alpha-numeric rand-seed size))))
 
 (def string-alpha-numeric
-  "Generate alpha-numeric strings"
+  "Generate alpha-numeric strings."
   [:gen string-alpha-numeric-gen])
 
 (defn shrink-string
@@ -449,7 +452,7 @@
 ;; ---------------------------------------------------------------------------
 
 (def keyword
-  "Generate keywords"
+  "Generate keywords."
   (->> string-alpha-numeric
        (such-that #(not= "" %))
        (fmap clojure.core/keyword)))

@@ -35,8 +35,8 @@
 
   Examples:
 
-    (def p (for-all [a gen/pos-int] (> (* a a) a)))
-    (quick-check 100 p)
+      (def p (for-all [a gen/pos-int] (> (* a a) a)))
+      (quick-check 100 p)
   "
   [num-tests property & {:keys [seed max-size] :or {max-size 200}}]
   (let [[created-seed rng] (make-rng seed)
