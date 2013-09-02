@@ -53,7 +53,21 @@
           (f (call-gen gen rand-seed size)))])
 
 (defn bind
-  "Monadic bind"
+  "Create a new generator that passes the result of `gen` into function
+  `k`. `k` should return a new generator. This allows you to create new
+  generators that depend on the value of other generators. For example,
+  to create a generator which first generates a vector of integers, and
+  then chooses a random element from that vector:
+
+      (gen/bind (gen/such-that not-empty (gen/vector gen/int))
+                ;; this function takes a realized vector,
+                ;; and then returns a new generator which
+                ;; chooses a random element from it
+                (fn [v] (gen/elements v)))
+
+  This is equivalent to Haskell QuickCheck's implementation
+  of bind (`>>=`) for the generator monad.
+  "
   [gen k]
   [:gen (fn [rand-seed size]
           (let [value (call-gen gen rand-seed size)]
