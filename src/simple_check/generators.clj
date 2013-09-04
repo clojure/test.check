@@ -318,6 +318,10 @@
   ;; this shrink goes into an infinite loop with floats
   {:shrink shrink-list})
 
+(extend (type '())
+  Shrink
+  {:shrink (constantly [])})
+
 ;; Bytes
 ;; ---------------------------------------------------------------------------
 
