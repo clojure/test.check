@@ -1,5 +1,26 @@
 # Changelog
 
+* 0.4.0
+    * tuple generator now creates tuple types (from `clj-tuple`)
+        * __BACKWARD_INCOMPATIBILITY__: `gen/tuple` now takes var-args, instead
+        of a vector of arguments. So change:
+
+        ```clojure
+        (gen/tuple [gen/int gen/boolean])
+        ```
+
+        to
+
+        ```clojure
+        (gen/tuple gen/int gen/boolean)
+        ```
+
+        Tuples will now retain their size when shrunk.
+
+    * add a `ratio` generator
+    * correctly shrink empty lists
+    * switch to `codox-md` for documentation
+
 * 0.3.0
     * add strictly-positive and strictly-negative integer generators
     * allow scientific notation in number of tests parameter
