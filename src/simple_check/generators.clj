@@ -472,3 +472,21 @@
 (extend clojure.lang.Keyword
   Shrink
   {:shrink shrink-keyword})
+
+;; Ratios
+;; ---------------------------------------------------------------------------
+
+(def ratio
+  (->> (tuple int (such-that (complement zero?) int))
+       (fmap (fn [[a b]] (/ a b)))))
+
+(defn shrink-ratio
+  [ratio]
+  (for [d (shrink (denominator ratio))
+        :when (not (zero? d))
+        n (shrink (numerator ratio))]
+    (/ n d)))
+
+(extend clojure.lang.Ratio
+  Shrink
+  {:shrink shrink-ratio})

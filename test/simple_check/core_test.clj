@@ -18,6 +18,10 @@
   (testing "+ and 0 form a monoid"
            (is (let [p (prop/for-all* [gen/int gen/int gen/int] passes-monoid-properties)]
                  (:result
+                   (sc/quick-check 1000 p)))))
+  (testing "with ratios as well"
+           (is (let [p (prop/for-all* [gen/ratio gen/ratio gen/ratio] passes-monoid-properties)]
+                 (:result
                    (sc/quick-check 1000 p))))))
 
 ;; reverse
