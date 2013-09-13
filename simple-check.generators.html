@@ -9,7 +9,7 @@
   <body>
     <header>
       <div id="header">
-        <h1 class="project-title">Simple-check 0.3.1-SNAPSHOT API documentation</h1>
+        <h1 class="project-title">Simple-check 0.4.0 API documentation</h1>
       </div>
     </header>
     <navigation>
@@ -47,7 +47,21 @@ based on type.</p>
             <div class="usage">[gen k]</div>
             
             
-            <div class="doc"><p>Monadic bind</p>
+            <div class="doc"><p>Create a new generator that passes the result of <code>gen</code> into function
+<code>k</code>. <code>k</code> should return a new generator. This allows you to create new
+generators that depend on the value of other generators. For example,
+to create a generator which first generates a vector of integers, and
+then chooses a random element from that vector:</p>
+
+<pre><code>(gen/bind (gen/such-that not-empty (gen/vector gen/int))
+          ;; this function takes a realized vector,
+          ;; and then returns a new generator which
+          ;; chooses a random element from it
+          gen/elements)
+</code></pre>
+
+<p>This is equivalent to Haskell QuickCheck's implementation
+of bind (<code>&gt;&gt;=</code>) for the generator monad.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-char" class="source var-name" href="/src/simple_check/generators.clj">char</a></h3>
@@ -55,7 +69,7 @@ based on type.</p>
             
             
             
-            <div class="doc"><p>Generates character from 0-255</p>
+            <div class="doc"><p>Generates character from 0-255.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-char-alpha-numeric" class="source var-name" href="/src/simple_check/generators.clj">char-alpha-numeric</a></h3>
@@ -63,7 +77,7 @@ based on type.</p>
             
             
             
-            <div class="doc"><p>Generate alpha-numeric characters</p>
+            <div class="doc"><p>Generate alpha-numeric characters.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-char-ascii" class="source var-name" href="/src/simple_check/generators.clj">char-ascii</a></h3>
@@ -71,7 +85,7 @@ based on type.</p>
             
             
             
-            <div class="doc"><p>Generate only ascii character</p>
+            <div class="doc"><p>Generate only ascii character.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-choose" class="source var-name" href="/src/simple_check/generators.clj">choose</a></h3>
@@ -80,7 +94,7 @@ based on type.</p>
             
             
             <div class="doc"><p>Create a generator that returns numbers in the range
-<code>min-range</code> to <code>max-range</code></p>
+<code>min-range</code> to <code>max-range</code>.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-elements" class="source var-name" href="/src/simple_check/generators.clj">elements</a></h3>
@@ -92,7 +106,8 @@ based on type.</p>
 
 <p>Examples:</p>
 
-<p>  (gen/elements [:foo :bar :baz])</p>
+<pre><code>(gen/elements [:foo :bar :baz])
+</code></pre>
 </div>
           </div><div class="public">
             <h3><a id="var-fmap" class="source var-name" href="/src/simple_check/generators.clj">fmap</a></h3>
@@ -101,7 +116,7 @@ based on type.</p>
             
             
             <div class="doc"><p>Create a new generator that calls <code>f</code> on the generated value before
-returning it</p>
+returning it.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-frequency" class="source var-name" href="/src/simple_check/generators.clj">frequency</a></h3>
@@ -115,7 +130,8 @@ its likelihood divided by the sum of all likelihoods</p>
 
 <p>Examples:</p>
 
-<p>  (gen/frequency [[5 gen/int] [3 (gen/vector gen/int)] [2 gen/boolean]])</p>
+<pre><code>(gen/frequency [[5 gen/int] [3 (gen/vector gen/int)] [2 gen/boolean]])
+</code></pre>
 </div>
           </div><div class="public">
             <h3><a id="var-int" class="source var-name" href="/src/simple_check/generators.clj">int</a></h3>
@@ -132,7 +148,7 @@ its likelihood divided by the sum of all likelihoods</p>
             
             
             
-            <div class="doc"><p>Generate keywords</p>
+            <div class="doc"><p>Generate keywords.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-list" class="source var-name" href="/src/simple_check/generators.clj">list</a></h3>
@@ -170,7 +186,8 @@ provided generators.</p>
 
 <p>Examples:</p>
 
-<p>  (one-of [gen/int gen/boolean (gen/vector gen/int)])</p>
+<pre><code>(one-of [gen/int gen/boolean (gen/vector gen/int)])
+</code></pre>
 </div>
           </div><div class="public">
             <h3><a id="var-pair" class="source var-name" href="/src/simple_check/generators.clj">pair</a></h3>
@@ -183,7 +200,8 @@ from <code>a</code> and <code>b</code>.</p>
 
 <p>Examples:</p>
 
-<p>  (pair gen/int gen/int)</p>
+<pre><code>(pair gen/int gen/int)
+</code></pre>
 </div>
           </div><div class="public">
             <h3><a id="var-pos-int" class="source var-name" href="/src/simple_check/generators.clj">pos-int</a></h3>
@@ -244,7 +262,7 @@ recursively on the sequence.</p>
             
             
             
-            <div class="doc"><p>Generate strings</p>
+            <div class="doc"><p>Generate strings.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-string-alpha-numeric" class="source var-name" href="/src/simple_check/generators.clj">string-alpha-numeric</a></h3>
@@ -252,7 +270,7 @@ recursively on the sequence.</p>
             
             
             
-            <div class="doc"><p>Generate alpha-numeric strings</p>
+            <div class="doc"><p>Generate alpha-numeric strings.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-string-ascii" class="source var-name" href="/src/simple_check/generators.clj">string-ascii</a></h3>
@@ -260,7 +278,7 @@ recursively on the sequence.</p>
             
             
             
-            <div class="doc"><p>Generate ascii strings</p>
+            <div class="doc"><p>Generate ascii strings.</p>
 </div>
           </div><div class="public">
             <h3><a id="var-such-that" class="source var-name" href="/src/simple_check/generators.clj">such-that</a></h3>
@@ -276,13 +294,14 @@ version this is called <code>suchThatMaybe</code>.</p>
 
 <p>Examples:</p>
 
-<p>  ;; generate non-empty vectors of integers
-  (such-that not-empty (gen/vector gen/int))</p>
+<pre><code>;; generate non-empty vectors of integers
+(such-that not-empty (gen/vector gen/int))
+</code></pre>
 </div>
           </div><div class="public">
             <h3><a id="var-tuple" class="source var-name" href="/src/simple_check/generators.clj">tuple</a></h3>
             <h4 class="var-type fn" id="var-type">fn</h4>
-            <div class="usage">[generators]</div>
+            <div class="usage">[&amp; generators]</div>
             
             
             <div class="doc"><p>Create a generator that returns a vector, whose elements are chosen
@@ -290,10 +309,11 @@ from the generators in the same position.</p>
 
 <p>Examples:</p>
 
-<p>  (def t (tuple [gen/int gen/boolean]))
-  (sample t)
-  ;; =&gt; ([1 true] [2 true] [2 false] [1 false] [0 true] [-2 false] [-6 false]
-  ;; =&gt;  [3 true] [-4 false] [9 true]))</p>
+<pre><code>(def t (tuple gen/int gen/boolean))
+(sample t)
+;; =&gt; ([1 true] [2 true] [2 false] [1 false] [0 true] [-2 false] [-6 false]
+;; =&gt;  [3 true] [-4 false] [9 true]))
+</code></pre>
 </div>
           </div><div class="public">
             <h3><a id="var-vector" class="source var-name" href="/src/simple_check/generators.clj">vector</a></h3>
