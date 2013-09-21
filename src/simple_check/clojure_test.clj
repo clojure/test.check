@@ -8,6 +8,8 @@
     (throw result)
     (ct/is result)))
 
+(def ^:dynamic *default-test-count* 100)
+
 (defmacro defspec
   "Defines a new clojure.test test var that uses `quick-check` to verify
   [property] with the given [args] (should be a sequence of generators),
@@ -15,22 +17,25 @@
   with no arguments to trigger this test directly (i.e.  without starting a
   wider clojure.test run), or with a single argument that will override
   [default-times]."
-  [name default-times property]
-  `(do
-     ;; consider my shame for introducing a cyclical dependency like this...
-     ;; Don't think we'll know what the solution is until simple-check
-     ;; integration with another test framework is attempted.
-     (require 'simple-check.core)
-     (defn ~(vary-meta name assoc
-                       ::defspec true
-                       :test `#(#'assert-check (assoc (~name) :test-var (str '~name))))
-       ([] (~name ~default-times))
-       ([times# & {:keys [seed# max-size#] :as quick-check-opts#}]
-          (apply
+  ([name property]
+   (defspec name *default-test-count* property))
+
+  ([name default-times property]
+   `(do
+      ;; consider my shame for introducing a cyclical dependency like this...
+      ;; Don't think we'll know what the solution is until simple-check
+      ;; integration with another test framework is attempted.
+      (require 'simple-check.core)
+      (defn ~(vary-meta name assoc
+                        ::defspec true
+                        :test `#(#'assert-check (assoc (~name) :test-var (str '~name))))
+        ([] (~name ~default-times))
+        ([times# & {:keys [seed# max-size#] :as quick-check-opts#}]
+         (apply
            simple-check.core/quick-check
            times#
            (vary-meta ~property assoc :name (str '~property))
-           (flatten (seq quick-check-opts#)))))))
+           (flatten (seq quick-check-opts#))))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
