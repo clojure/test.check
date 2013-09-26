@@ -250,3 +250,34 @@
                              c (count v)]
                          (and (<= c maximum)
                               (>= c minimum)))))))))
+
+;; Tuples and Pairs retain their count during shrinking
+;; ---------------------------------------------------------------------------
+
+(defn n-int-generators
+  [n]
+  (vec (repeat n gen/int)))
+
+(def tuples
+  [(apply gen/tuple (n-int-generators 1))
+   (apply gen/tuple (n-int-generators 2))
+   (apply gen/tuple (n-int-generators 3))
+   (apply gen/tuple (n-int-generators 4))
+   (apply gen/tuple (n-int-generators 5))
+   (apply gen/tuple (n-int-generators 6))])
+
+(defn get-tuple-gen
+  [index]
+  (nth tuples (dec index)))
+
+(defn inner-tuple-property
+  [size]
+  (prop/for-all [t (get-tuple-gen size)]
+                false))
+
+(defspec tuples-retain-size-during-shrinking 1000
+  (prop/for-all [index (gen/choose 1 6)]
+                (let [result (sc/quick-check
+                               100 (inner-tuple-property index))]
+                  (= index (count (-> result
+                                    :shrunk :smallest first))))))
