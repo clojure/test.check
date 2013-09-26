@@ -61,18 +61,21 @@
      ~expr))
 
 (defn- smallest-shrink
-  [total-nodes-visited depth smallest-args]
+  [total-nodes-visited depth smallest-args smallest-result]
   {:total-nodes-visited total-nodes-visited
    :depth depth
+   :result smallest-result
    :smallest smallest-args})
 
 (defn- safe-apply-props
   [prop args]
   (try (apply prop args)
-    (catch Throwable t
-      ; assuming that this `t` is of the same type that was
-      ; originally thrown in quick-check...
-      false)))
+    (catch Throwable t t)))
+
+(defn not-falsey-or-exception?
+  "True if the value is not falsy or an exception"
+  [value]
+  (and value (not (instance? Throwable value))))
 
 (defn- shrink-loop
   "Shrinking a value produces a sequence of smaller values of the same type.
@@ -86,28 +89,32 @@
   * If a node fails the property, search it's children
   The value returned is the left-most failing example at the depth where a
   passing example was found."
-  [prop failing]
+  [prop failing failing-result]
   (let [shrinks-this-depth (gen/shrink failing)]
     (loop [nodes shrinks-this-depth
            f failing
+           result failing-result
            total-nodes-visited 0
-           depth 0
-           can-set-new-best? true]
+           depth 0]
       ; TODO why does this cause failures? (or (empty? nodes) (>= total-nodes-visited 10000))
       (if (empty? nodes)
-        (smallest-shrink total-nodes-visited depth f)
+        (smallest-shrink total-nodes-visited depth f failing-result)
         (let [[head & tail] nodes]
-          (if (safe-apply-props prop head)
-            ;; this node passed the test, so now try testing it's right-siblings
-            (recur tail f (inc total-nodes-visited) depth can-set-new-best?)
-            ;; this node failed the test, so check if it has children,
-            ;; if so, traverse down them. If not, save this as the best example
-            ;; seen now and then look at the right-siblings
-            ;; children
-            (let [children (gen/shrink head)]
-              (if (empty? children)
-                (recur tail head (inc total-nodes-visited) depth false)
-                (recur children head (inc total-nodes-visited) (inc depth) true)))))))))
+          (let [head-result (safe-apply-props prop head)]
+            (if (not-falsey-or-exception? head-result)
+              ;; this node passed the test, so now try testing it's right-siblings
+              (recur tail f failing-result
+                     (inc total-nodes-visited) depth)
+              ;; this node failed the test, so check if it has children,
+              ;; if so, traverse down them. If not, save this as the best example
+              ;; seen now and then look at the right-siblings
+              ;; children
+              (let [children (gen/shrink head)]
+                (if (empty? children)
+                  (recur tail head head-result (inc total-nodes-visited)
+                         depth)
+                  (recur children head head-result (inc total-nodes-visited)
+                         (inc depth)))))))))))
 
 (defn- failure
   [property property-fun result trial-number size failing-params]
@@ -116,5 +123,5 @@
    :failing-size size
    :num-tests trial-number
    :fail (vec failing-params)
-   :shrunk (shrink-loop property-fun failing-params)})
+   :shrunk (shrink-loop property-fun failing-params result)})
 
