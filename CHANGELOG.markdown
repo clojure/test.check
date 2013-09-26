@@ -1,5 +1,11 @@
 # Changelog
 
+* 0.4.1
+    * When a property fails, add the result of the final shrink to the output
+      map. This can be found in [:shrunk :result]
+    * Make pairs respect their size during shrinking (they're just tuples)
+    * Add a default num-tests to `defspec`
+
 * 0.4.0
     * tuple generator now creates tuple types (from `clj-tuple`)
         * __BACKWARD_INCOMPATIBILITY__: `gen/tuple` now takes var-args, instead

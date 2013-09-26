@@ -25,7 +25,7 @@ for each version are available in [`CHANGELOG.markdown`](CHANGELOG.markdown).
 ### Leiningen
 
 ```clojure
-[reiddraper/simple-check "0.4.0"]
+[reiddraper/simple-check "0.4.1"]
 ```
 
 ### Maven
@@ -34,7 +34,7 @@ for each version are available in [`CHANGELOG.markdown`](CHANGELOG.markdown).
 <dependency>
   <groupId>reiddraper</groupId>
   <artifactId>simple-check</artifactId>
-  <version>0.4.0</version>
+  <version>0.4.1</version>
 </dependency>
 ```
 
