@@ -159,7 +159,9 @@
 ;; Generic generators and helpers
 ;; ---------------------------------------------------------------------------
 
-(defn pair
+(declare tuple)
+
+(def pair
   "Create a generator that generates two-vectors that generate a value
   from `a` and `b`.
 
@@ -167,10 +169,7 @@
 
       (pair gen/int gen/int)
   "
-  [a b]
-  [:gen (fn [rand-seed size]
-    [(call-gen a rand-seed size)
-     (call-gen b rand-seed size)])])
+  tuple)
 
 (defn shrink-index
   [coll index]
