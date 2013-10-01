@@ -17,7 +17,7 @@
 
 (defn make-size-range-seq
   [max-size]
-  (cycle (range 1 max-size)))
+  (cycle (range 0 max-size)))
 
 (defn sample-seq
   ([generator] (sample-seq generator 100))
@@ -154,7 +154,7 @@
     (let [value (call-gen gen rand-seed size)]
       (if (f value)
         value
-        (recur rand-seed size))))])
+        (recur rand-seed (inc size)))))])
 
 ;; Generic generators and helpers
 ;; ---------------------------------------------------------------------------
@@ -421,7 +421,8 @@
 
 (defn string-gen
   [rand-seed size]
-  (clojure.string/join (repeatedly size #(call-gen char rand-seed size))))
+  (clojure.string/join (repeatedly (call-gen (choose 0 size) rand-seed size)
+                                   #(call-gen char rand-seed size))))
 
 (def string
   "Generate strings."
@@ -429,7 +430,8 @@
 
 (defn string-ascii-gen
   [rand-seed size]
-  (clojure.string/join (repeatedly size #(call-gen char-ascii rand-seed size))))
+  (clojure.string/join (repeatedly (call-gen (choose 0 size) rand-seed size)
+                                   #(call-gen char-ascii rand-seed size))))
 
 (def string-ascii
   "Generate ascii strings."
@@ -437,7 +439,8 @@
 
 (defn string-alpha-numeric-gen
   [rand-seed size]
-  (clojure.string/join (repeatedly size #(call-gen char-alpha-numeric rand-seed size))))
+  (clojure.string/join (repeatedly (call-gen (choose 0 size) rand-seed size)
+                                   #(call-gen char-alpha-numeric rand-seed size))))
 
 (def string-alpha-numeric
   "Generate alpha-numeric strings."
