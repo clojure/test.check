@@ -324,7 +324,7 @@
 ;; Bytes
 ;; ---------------------------------------------------------------------------
 
-(def byte (fmap clojure.core/byte (choose 0 127)))
+(def byte (fmap clojure.core/byte (choose -128 127)))
 
 (def bytes (fmap clojure.core/byte-array (vector byte)))
 
