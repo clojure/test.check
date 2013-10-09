@@ -121,7 +121,7 @@
   (ct/report-failure property result trial-number failing-params)
   {:result result
    :failing-size size
-   :num-tests trial-number
+   :num-tests (inc trial-number)
    :fail (vec failing-params)
    :shrunk (shrink-loop property-fun failing-params result)})
 
