@@ -56,10 +56,6 @@
                      (recur (inc so-far) rest-size-seq))
             :default (failure property (:function result-map) result so-far size args)))))))
 
-(defmacro forall [bindings expr]
-  `(let [~@bindings]
-     ~expr))
-
 (defn- smallest-shrink
   [total-nodes-visited depth smallest-args smallest-result]
   {:total-nodes-visited total-nodes-visited
