@@ -190,6 +190,16 @@
                 (print "")
                 (= a 42)))
 
+(deftest constant-generators-dont-shrink
+  (testing
+    "Generators created with `gen/return` should not shrink"
+    (is (= [42]
+           (let [result (sc/quick-check 100
+                                        (prop/for-all
+                                          [a (gen/return 42)]
+                                          false))]
+             (-> result :shrunk :smallest))))))
+
 ;; Tests are deterministic
 ;; ---------------------------------------------------------------------------
 
@@ -281,3 +291,36 @@
                                100 (inner-tuple-property index))]
                   (= index (count (-> result
                                     :shrunk :smallest first))))))
+
+;; Bind works
+;; ---------------------------------------------------------------------------
+
+(def nat-vec
+  (gen/such-that not-empty
+                 (gen/vector gen/nat)))
+
+(def vec-and-elem
+  (gen/bind nat-vec
+            (fn [v]
+              (gen/tuple (gen/elements v) (gen/return v)))))
+
+(defspec element-is-in-vec 100
+  (prop/for-all [[element coll] vec-and-elem]
+                (some #{element} coll)))
+
+;; fmap is respected during shrinking
+;; ---------------------------------------------------------------------------
+
+(def plus-fifty
+  (gen/fmap (partial + 50) gen/nat))
+
+(deftest f-map-respected-during-shrinking
+  (testing
+    "Generators created fmap should have that function applied
+    during shrinking"
+    (is (= [50]
+           (let [result (sc/quick-check 100
+                                        (prop/for-all
+                                          [a plus-fifty]
+                                          false))]
+             (-> result :shrunk :smallest))))))

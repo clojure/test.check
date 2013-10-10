@@ -18,13 +18,13 @@
 
 (defn- apply-gen
   [function]
-  (fn [args]
-    [:gen (fn [random-seed size]
-      (let [result (try (apply function args) (catch Throwable t t))]
-        {:result result
-         :shrink gen/shrink
-         :function function
-         :args args}))]))
+  (fn [args-rose]
+    (gen/gen-pure
+      (gen/rose-fmap
+        (fn [args] (let [result (try (apply function args) (catch Throwable t t))]
+                     {:result result
+                      :function function
+                      :args args})) args-rose))))
 
 (defn for-all*
   "Creates a property (properties are also generators). A property
@@ -34,11 +34,11 @@
 
   Example:
 
-      (for-all* [gen/int gen/int] fn [a b] (>= (+ a b) a))
+  (for-all* [gen/int gen/int] fn [a b] (>= (+ a b) a))
   "
   [args function]
-  (gen/bind (apply gen/tuple args)
-            (apply-gen function)))
+  (gen/gen-bind (apply gen/tuple args)
+                (apply-gen function)))
 
 (defn binding-vars
   [bindings]
@@ -55,9 +55,9 @@
 
   Examples
 
-      (for-all [a gen/int
-                b gen/int]
-        (>= (+ a b) a))
+  (for-all [a gen/int
+  b gen/int]
+  (>= (+ a b) a))
   "
   [bindings & body]
   `(for-all* ~(vec (binding-gens bindings))
