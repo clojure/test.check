@@ -406,7 +406,7 @@
                           (gen-pure (shrink-rose clojure.core/list
                                                  roses)))))))
 
-(def byte (fmap clojure.core/byte (choose 0 255)))
+(def byte (fmap clojure.core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE)))
 
 (def bytes (fmap clojure.core/byte-array (vector byte)))
 

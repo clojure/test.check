@@ -224,6 +224,30 @@
            (is (:result
                  (sc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
 
+;; Generating basic generators
+;; --------------------------------------------------------------------------
+(deftest generators-test
+  (let [t (fn [generator klass]
+            (:result (sc/quick-check 100 (prop/for-all [x generator]
+                                                       (instance? klass x)))))]
+
+    (testing "keyword"              (t gen/keyword clojure.lang.Keyword))
+    (testing "ratio"                (t gen/ratio   clojure.lang.Ratio))
+    (testing "byte"                 (t gen/byte    Byte))
+    (testing "bytes"                (t gen/bytes   (Class/forName "[B")))
+
+    (testing "char"                 (t gen/char                 Character))
+    (testing "char-ascii"           (t gen/char-ascii           Character))
+    (testing "char-alpha-numeric"   (t gen/char-alpha-numeric   Character))
+    (testing "string"               (t gen/string               String))
+    (testing "string-ascii"         (t gen/string-ascii         String))
+    (testing "string-alpha-numeric" (t gen/string-alpha-numeric String))
+
+    (testing "vector" (t (gen/vector gen/int) clojure.lang.IPersistentVector))
+    (testing "list"   (t (gen/list gen/int)   clojure.lang.IPersistentList))
+    (testing "map"    (t (gen/map gen/int gen/int) clojure.lang.IPersistentMap))
+    ))
+
 ;; Generating proper matrices
 ;; ---------------------------------------------------------------------------
 
