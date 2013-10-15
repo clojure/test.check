@@ -248,7 +248,9 @@
   (make-gen
     (fn [^Random rnd _size]
       (let [value (rand-range rnd lower upper)]
-        [value (clojure.core/map int-rose-tree (shrink-int value))]))))
+        (rose-filter
+          #(>= % lower)
+          [value (clojure.core/map int-rose-tree (shrink-int value))])))))
 
 (defn one-of
   "Create a generator that randomly chooses a value from the list of
@@ -339,7 +341,7 @@
 (def int
   "Generates a positive or negative integer bounded by the generator's
   `size` parameter.
-  (Really returns a long."
+  (Really returns a long"
   (sized (fn [size] (choose (- size) size))))
 
 (def nat
