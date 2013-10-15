@@ -341,7 +341,7 @@
 (def int
   "Generates a positive or negative integer bounded by the generator's
   `size` parameter.
-  (Really returns a long"
+  (Really returns a long)"
   (sized (fn [size] (choose (- size) size))))
 
 (def nat
