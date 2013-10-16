@@ -9,7 +9,7 @@
   <body>
     <header>
       <div id="header">
-        <h1 class="project-title">Simple-check 0.4.1-SNAPSHOT API documentation</h1>
+        <h1 class="project-title">Simple-check 0.5.0 API documentation</h1>
       </div>
     </header>
     <navigation>
@@ -44,10 +44,9 @@ and use them in expression, without wrapping them in a lambda. Like
 
 <p>Examples</p>
 
-<pre><code>(for-all [a gen/int
-          b gen/int]
-  (&gt;= (+ a b) a))
-</code></pre>
+<p>(for-all [a gen/int
+b gen/int]
+(&gt;= (+ a b) a))</p>
 </div>
           </div><div class="public">
             <h3><a id="var-for-all*" class="source var-name" href="/src/simple_check/properties.clj">for-all*</a></h3>
@@ -62,8 +61,7 @@ will be applied to <code>function</code> with <code>apply</code>.</p>
 
 <p>Example:</p>
 
-<pre><code>(for-all* [gen/int gen/int] fn [a b] (&gt;= (+ a b) a))
-</code></pre>
+<p>(for-all* [gen/int gen/int] fn [a b] (&gt;= (+ a b) a))</p>
 </div>
           </div>
         </div>
