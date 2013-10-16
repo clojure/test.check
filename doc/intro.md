@@ -49,7 +49,10 @@ to fail. For example, the function might originally fail with input:
     (ascending? v)))
 
 (sc/quickcheck 100 bad-property)
-;; => {:result false, :failing-size 7, :num-tests 8, :fail [[-2 4 -7 5 -2 7 -4]], :shrunk {:total-nodes-visited 19, :depth 8, :result false, :smallest [[0 -1]]}}
+;; => {:result false, :failing-size 7, :num-tests 8, :fail [[-2 4 -7 5 -2 7 -4]],
+;; =>  :shrunk {:total-nodes-visited 19, :depth 8, :result false,
+;; =>           :smallest [[0 -1]]}}
+```
 
 This process of shrinking is down automatically, even for our more complex
 generators that we write ourselves.
