@@ -1,6 +1,5 @@
 (ns simple-check.generators
   (:import java.util.Random)
-  (:require [clj-tuple])
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence]))
 
