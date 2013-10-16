@@ -17,8 +17,9 @@ behaves well under these input. When a property fails, by returning something
 false or nil, _simple-check_ will try and find 'smaller' input for which the
 test still fails. This feature is called shrinking. You can find [API
 documentation here](http://reiddraper.github.io/simple-check), and some example usage
-[below](https://github.com/reiddraper/simple-check#usage). Release notes
-for each version are available in [`CHANGELOG.markdown`](CHANGELOG.markdown).
+[below](https://github.com/reiddraper/simple-check#usage). There is also
+[a guide in the repository](doc/intro.md).
+Release notes for each version are available in [`CHANGELOG.markdown`](CHANGELOG.markdown).
 
 ## Installation
 
