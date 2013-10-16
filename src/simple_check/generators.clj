@@ -32,27 +32,32 @@
 (defn join-rose
   "Turn a tree of trees into a single tree. Does this by concatenating
   children of the inner and outer trees."
+  {:no-doc true}
   [[[inner-root inner-children] children]]
   [inner-root (concat (clojure.core/map join-rose children)
                       inner-children)])
 
 (defn rose-root
   "Returns the root of a Rose tree."
+  {:no-doc true}
   [[root _children]]
   root)
 
 (defn rose-children
   "Returns the children of the root of the Rose tree."
+  {:no-doc true}
   [[_root children]]
   children)
 
 (defn rose-pure
   "Puts a value `x` into a Rose tree, with no children."
+  {:no-doc true}
   [x]
   [x []])
 
 (defn rose-fmap
   "Applies functions `f` to all values in the tree."
+  {:no-doc true}
   [f [root children]]
   [(f root) (clojure.core/map (partial rose-fmap f) children)])
 
@@ -60,6 +65,7 @@
   "Takes a Rose tree (m) and a function (k) from
   values to Rose tree and returns a new Rose tree.
   This is the monadic bind (>>=) for Rose trees."
+  {:no-doc true}
   [m k]
   (join-rose (rose-fmap k m)))
 
@@ -67,12 +73,14 @@
   "Returns a new Rose tree whose values pass `pred`. Values who
   do not pass `pred` have their children cut out as well.
   Takes a list of roses, not a rose"
+  {:no-doc true}
   [pred [root children]]
   [root (clojure.core/map (partial rose-filter pred)
                           (clojure.core/filter (comp pred rose-root) children))])
 (defn rose-permutations
   "Create a seq of vectors, where each rose in turn, has been replaced
   by its children."
+  {:no-doc true}
   [roses]
   (apply concat
          (for [[rose index]
@@ -81,12 +89,14 @@
 
 (defn zip-rose
   "Apply `f` to the sequence of Rose trees `roses`."
+  {:no-doc true}
   [f roses]
   [(apply f (clojure.core/map rose-root roses))
    (clojure.core/map (partial zip-rose f)
                      (rose-permutations roses))])
 
 (defn remove-roses
+  {:no-doc true}
   [roses]
   (concat
     [(rest roses)]
@@ -94,6 +104,7 @@
     (rose-permutations (vec roses))))
 
 (defn shrink-rose
+  {:no-doc true}
   [f roses]
   (if (seq roses)
     [(apply f (clojure.core/map rose-root roses))
@@ -109,22 +120,26 @@
    {:gen generator-fn}))
 
 (defn call-gen
+  {:no-doc true}
   [{generator-fn :gen} rnd size]
   (generator-fn rnd size))
 
 (defn gen-pure
+  {:no-doc true}
   [value]
   (make-gen
     (fn [rnd size]
       value)))
 
 (defn gen-fmap
+  {:no-doc true}
   [k {h :gen}]
   (make-gen
     (fn [rnd size]
       (k (h rnd size)))))
 
 (defn gen-bind
+  {:no-doc true}
   [{h :gen} k]
   (make-gen
     (fn [rnd size]
@@ -179,10 +194,12 @@
 ;; ---------------------------------------------------------------------------
 
 (defn random
+  {:no-doc true}
   ([] (Random.))
   ([seed] (Random. seed)))
 
 (defn make-size-range-seq
+  {:no-doc true}
   [max-size]
   (cycle (range 0 max-size)))
 
@@ -226,6 +243,9 @@
       (+ (.nextInt rnd (inc diff)) lower))))
 
 (defn sized
+  "Create a generator that depends on the size parameter.
+  `sized-gen` is a function that takes an integer and returns
+  a generator."
   [sized-gen]
   (make-gen
     (fn [rnd size]
@@ -236,6 +256,7 @@
 ;; ---------------------------------------------------------------------------
 
 (defn resize
+  "Create a new generator with `size` always bound to `n`."
   [n {gen :gen}]
   (make-gen
     (fn [rnd _size]
