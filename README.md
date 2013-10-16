@@ -26,7 +26,7 @@ Release notes for each version are available in [`CHANGELOG.markdown`](CHANGELOG
 ### Leiningen
 
 ```clojure
-[reiddraper/simple-check "0.4.1"]
+[reiddraper/simple-check "0.5.0"]
 ```
 
 ### Maven
@@ -35,7 +35,7 @@ Release notes for each version are available in [`CHANGELOG.markdown`](CHANGELOG
 <dependency>
   <groupId>reiddraper</groupId>
   <artifactId>simple-check</artifactId>
-  <version>0.4.1</version>
+  <version>0.5.0</version>
 </dependency>
 ```
 

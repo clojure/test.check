@@ -1,5 +1,13 @@
 # Changelog
 
+* 0.5.0
+    * Shrinking will only shrink to values that could have been created by the
+      generator
+    * Bugfix with the byte and bytes generator
+    * Create strings of variable length (instead of always length=size)
+    * Fix off-by-one error in number of tests reported
+    * Generate sizes starting a 0, not 1
+
 * 0.4.1
     * When a property fails, add the result of the final shrink to the output
       map. This can be found in [:shrunk :result]
