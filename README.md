@@ -48,14 +48,15 @@ Release notes for each version are available in [`CHANGELOG.markdown`](CHANGELOG
 
 ;; a passing test
 (sc/quick-check 100
-  (prop/for-all [(gen/vector gen/int)]
-                #(= % (reverse (reverse %)))))
+  (prop/for-all [a (gen/vector gen/int)]
+                (= a (reverse (reverse b)))))
 ;; {:result true, :num-tests 100 :seed 1371257283560}
 
 ;; a failing test
 (sc/quick-check 100
-  (prop/for-all [gen/int gen/int]
-                #(> (+ %1 %2) %)))
+  (prop/for-all [a gen/int
+                 b gen/int]
+                (> (+ a b) a)))
 ;; {:result false,
 ;;  :failing-size 4,
 ;;  :num-tests 3,
