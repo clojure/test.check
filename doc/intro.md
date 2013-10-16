@@ -8,6 +8,52 @@ preserve the count. Reversing it twice should equal the input. In this guide,
 we'll cover the thought process for coming up with properties, as well as the
 practice of writing the tests themselves.
 
+## A simple example
+
+First, let's start with an example, suppose we want to test a sort function.
+It's easy to come up with some trivial properties for our function, namely that
+the output should be in ascending order. We also might want to make sure that
+the count of the input is preserved. Our test might look like:
+
+```clojure
+(require '[simple-check.core :as sc])
+(require '[simple-check.generators :as gen])
+(require '[simple-check.properties :as prop])
+
+(defn ascending?
+  "clojure.core/sorted? doesn't do what we might expect, so we write our
+  own function"
+  [coll]
+  (every? (fn [[a b]] (<= a b))
+          (partition 2 1 coll)))
+
+(def property
+  (prop/for-all [v (gen/vector gen/int)]
+    (let [s (sort v)]
+      (and (= (count v) (count s))
+           (ascending? s)))))
+
+;; test our property
+(sc/quickcheck 100 property)
+;; => {:result true, :num-tests 100, :seed 1381894143051}
+```
+
+What if we were to forget to actually sort our vector? The test will fail, and
+then simple-check will try and find 'smaller' inputs that still cause the test
+to fail. For example, the function might originally fail with input:
+`[5 4 2 2 2]`, but simple-check will shrink this down to `[0 -1]` (or `[1 0]`).
+
+```clojure
+(def bad-property
+  (prop/for-all [v (gen/vector gen/int)]
+    (ascending? v)))
+
+(sc/quickcheck 100 bad-property)
+;; => {:result false, :failing-size 7, :num-tests 8, :fail [[-2 4 -7 5 -2 7 -4]], :shrunk {:total-nodes-visited 19, :depth 8, :result false, :smallest [[0 -1]]}}
+
+This process of shrinking is down automatically, even for our more complex
+generators that we write ourselves.
+
 ## Generators
 
 In order to write our property, we'll use generators. A generator knows how to
