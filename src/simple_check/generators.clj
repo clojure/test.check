@@ -479,3 +479,33 @@
     (fn [[a b]] (/ a b))
     (tuple int
            (such-that (complement zero?) int))))
+
+(def simple-type
+  (one-of [int char string ratio boolean keyword]))
+
+(def simple-type-printable
+  (one-of [int char-ascii string-ascii ratio boolean keyword]))
+
+(defn container-type
+  [inner-type]
+  (one-of [(vector inner-type)
+           (list inner-type)
+           (map inner-type inner-type)]))
+
+(defn sized-container
+  {:no-doc true}
+  [inner-type]
+  (fn [size]
+    (if (= size 0)
+      inner-type
+      (one-of [inner-type
+               (container-type (resize (quot size 2) (sized (sized-container inner-type))))]))))
+
+(def any
+  "A recursive generator that will generate many different, often nested, values"
+  (sized (sized-container simple-type)))
+
+(def any-printable
+  "Like any, but avoids characters that the shell will interpret as actions,
+  like 7 and 14 (bell and alternate character set command)"
+  (sized (sized-container simple-type-printable)))
