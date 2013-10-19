@@ -3,7 +3,8 @@
   (:require [simple-check.core       :as sc]
             [simple-check.generators :as gen]
             [simple-check.properties :as prop]
-            [simple-check.clojure-test :as ct :refer (defspec)]))
+            [simple-check.clojure-test :as ct :refer (defspec)]
+            [clojure.edn :as edn]))
 
 ;; plus and 0 form a monoid
 ;; ---------------------------------------------------------------------------
@@ -348,3 +349,14 @@
                                           [a plus-fifty]
                                           false))]
              (-> result :shrunk :smallest))))))
+
+;; edn rountrips
+;; ---------------------------------------------------------------------------
+
+(defn edn-roundtrip?
+  [value]
+  (= value (-> value prn-str edn/read-string)))
+
+(defspec edn-roundtrips 50
+  (prop/for-all [a gen/any]
+                (edn-roundtrip? a)))
