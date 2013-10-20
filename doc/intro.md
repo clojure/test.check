@@ -170,3 +170,98 @@ from that generator, and creates a new generator.
 ```
 
 This allows us to build quite sophisticated generators.
+
+### Recursive generators
+
+Imagine we have some tree data-type that we want to generate: an (unbalanced)
+binary tree of natural numbers. Our tree representation uses vectors of count
+three for nodes ([value, left-tree, right-tree]), and raw integers for leaf
+nodes. Some example trees are
+
+```clojure
+7
+[5 [2 2] 1]
+[10 nil 3]
+[3 [1 [3 4 3] [1 5 nil]] [5 4 3]]
+```
+
+Let's try and rephrase our goals a little more formally:
+
+1. A tree is either a natural number, or a natural number and two children.
+2. A child is either `nil`, or a tree.
+
+Here's a first translation of our requirements:
+
+```clojure
+(def tree
+  (gen/one-of ;; choose either a natural number, or a node
+    [gen/nat
+     (gen/tuple gen/nat
+                (gen/one-of [(gen/return nil) tree])
+                (gen/one-of [(gen/return nil) tree]))))
+```
+
+And if we try and `sample` our generator:
+
+```clojure
+(gen/sample tree)
+;; => NullPointerException   simple-check.generators/gen-bind/fn--1244 (generators.clj:147)
+```
+
+It turns out, we can't create recursive values (tree refers to itself in it's
+definition). Well, we can simply wrap it in a nullary function:
+
+```clojure
+(defn tree
+  []
+  (gen/one-of ;; choose either a natural number, or a node
+    [gen/nat
+     (gen/tuple gen/nat
+                (gen/one-of [(gen/return nil) (tree)])
+                (gen/one-of [(gen/return nil) (tree)]))]))
+```
+
+And now if we try and `sample`:
+
+```clojure
+(gen/sample (tree)) ;; we now have to 'call' tree to get our generator
+;; => StackOverflowError   simple-check.generators/return (generators.clj:161)
+```
+
+Progress. It turns out, we don't have a deterministic way to stop our
+recursion. Our tree can just be created deeper and deeper. What we'd like is
+some way to control the maximum depth of the tree. Fortunately, _simple-check_
+provides a function to help: `sized`. `sized` takes a function that takes an
+integer size, and returns a generator based on this size. We can use this size
+parameter to decide when to stop recurring. We'll say that when size is 0,
+we'll only return leaf nodes. Further, when we recur, calling our own
+generator, we'll decrease the size (half it, in this case). We can do this
+with the `resize` function, which allows us to create a new generator with
+size always bound to a particular value. Let's see how this looks:
+
+```clojure
+(defn tree
+  [size]
+  (if (= size 0)
+    gen/nat
+    (let [new-size (quot size 2)
+          smaller-tree (gen/resize new-size (gen/sized tree))]
+      (gen/one-of ;; choose either a natural number, or a node
+        [gen/nat
+         (gen/tuple gen/nat
+                    (gen/one-of [(gen/return nil) smaller-tree])
+                    (gen/one-of [(gen/return nil) smaller-tree]))]))))
+```
+
+Now let's see where we are:
+
+```clojure
+(gen/sample (gen/sized tree))
+;; => (0 [1 nil 0] [1 nil 0] [1 nil 1] 1 1 4 3 8 [7 nil [1 nil nil]])
+```
+
+Excellent. We see ten trees printed. But we're seeing lots of one-element
+trees. And if we do some more sampling, we'll see that we see lots of nils as
+well. We can replace some of our calls to `one-of` with calls to `frequency`
+to start controlling the likelihood of generating different bits of our tree.
+Try playing with this yourself.
