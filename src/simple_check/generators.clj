@@ -314,10 +314,8 @@
       (gen/elements [:foo :bar :baz])
   "
   [coll]
-  (if (coll? coll)
-    (gen-bind (choose 0 (dec (count coll)))
-              #(gen-pure (rose-fmap (partial nth coll) %)))
-    (println coll)))
+  (gen-bind (choose 0 (dec (count coll)))
+            #(gen-pure (rose-fmap (partial nth coll) %))))
 
 (defn such-that
   "Create a generator that generates values from `gen` that satisfy predicate
