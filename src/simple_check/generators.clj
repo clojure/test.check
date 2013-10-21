@@ -495,7 +495,7 @@
   {:no-doc true}
   [inner-type]
   (fn [size]
-    (if (= size 0)
+    (if (zero? size)
       inner-type
       (one-of [inner-type
                (container-type (resize (quot size 2) (sized (sized-container inner-type))))]))))
