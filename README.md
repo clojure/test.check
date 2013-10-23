@@ -1,25 +1,11 @@
 # simple-check
 
-## Build Status
 
-[![Build Status](https://secure.travis-ci.org/reiddraper/simple-check.png)](http://travis-ci.org/reiddraper/simple-check)
-
-_simple-check_ is a Clojure property-based testing tool inspired by QuickCheck.
-The core idea of _simple-check_ (and QuickCheck) is that instead of enumerating
+__simple-check__ is a Clojure property-based testing tool inspired by QuickCheck.
+The core idea of __simple-check__ is that instead of enumerating
 expected input and output for unit tests, you write properties about your
-function that should hold true for all inputs. For example, for all lists L,
-the count of L should equal the count of the reverse of L. Furthermore,
-reversing the list twice should equal the original list.
-
-To write _simple-check_ tests, you'll do two things: use and create generators
-that generate random input for your function, and test that your function
-behaves well under these input. When a property fails, by returning something
-false or nil, _simple-check_ will try and find 'smaller' input for which the
-test still fails. This feature is called shrinking. You can find [API
-documentation here](http://reiddraper.github.io/simple-check), and some example usage
-[below](https://github.com/reiddraper/simple-check#usage). There is also
-[a guide in the repository](doc/intro.md).
-Release notes for each version are available in [`CHANGELOG.markdown`](CHANGELOG.markdown).
+function that should hold true for all inputs. This lets you concise, powerful
+tests.
 
 ## Installation
 
@@ -39,30 +25,83 @@ Release notes for each version are available in [`CHANGELOG.markdown`](CHANGELOG
 </dependency>
 ```
 
-## Usage
+## Documentation
+
+  * [Generator writing guide](doc/intro.md)
+  * [API documentation](http://reiddraper.github.io/simple-check)
+  * Examples
+    * foo
+    * bar
+    * baz
+
+## Examples
+
+Let's say we're testing a sort function. We want want to check that that our
+sort function is idempotent, that is, applying sort twice should be
+equivalent to applying it once: `(= (sort a) (sort (sort a)))`. Let's write a
+quick test to make sure this is the case:
 
 ```clojure
 (require '[simple-check.core :as sc])
 (require '[simple-check.generators :as gen])
 (require '[simple-check.properties :as prop])
 
-;; a passing test
-(sc/quick-check 100
-  (prop/for-all [a (gen/vector gen/int)]
-                (= a (reverse (reverse b)))))
-;; {:result true, :num-tests 100 :seed 1371257283560}
+(def sort-idempotent-prop
+  (prop/for-all [v (gen/vector gen/int)]
+    (= (sort v) (sort (sort v)))))
 
-;; a failing test
-(sc/quick-check 100
-  (prop/for-all [a gen/int
-                 b gen/int]
-                (> (+ a b) a)))
-;; {:result false,
-;;  :failing-size 4,
-;;  :num-tests 3,
-;;  :fail [-2 -4],
-;;  :shrunk {:total-nodes-visited 6, depth 3, :smallest [0 0]}}
+(sc/quick-check 100 sort-idempotent-prop)
+;; => {:result true, :num-tests 100, :seed 1382488326530}
 ```
+
+In prose, this test reads: for all vectors of integers, `v`, sorting `v` is
+equal to sorting `v` twice.
+
+What happens if our test fails? __simple-check__ will try and find 'smaller'
+input that still fails. This process is called shrinking. Let's see it in
+action:
+
+```clojure
+(def prop-sorted-first-less-than-last
+  (prop/for-all [v (gen/such-that not-empty (gen/vector gen/int))]
+    (let [s (sort v)]
+      (< (first s) (last s)))))
+
+(sc/quick-check 100 prop-sorted-first-less-than-last)
+;; => {:result false, :failing-size 0, :num-tests 1, :fail [[3]],
+       :shrunk {:total-nodes-visited 5, :depth 2, :result false,
+                :smallest [[0]]}}
+```
+
+This test claims that the first element of a sorted vector should be less-than
+the last. Of course, this isn't true: the test fails with input `[3]`, which
+gets shrunk down to `[0]`, as seen in the output above. As your test functions
+require more sophisticated input, shrinking becomes critical to being able
+to understand exactly why a random test failed. To see how powerful shrinking
+is, let's come up with a contrived example: a function that fails if its
+passed a sequence that contains the number 42:
+
+```clojure
+(def prop-no-42
+  (prop/for-all [v (gen/vector gen/int)]
+    (not (some #{42} v))))
+
+(sc/quick-check 100 prop-no-42)
+;; => {:result false,
+       :failing-size 45,
+       :num-tests 46,
+       :fail [[10 1 28 40 11 -33 42 -42 39 -13 13 -44 -36 11 27 -42 4 21 -39]],
+       :shrunk {:total-nodes-visited 38,
+                :depth 18,
+                :result false,
+                :smallest [[42]]}}
+```
+
+We see that the test failed on a rather large vector, as seen in the `:fail`
+key. But then __simple-check__ was able to shrink the input down to `[42]`, as
+seen in the keys `[:shrunk :smallest]`.
+
+To learn more, check out the [documentation](#documentation) links.
 
 ### `clojure.test` Integration
 
@@ -79,17 +118,13 @@ properties that run under the `clojure.test` runner, for example:
 
 See more examples in [`core_test.clj`](test/simple_check/core_test.clj).
 
-## TODO
+## Build Status
 
-* __Nested properties__ allow you to write properties that depend on values
-  generated in an outer property. For example:
+[![Build Status](https://secure.travis-ci.org/reiddraper/simple-check.png)](http://travis-ci.org/reiddraper/simple-check)
 
-  ```clojure
-  (for-all [(gen/vector gen/int)]
-    (fn [v]
-      (for-all [(gen/elements v)]
-        (fn [e] (some #{e} v)))))
-  ```
+## Release Notes
+
+Release notes for each version are available in [`CHANGELOG.markdown`](CHANGELOG.markdown).
 
 ## See also...
 
