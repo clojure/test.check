@@ -1,5 +1,11 @@
 # Changelog
 
+* 0.5.1
+    * Remove unused dependency (clj-tuple)
+    * Add 'any' generator
+    * Add not-empty generator modifier
+    * Change one-of to shrink toward earlier generators on failure
+
 * 0.5.0
     * Shrinking will only shrink to values that could have been created by the
       generator
