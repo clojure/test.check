@@ -1,7 +1,8 @@
 (ns simple-check.generators
   (:import java.util.Random)
   (:refer-clojure :exclude [int vector list hash-map map keyword
-                            char boolean byte bytes sequence]))
+                            char boolean byte bytes sequence
+                            not-empty]))
 
 ;; Generic helpers
 ;; ---------------------------------------------------------------------------
@@ -337,6 +338,10 @@
         (if (pred (rose-root value))
           (rose-filter pred value)
           (recur rand-seed (inc size)))))))
+
+(def not-empty
+  "Modifies a generator so that it doesn't generate empty collections."
+  (partial such-that clojure.core/not-empty))
 
 (def boolean
   (elements [false true]))

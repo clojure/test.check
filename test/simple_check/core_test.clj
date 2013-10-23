@@ -360,3 +360,10 @@
 (defspec edn-roundtrips 50
   (prop/for-all [a gen/any]
                 (edn-roundtrip? a)))
+
+;; not-empty works
+;; ---------------------------------------------------------------------------
+
+(defspec not-empty-works 100
+  (prop/for-all [v (gen/not-empty (gen/vector gen/boolean))]
+                (not-empty v)))
