@@ -30,9 +30,9 @@ tests.
   * [Generator writing guide](doc/intro.md)
   * [API documentation](http://reiddraper.github.io/simple-check)
   * Examples
-    * foo
-    * bar
-    * baz
+    * [core.matrix](https://github.com/mikera/core.matrix/blob/c45ee6b551a50a509e668f46a1ae52ade2c52a82/src/test/clojure/clojure/core/matrix/properties.clj)
+    * [byte-streams](https://github.com/ztellman/byte-streams/blob/b5f50a20c6237ae4e45046f72367ad658090c591/test/byte_streams_simple_check.clj)
+    * [byte-transforms](https://github.com/ztellman/byte-transforms/blob/c5b9613eebac722447593530531b9aa7976a0592/test/byte_transforms_simple_check.clj)
 
 ## Examples
 
