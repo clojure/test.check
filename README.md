@@ -4,7 +4,7 @@
 __simple-check__ is a Clojure property-based testing tool inspired by QuickCheck.
 The core idea of __simple-check__ is that instead of enumerating
 expected input and output for unit tests, you write properties about your
-function that should hold true for all inputs. This lets you concise, powerful
+function that should hold true for all inputs. This lets you write concise, powerful
 tests.
 
 ## Installation
