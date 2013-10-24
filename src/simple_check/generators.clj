@@ -443,7 +443,16 @@
   (let [input (vector (tuple key-gen val-gen))]
     (fmap (partial into {}) input)))
 
-(def hash-map map)
+(defn hash-map 
+  "Like clojure.core/hash-map, except the values are generators.
+   Returns a generator that makes maps with the supplied keys and 
+   values generated using the supplied generators."
+  [& kvs]
+  (assert (even? (count kvs)))
+  (let [ks (take-nth 2 kvs)
+        vs (take-nth 2 (rest kvs))]
+    (fmap (partial zipmap ks)
+          (apply tuple vs))))
 
 (def char
   "Generates character from 0-255."
