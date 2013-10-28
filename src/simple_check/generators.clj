@@ -264,7 +264,7 @@
 
 (defn choose
   "Create a generator that returns numbers in the range
-  `min-range` to `max-range`."
+  `min-range` to `max-range`, inclusive."
   [lower upper]
   (make-gen
     (fn [^Random rnd _size]
@@ -340,15 +340,23 @@
           (recur rand-seed (inc size)))))))
 
 (def not-empty
-  "Modifies a generator so that it doesn't generate empty collections."
+  "Modifies a generator so that it doesn't generate empty collections.
+
+  Examples:
+
+      ;; generate a vector of booleans, but never the empty vector
+      (gen/not-empty (gen/vector gen/boolean))
+  "
   (partial such-that clojure.core/not-empty))
 
 (def boolean
+  "Generates one of `true` or `false`. Shrinks to `false`."
   (elements [false true]))
 
 (defn tuple
   "Create a generator that returns a vector, whose elements are chosen
-  from the generators in the same position.
+  from the generators in the same position. The individual elements shrink
+  according to their generator, but the value will never shrink in count.
 
   Examples:
 
@@ -369,6 +377,7 @@
   (sized (fn [size] (choose (- size) size))))
 
 (def nat
+  "Generates natural numbers, starting at zero. Shrinks to zero."
   (fmap #(Math/abs (long %)) int))
 
 (def pos-int
@@ -432,9 +441,13 @@
                           (gen-pure (shrink-rose clojure.core/list
                                                  roses)))))))
 
-(def byte (fmap clojure.core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE)))
+(def byte
+  "Generates `java.lang.Byte`s, using the full byte-range."
+  (fmap clojure.core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE)))
 
-(def bytes (fmap clojure.core/byte-array (vector byte)))
+(def bytes
+  "Generates byte-arrays."
+  (fmap clojure.core/byte-array (vector byte)))
 
 (defn map
   "Create a generator that generates maps, with keys chosen from
@@ -443,10 +456,15 @@
   (let [input (vector (tuple key-gen val-gen))]
     (fmap (partial into {}) input)))
 
-(defn hash-map 
+(defn hash-map
   "Like clojure.core/hash-map, except the values are generators.
-   Returns a generator that makes maps with the supplied keys and 
-   values generated using the supplied generators."
+   Returns a generator that makes maps with the supplied keys and
+   values generated using the supplied generators.
+
+  Examples:
+
+    (gen/hash-map :a gen/boolean :b gen/nat)
+  "
   [& kvs]
   (assert (even? (count kvs)))
   (let [ks (take-nth 2 kvs)
@@ -470,7 +488,7 @@
                  (choose 97 122)])))
 
 (def string
-  "Generate strings."
+  "Generate strings. May generate unprintable characters."
   (fmap clojure.string/join (vector char)))
 
 (def string-ascii
@@ -488,6 +506,8 @@
     (fmap clojure.core/keyword)))
 
 (def ratio
+  "Generates a `clojure.lang.Ratio`. Shrinks toward 0. Not all values generated
+  will be ratios, as many values returned by `/` are not ratios."
   (fmap
     (fn [[a b]] (/ a b))
     (tuple int
