@@ -23,6 +23,16 @@
           (return-fn [])
           ms))
 
+(defn- exclude-nth
+  [n coll]
+  "Exclude the nth value in a collection."
+  (lazy-seq
+    (when-let [s (seq coll)]
+      (if (zero? n)
+        (rest coll)
+        (cons (first s)
+              (exclude-nth (dec n) (rest s)))))))
+
 ;; Rose tree
 ;; ---------------------------------------------------------------------------
 ;;
@@ -99,8 +109,7 @@
   {:no-doc true}
   [roses]
   (concat
-    [(rest roses)]
-    [(drop-last roses)]
+    (map-indexed (fn [index _] (exclude-nth index roses)) roses)
     (rose-permutations (vec roses))))
 
 (defn shrink-rose
