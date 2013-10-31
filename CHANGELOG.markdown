@@ -1,5 +1,10 @@
 # Changelog
 
+* 0.5.2
+    * Improve shrinking for sequences
+    * __BACKWARD_INCOMPATIBILITY__: update API for gen/hash-map,
+    now mirrors closer the clojure.core API
+
 * 0.5.1
     * Remove unused dependency (clj-tuple)
     * Add 'any' generator

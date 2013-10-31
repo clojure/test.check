@@ -1,4 +1,4 @@
-(defproject reiddraper/simple-check "0.5.2-SNAPSHOT"
+(defproject reiddraper/simple-check "0.5.2"
   :description "A QuickCheck inspired property-based testing library."
   :url "http://github.com/reiddraper/simple-check"
   :license {:name "Eclipse Public License"
