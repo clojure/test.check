@@ -1,5 +1,9 @@
 # Changelog
 
+* 0.5.3
+    * All dependencies are now dev-dependencies
+    * Minor doc typo correction
+
 * 0.5.2
     * Improve shrinking for sequences
     * __BACKWARD_INCOMPATIBILITY__: update API for gen/hash-map,
