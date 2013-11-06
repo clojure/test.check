@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies []
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.0"]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
                                   [codox-md "0.2.0" :exclusions [org.clojure/clojure]]]}}
   :global-vars {*warn-on-reflection* true}
   :codox {:writer codox-md.writer/write-docs}
