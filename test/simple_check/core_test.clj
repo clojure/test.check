@@ -367,3 +367,20 @@
 (defspec not-empty-works 100
   (prop/for-all [v (gen/not-empty (gen/vector gen/boolean))]
                 (not-empty v)))
+
+;; no-shrink works
+;; ---------------------------------------------------------------------------
+
+(defn run-no-shrink
+  [i]
+  (sc/quick-check 100
+                  (prop/for-all [coll (gen/vector gen/nat)]
+                                (some #{i} coll))))
+
+(defspec no-shrink-works 100
+  (prop/for-all [i gen/nat]
+                (let [result (run-no-shrink i)]
+                  (if (:result result)
+                    true
+                    (= (:fail result)
+                       (-> result :shrunk :smallest))))))

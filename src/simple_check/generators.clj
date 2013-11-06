@@ -358,6 +358,16 @@
   "
   (partial such-that clojure.core/not-empty))
 
+(defn no-shrink
+  "Create a new generator that is just like `gen`, except does not shrink
+  at all. This can be useful when shrinking is taking a long time or is not
+  applicable to the domain."
+  [gen]
+  (gen-bind gen
+            (fn [[root _children]]
+              (gen-pure
+                [root []]))))
+
 (def boolean
   "Generates one of `true` or `false`. Shrinks to `false`."
   (elements [false true]))
