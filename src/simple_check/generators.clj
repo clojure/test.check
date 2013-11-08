@@ -325,6 +325,9 @@
       (gen/elements [:foo :bar :baz])
   "
   [coll]
+  (when (empty? coll)
+    (throw (ex-info "simple-check.generators/elements called with empty collection!"
+                    {:collection coll})))
   (gen-bind (choose 0 (dec (count coll)))
             #(gen-pure (rose-fmap (partial nth coll) %))))
 

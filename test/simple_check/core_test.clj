@@ -367,3 +367,10 @@
 (defspec not-empty-works 100
   (prop/for-all [v (gen/not-empty (gen/vector gen/boolean))]
                 (not-empty v)))
+
+;; elements throws a helpful exception when called on an empty collection
+;; ---------------------------------------------------------------------------
+
+(deftest elements-with-empty
+  (let [t (is (thrown? clojure.lang.ExceptionInfo (gen/elements ())))]
+    (is (= () (-> t ex-data :collection)))))
