@@ -120,6 +120,16 @@
      (clojure.core/map (partial shrink-rose f) (remove-roses roses))]
     [(f) []]))
 
+(defn collapse-rose
+  "Return a new rose-tree whose depth-one children
+  are the children from depth one _and_ two of the input
+  tree."
+  {:no-doc true}
+  [[root children]]
+  [root (concat (clojure.core/map collapse-rose children)
+                (clojure.core/map collapse-rose
+                                  (clojure.core/mapcat rose-children children)))])
+
 ;; Gen
 ;; (internal functions)
 ;; ---------------------------------------------------------------------------
@@ -360,6 +370,22 @@
       (gen/not-empty (gen/vector gen/boolean))
   "
   (partial such-that clojure.core/not-empty))
+
+(defn no-shrink
+  "Create a new generator that is just like `gen`, except does not shrink
+  at all. This can be useful when shrinking is taking a long time or is not
+  applicable to the domain."
+  [gen]
+  (gen-bind gen
+            (fn [[root _children]]
+              (gen-pure
+                [root []]))))
+
+(defn shrink-2
+  "Create a new generator like `gen`, but will consider nodes for shrinking
+  even if their parent passes the test (up to one additional level)."
+  [gen]
+  (gen-bind gen (comp gen-pure collapse-rose)))
 
 (def boolean
   "Generates one of `true` or `false`. Shrinks to `false`."
