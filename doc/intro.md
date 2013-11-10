@@ -171,6 +171,60 @@ from that generator, and creates a new generator.
 
 This allows us to build quite sophisticated generators.
 
+### Record generators
+
+Let's go through an example of generating random values of our own
+`defrecord`s. Let's create a simple user record:
+
+```clojure
+(defrecord User [user-name user-id email active?])
+
+;; recall that a helper function is automatically generated
+;; for us
+
+(->User "reiddraper" 15 "reid@example.com" true)
+;; #user.User{:user-name "reiddraper",
+;;            :user-id 15,
+;;            :email "reid@example.com",
+;;            :active? true}
+```
+
+We can use the `->User` helper function to construct our user. First, let's
+look at the generators we'll use for the arguments. For the user-name, we can
+just use an alpha-numeric string, user IDs will be natural numbers, we'll
+construct our own simple email generator, and we'll use booleans to denote
+whether the user account is active. Let's write a simple email address
+generator:
+
+```clojure
+(def domain (gen/elements ["gmail.com" "hotmail.com" "computer.org"]))
+(def email-gen
+  (gen/fmap (fn [[name domain-name]]
+              (str name "@" domain-name))
+            (gen/tuple (gen/not-empty gen/string-alpha-numeric) domain)))
+
+(last (gen/sample email-gen))
+;; => "CW6161Q6@hotmail.com"
+```
+
+To put it all together, we'll use `fmap` to call our record constructor, and
+`tuple` to create a vector of the arguments:
+
+```clojure
+(def user-gen
+  (gen/fmap (partial apply ->User)
+            (gen/tuple (gen/not-empty gen/string-alpha-numeric)
+                       gen/nat
+                       email-gen
+                       gen/boolean)))
+
+(last (gen/sample user))
+;; => #user.User{:user-name "kWodcsE2",
+;;               :user-id 1,
+;;               :email "r2ed3VE@computer.org",
+;;               :active? true}
+```
+
 ### Recursive generators
 
 Imagine we have some tree data-type that we want to generate: an (unbalanced)
