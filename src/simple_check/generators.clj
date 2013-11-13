@@ -176,7 +176,8 @@
 
 (defn return
   "Create a generator that always returns `value`,
-  and never shrinks."
+  and never shrinks. You can think of this as
+  the `constantly` of generators."
   [value]
   (gen-pure (rose-pure value)))
 
@@ -202,9 +203,6 @@
                 ;; chooses a random element from it
                 gen/elements)
 
-  Aside: technically this is not bind for a particular monad, since
-  we're dealing with two nested monads (Gen and RoseTree). The name
-  is kept for backward compatibility.
   "
   [generator k]
   (gen-bind generator (bind-helper k)))
