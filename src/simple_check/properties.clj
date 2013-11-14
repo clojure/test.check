@@ -34,7 +34,7 @@
 
   Example:
 
-  (for-all* [gen/int gen/int] fn [a b] (>= (+ a b) a))
+  (for-all* [gen/int gen/int] (fn [a b] (>= (+ a b) a)))
   "
   [args function]
   (gen/gen-bind (apply gen/tuple args)
@@ -56,8 +56,8 @@
   Examples
 
   (for-all [a gen/int
-  b gen/int]
-  (>= (+ a b) a))
+            b gen/int]
+    (>= (+ a b) a))
   "
   [bindings & body]
   `(for-all* ~(vec (binding-gens bindings))
