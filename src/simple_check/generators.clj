@@ -130,6 +130,36 @@
                 (clojure.core/map collapse-rose
                                   (clojure.core/mapcat rose-children children)))])
 
+(defn- make-stack
+  [children stack]
+  (if-let [s (seq children)]
+    (cons children stack)
+    stack))
+
+(defn rose-seq
+  "Create a lazy-seq of all of the (unique) nodes in a shrink-tree.
+  This assumes that two nodes with the same value have the same children.
+  While it's not common, it's possible to create trees that don't
+  fit that description. This function is significantly faster than
+  brute-force unumerating all of the nodes in a tree, as there will
+  be many duplicates."
+  [root]
+  (let [helper (fn helper [[node children] seen stack]
+                 (lazy-seq
+                   (if-not (seen node)
+                     (cons node
+                           (if (seq children)
+                             (helper (first children) (conj seen node) (make-stack (rest children) stack))
+                             (when-let [s (seq stack)]
+                               (let [f (ffirst s)
+                                     r (rest (first s))]
+                                 (helper f (conj seen node) (make-stack r (rest s)))))))
+                     (when-let [s (seq stack)]
+                       (let [f (ffirst s)
+                             r (rest (first s))]
+                         (helper f seen (make-stack r (rest s))))))))]
+    (helper root #{} '())))
+
 ;; Gen
 ;; (internal functions)
 ;; ---------------------------------------------------------------------------
@@ -287,7 +317,7 @@
     (fn [^Random rnd _size]
       (let [value (rand-range rnd lower upper)]
         (rose-filter
-          #(>= % lower)
+          #(and (>= % lower) (<= % upper))
           [value (clojure.core/map int-rose-tree (shrink-int value))])))))
 
 (defn one-of

@@ -392,3 +392,24 @@
   (let [t (is (thrown? clojure.lang.ExceptionInfo (gen/elements ())))]
     (is (= () (-> t ex-data :collection)))))
 
+
+;; choose respects bounds during shrinking
+;; ---------------------------------------------------------------------------
+
+(def range-gen
+  (gen/fmap (fn [[a b]]
+              [(min a b) (max a b)])
+            (gen/tuple gen/int gen/int)))
+
+(defspec choose-respects-bounds-during-shrinking 100
+  (prop/for-all [[mini maxi] range-gen
+                 random-seed gen/nat
+                 size gen/nat]
+                (let [tree (gen/call-gen
+                             (gen/choose mini maxi)
+                             (gen/random random-seed)
+                             size)]
+                  (every?
+                    #(and (<= mini %) (>= maxi %))
+                    (gen/rose-seq tree)))))
+
