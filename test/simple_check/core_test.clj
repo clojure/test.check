@@ -413,3 +413,21 @@
                     #(and (<= mini %) (>= maxi %))
                     (gen/rose-seq tree)))))
 
+
+;; rand-range copes with full range of longs as bounds
+;; ---------------------------------------------------------------------------
+
+(deftest rand-range-copes-with-full-range-of-longs
+  (let [[low high] (reduce
+                    (fn [[low high :as margins] x]
+                      (cond
+                       (< x low) [x high]
+                       (> x high) [low x]
+                       :else margins))
+                    [Long/MAX_VALUE Long/MIN_VALUE]
+                    ; choose uses rand-range directly, reasonable proxy for its
+                    ; guarantees
+                    (take 1e6 (gen/sample-seq (gen/choose Long/MIN_VALUE Long/MAX_VALUE))))]
+    (is (< low high))
+    (is (< low Integer/MIN_VALUE))
+    (is (> high Integer/MAX_VALUE))))

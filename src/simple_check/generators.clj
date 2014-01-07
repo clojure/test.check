@@ -282,12 +282,11 @@
   [value]
   [value (clojure.core/map int-rose-tree (shrink-int value))])
 
-(defn- rand-range
+(defn rand-range
   [^Random rnd lower upper]
-  (let [diff (Math/abs (long (- upper lower)))]
-    (if (zero? diff)
-      lower
-      (+ (.nextInt rnd (inc diff)) lower))))
+  {:pre [(<= lower upper)]}
+  (let [factor (.nextDouble rnd)]
+    (long (Math/floor (+ lower (- (* factor upper) (* factor lower)))))))
 
 (defn sized
   "Create a generator that depends on the size parameter.
