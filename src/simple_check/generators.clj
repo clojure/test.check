@@ -24,8 +24,8 @@
           ms))
 
 (defn- exclude-nth
-  [n coll]
   "Exclude the nth value in a collection."
+  [n coll]
   (lazy-seq
     (when-let [s (seq coll)]
       (if (zero? n)
