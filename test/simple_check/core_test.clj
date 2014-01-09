@@ -101,10 +101,11 @@
 
 (defn interpose-twice-the-length ;; (or one less)
   [v]
-  (let [interpose-count (count (interpose :i v))]
+  (let [interpose-count (count (interpose :i v))
+        original-count (count v)]
     (or
-      (= (* 2 interpose-count))
-      (= (dec (* 2 interpose-count))))))
+      (= (* 2 original-count) interpose-count)
+      (= (dec (* 2 original-count)) interpose-count))))
 
 
 (deftest interpose-creates-sequence-twice-the-length
@@ -112,7 +113,7 @@
     "Interposing a collection with a value makes it's count
     twice the original collection, or ones less."
     (is (:result
-          (sc/quick-check 1000 (prop/for-all* [(gen/vector gen/int)] interpose-twice-the-length))))))
+          (sc/quick-check 1000 (prop/for-all [v (gen/vector gen/int)] (interpose-twice-the-length v)))))))
 
 ;; Lists and vectors are equivalent with seq abstraction
 ;; ---------------------------------------------------------------------------
