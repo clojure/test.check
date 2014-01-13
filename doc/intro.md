@@ -54,7 +54,7 @@ to fail. For example, the function might originally fail with input:
 ;; =>           :smallest [[0 -1]]}}
 ```
 
-This process of shrinking is down automatically, even for our more complex
+This process of shrinking is done automatically, even for our more complex
 generators that we write ourselves.
 
 ## Generators
@@ -218,7 +218,7 @@ To put it all together, we'll use `fmap` to call our record constructor, and
                        email-gen
                        gen/boolean)))
 
-(last (gen/sample user))
+(last (gen/sample user-gen))
 ;; => #user.User{:user-name "kWodcsE2",
 ;;               :user-id 1,
 ;;               :email "r2ed3VE@computer.org",
