@@ -4,6 +4,9 @@
             [simple-check.properties :as prop]
             [simple-check.clojure-test :as ct :refer (defspec)]))
 
+(defspec default-trial-counts
+  (prop/for-all* [gen/int] (constantly true)))
+
 (defspec trial-counts 5000
   (prop/for-all* [gen/int] (constantly true)))
 

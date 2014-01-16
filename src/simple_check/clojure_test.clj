@@ -18,7 +18,7 @@
   wider clojure.test run), or with a single argument that will override
   [default-times]."
   ([name property]
-   (defspec name *default-test-count* property))
+   `(defspec ~name ~*default-test-count* ~property))
 
   ([name default-times property]
    `(do
