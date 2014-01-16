@@ -22,32 +22,41 @@
     [(gen/vector gen/int)]
     vector-elements-are-unique*))
 
-(defspec failing-spec 100 vector-elements-are-unique)
+(defspec this-is-supposed-to-fail 100 vector-elements-are-unique)
+
+(defn- capture-test-var
+  [v]
+  (doto (with-out-str (binding [*test-out* *out*] (test-var v)))
+    println))
 
 (defn test-ns-hook
   []
-  (is (-> (with-out-str (binding [*test-out* *out*] (test-var #'trial-counts)))
-             read-string
-             (select-keys [:test-var :result :num-tests])
-             (= {:test-var 'trial-counts, :result true, :num-tests 5000})))
+  (is (-> (capture-test-var #'default-trial-counts)
+          read-string
+          :num-tests
+          (= ct/*default-test-count*)))
+  
+  (is (-> (capture-test-var #'trial-counts)
+          read-string
+          (select-keys [:test-var :result :num-tests])
+          (= {:test-var 'trial-counts, :result true, :num-tests 5000})))
   
   (binding [ct/*report-trials* true]
-     (let [output (with-out-str (test-var #'trial-counts))]
+     (let [output (capture-test-var #'trial-counts)]
        (is (re-matches #"(?s)\.{5}.+" output))))
 
   (binding [ct/*report-trials* ct/trial-report-periodic
             ct/*trial-report-period* 500]
     (is (re-seq
           #"(Passing trial \d{3} / 1000 for .+\n)+"
-           (with-out-str (binding [*test-out* *out*] (test-var #'long-running-spec))))))
+           (capture-test-var #'long-running-spec))))
 
   (let [[report-counters stdout]
         (binding [ct/*report-shrinking* true
-                  ; need to keep the failure of failing-spec from affecting the
-                  ; simple-check test run
+                  ; need to keep the failure of this-is-supposed-to-fail from
+                  ; affecting the simple-check test run
                   *report-counters* (ref *initial-report-counters*)]
-          [*report-counters*
-           (with-out-str (binding [*test-out* *out*] (test-var #'failing-spec)))])]
+          [*report-counters* (capture-test-var #'this-is-supposed-to-fail)])]
     (is (== 1 (:fail @report-counters)))
     (is (re-seq
           #"(?s)Shrinking vector-elements-are-unique starting with parameters \[\[.+"
