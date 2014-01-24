@@ -1,5 +1,15 @@
 # Changelog
 
+* 0.5.4
+    * Fix documentation typos
+    * Fix defspec default num-tests bug (#52)
+    * Fix docstring position on `exclude-nth` function (#50)
+    * Add rose-seq helper function
+    * Use full Long range in rand-range (#42)
+    * More useful error-message with `one-of`
+    * Add `no-shrink` and `shrink-2` combinators
+    * Fix `interpose-twice-the-length` test (#52)
+
 * 0.5.3
     * All dependencies are now dev-dependencies
     * Minor doc typo correction

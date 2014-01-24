@@ -12,7 +12,7 @@ tests.
 ### Leiningen
 
 ```clojure
-[reiddraper/simple-check "0.5.3"]
+[reiddraper/simple-check "0.5.4"]
 ```
 
 ### Maven
@@ -21,7 +21,7 @@ tests.
 <dependency>
   <groupId>reiddraper</groupId>
   <artifactId>simple-check</artifactId>
-  <version>0.5.3</version>
+  <version>0.5.4</version>
 </dependency>
 ```
 
