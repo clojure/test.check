@@ -1,5 +1,8 @@
 # Changelog
 
+* 0.5.5
+    * Fix botched release
+
 * 0.5.4
     * Fix documentation typos
     * Fix defspec default num-tests bug (#52)
