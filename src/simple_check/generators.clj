@@ -286,7 +286,8 @@
   [^Random rnd lower upper]
   {:pre [(<= lower upper)]}
   (let [factor (.nextDouble rnd)]
-    (long (Math/floor (+ lower (- (* factor upper) (* factor lower)))))))
+    (long (Math/floor (+ lower (- (* factor (+ 1.0 upper))
+                                  (* factor lower)))))))
 
 (defn sized
   "Create a generator that depends on the size parameter.
