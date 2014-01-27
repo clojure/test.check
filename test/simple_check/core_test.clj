@@ -432,3 +432,34 @@
     (is (< low high))
     (is (< low Integer/MIN_VALUE))
     (is (> high Integer/MAX_VALUE))))
+
+;; rand-range yields values inclusive of both lower & upper bounds provided to it
+;; further, that generators that use rand-range use its full range of values
+;; ---------------------------------------------------------------------------
+
+(deftest rand-range-uses-inclusive-bounds
+  (let [bounds [5 7]
+        rand-range (apply partial gen/rand-range (gen/random) bounds)]
+    (loop [trials 0
+           bounds (set bounds)]
+      (cond
+       (== trials 10000)
+       (is nil (str "rand-range didn't return both of its bounds after 10000 trials; "
+                    "it is possible for this to fail without there being a problem, "
+                    "but we should be able to rely upon probability to not bother us "
+                    "too frequently."))
+       (empty? bounds) (is true)
+       :else (recur (inc trials) (disj bounds (rand-range)))))))
+
+(deftest elements-generates-all-provided-values
+  (let [options [:a 42 'c/d "foo"]]
+    (is (->> (reductions
+                 disj
+                 (set options)
+                 (gen/sample-seq (gen/elements options)))
+             (take 10000)
+             (some empty?))
+        (str "elements didn't return all of its candidate values after 10000 trials; "
+             "it is possible for this to fail without there being a problem, "
+             "but we should be able to rely upon probability to not bother us "
+             "too frequently."))))
