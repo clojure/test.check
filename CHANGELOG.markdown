@@ -1,5 +1,8 @@
 # Changelog
 
+0.5.6
+    * Fix `choose` bug introduced in 0.5.4, the upper-bound was not inclusive.
+
 * 0.5.5
     * Fix botched release
 
