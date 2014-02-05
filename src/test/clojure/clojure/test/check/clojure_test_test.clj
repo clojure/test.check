@@ -1,8 +1,8 @@
-(ns simple-check.clojure-test-test
+(ns clojure.test.check.clojure-test-test
   (:use clojure.test)
-  (:require [simple-check.generators :as gen]
-            [simple-check.properties :as prop]
-            [simple-check.clojure-test :as ct :refer (defspec)]))
+  (:require [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]
+            [clojure.test.check.clojure-test :as ct :refer (defspec)]))
 
 (defspec default-trial-counts
   (prop/for-all* [gen/int] (constantly true)))
@@ -54,7 +54,7 @@
   (let [[report-counters stdout]
         (binding [ct/*report-shrinking* true
                   ; need to keep the failure of this-is-supposed-to-fail from
-                  ; affecting the simple-check test run
+                  ; affecting the clojure.test.check test run
                   *report-counters* (ref *initial-report-counters*)]
           [*report-counters* (capture-test-var #'this-is-supposed-to-fail)])]
     (is (== 1 (:fail @report-counters)))

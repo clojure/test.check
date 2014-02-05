@@ -1,4 +1,4 @@
-(ns simple-check.generators
+(ns clojure.test.check.generators
   (:import java.util.Random)
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
@@ -364,7 +364,7 @@
   "
   [coll]
   (when (empty? coll)
-    (throw (ex-info "simple-check.generators/elements called with empty collection!"
+    (throw (ex-info "clojure.test.check.generators/elements called with empty collection!"
                     {:collection coll})))
   (gen-bind (choose 0 (dec (count coll)))
             #(gen-pure (rose-fmap (partial nth coll) %))))

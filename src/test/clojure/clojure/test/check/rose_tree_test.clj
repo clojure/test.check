@@ -1,9 +1,9 @@
-(ns simple-check.rose-tree-test
+(ns clojure.test.check.rose-tree-test
   (:use clojure.test)
-  (:require [simple-check.core       :as sc]
-            [simple-check.generators :as gen]
-            [simple-check.properties :as prop]
-            [simple-check.clojure-test :as ct :refer (defspec)]))
+  (:require [clojure.test.check.core       :as sc]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]
+            [clojure.test.check.clojure-test :as ct :refer (defspec)]))
 
 (defn depth-one-children
   [[root children]]

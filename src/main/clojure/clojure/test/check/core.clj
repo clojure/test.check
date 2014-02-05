@@ -1,6 +1,6 @@
-(ns simple-check.core
-  (:require [simple-check.generators :as gen]
-            [simple-check.clojure-test :as ct]))
+(ns clojure.test.check.core
+  (:require [clojure.test.check.generators :as gen]
+            [clojure.test.check.clojure-test :as ct]))
 
 (declare shrink-loop failure)
 

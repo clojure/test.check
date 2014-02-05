@@ -1,9 +1,9 @@
-(ns simple-check.core-test
+(ns clojure.test.check.core-test
   (:use clojure.test)
-  (:require [simple-check.core       :as sc]
-            [simple-check.generators :as gen]
-            [simple-check.properties :as prop]
-            [simple-check.clojure-test :as ct :refer (defspec)]
+  (:require [clojure.test.check.core       :as sc]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]
+            [clojure.test.check.clojure-test :as ct :refer (defspec)]
             [clojure.edn :as edn]))
 
 ;; plus and 0 form a monoid
@@ -121,7 +121,7 @@
 (defn list-vector-round-trip-equiv
   [a]
   ;; NOTE: can't use `(into '() ...)` here because that
-  ;; puts the list in reverse order. simple-check found that bug
+  ;; puts the list in reverse order. clojure.test.check found that bug
   ;; pretty quickly...
   (= a (apply list (vec a))))
 

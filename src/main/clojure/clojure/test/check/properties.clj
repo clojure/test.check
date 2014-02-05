@@ -1,5 +1,5 @@
-(ns simple-check.properties
-  (:require [simple-check.generators :as gen]))
+(ns clojure.test.check.properties
+  (:require [clojure.test.check.generators :as gen]))
 
 ;; NOTES:
 ;; The fields that should be returned from each test
