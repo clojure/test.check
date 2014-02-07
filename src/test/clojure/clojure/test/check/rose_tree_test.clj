@@ -9,7 +9,7 @@
 
 (ns clojure.test.check.rose-tree-test
   (:use clojure.test)
-  (:require [clojure.test.check.core       :as sc]
+  (:require [clojure.test.check.core       :as tc]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
             [clojure.test.check.clojure-test :as ct :refer (defspec)]))
