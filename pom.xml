@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>test.check</artifactId>
+  <version>0.5.7-SNAPSHOT</version>
+  <name>${project.artifactId}</name>
+  <description>A QuickCheck inspired property-based testing library</description>
+
+  <parent>
+    <groupId>org.clojure</groupId>
+    <artifactId>pom.contrib</artifactId>
+    <version>0.1.2</version>
+  </parent>
+
+  <licenses>
+    <license>
+      <name>Eclipse Public License 1.0</name>
+      <url>http://opensource.org/licenses/eclipse-1.0.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>reiddraper</id>
+      <name>Reid Draper</name>
+      <url>https://github.com/reiddraper</url>
+    </developer>
+  </developers>
+
+  <properties>
+    <clojure.version>1.5.1</clojure.version>
+    <clojure.warnOnReflection>true</clojure.warnOnReflection>
+  </properties>
+
+  <dependencies>
+  </dependencies>
+
+  <scm>
+    <connection>scm:git:git://github.com/clojure/test.check.git</connection>
+    <developerConnection>scm:git:git://github.com/clojure/test.check.git</developerConnection>
+    <url>http://github.com/clojure/test.check</url>
+    <tag>HEAD</tag>
+  </scm>
+</project>
