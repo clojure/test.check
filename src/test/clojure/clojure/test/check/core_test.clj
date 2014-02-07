@@ -1,9 +1,18 @@
-(ns simple-check.core-test
+;   Copyright (c) Rich Hickey, Reid Draper, and contributors.
+;   All rights reserved.
+;   The use and distribution terms for this software are covered by the
+;   Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;   which can be found in the file epl-v10.html at the root of this distribution.
+;   By using this software in any fashion, you are agreeing to be bound by
+;   the terms of this license.
+;   You must not remove this notice, or any other, from this software.
+
+(ns clojure.test.check.core-test
   (:use clojure.test)
-  (:require [simple-check.core       :as sc]
-            [simple-check.generators :as gen]
-            [simple-check.properties :as prop]
-            [simple-check.clojure-test :as ct :refer (defspec)]
+  (:require [clojure.test.check.core       :as tc]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]
+            [clojure.test.check.clojure-test :as ct :refer (defspec)]
             [clojure.edn :as edn]))
 
 ;; plus and 0 form a monoid
@@ -19,11 +28,11 @@
   (testing "+ and 0 form a monoid"
            (is (let [p (prop/for-all* [gen/int gen/int gen/int] passes-monoid-properties)]
                  (:result
-                   (sc/quick-check 1000 p)))))
+                   (tc/quick-check 1000 p)))))
   (testing "with ratios as well"
            (is (let [p (prop/for-all* [gen/ratio gen/ratio gen/ratio] passes-monoid-properties)]
                  (:result
-                   (sc/quick-check 1000 p))))))
+                   (tc/quick-check 1000 p))))))
 
 ;; reverse
 ;; ---------------------------------------------------------------------------
@@ -37,7 +46,7 @@
 (deftest reverse-equal?
   (testing "For all vectors L, reverse(reverse(L)) == L"
            (is (let [p (prop/for-all* [(gen/vector gen/int)] reverse-equal?-helper)]
-                 (:result (sc/quick-check 1000 p))))))
+                 (:result (tc/quick-check 1000 p))))))
 
 ;; failing reverse
 ;; ---------------------------------------------------------------------------
@@ -46,7 +55,7 @@
   (testing "For all vectors L, L == reverse(L). Not true"
            (is (false?
                  (let [p (prop/for-all* [(gen/vector gen/int)] #(= (reverse %) %))]
-                   (:result (sc/quick-check 1000 p)))))))
+                   (:result (tc/quick-check 1000 p)))))))
 
 ;; failing element remove
 ;; ---------------------------------------------------------------------------
@@ -60,7 +69,7 @@
            longer be in the list. (This is a false assumption)"
            (is (false?
                  (let [p (prop/for-all* [(gen/vector gen/int)] first-is-gone)]
-                   (:result (sc/quick-check 1000 p)))))))
+                   (:result (tc/quick-check 1000 p)))))))
 
 ;; exceptions shrink and return as result
 ;; ---------------------------------------------------------------------------
@@ -76,7 +85,7 @@
            as they continue to throw."
            (is (= [exception [0]]
                   (let [result
-                        (sc/quick-check
+                        (tc/quick-check
                           1000 (prop/for-all* [gen/int] exception-thrower))]
                     [(:result result) (get-in result [:shrunk :smallest])])))))
 
@@ -94,7 +103,7 @@
            (is (:result
                  (let [p (prop/for-all* [(gen/vector gen/int)
                                         (gen/vector gen/int)] concat-counts-correct)]
-                   (sc/quick-check 1000 p))))))
+                   (tc/quick-check 1000 p))))))
 
 ;; Interpose (Count)
 ;; ---------------------------------------------------------------------------
@@ -113,7 +122,7 @@
     "Interposing a collection with a value makes it's count
     twice the original collection, or ones less."
     (is (:result
-          (sc/quick-check 1000 (prop/for-all [v (gen/vector gen/int)] (interpose-twice-the-length v)))))))
+          (tc/quick-check 1000 (prop/for-all [v (gen/vector gen/int)] (interpose-twice-the-length v)))))))
 
 ;; Lists and vectors are equivalent with seq abstraction
 ;; ---------------------------------------------------------------------------
@@ -121,7 +130,7 @@
 (defn list-vector-round-trip-equiv
   [a]
   ;; NOTE: can't use `(into '() ...)` here because that
-  ;; puts the list in reverse order. simple-check found that bug
+  ;; puts the list in reverse order. clojure.test.check found that bug
   ;; pretty quickly...
   (= a (apply list (vec a))))
 
@@ -129,7 +138,7 @@
   (testing
     ""
     (is (:result
-          (sc/quick-check
+          (tc/quick-check
             1000 (prop/for-all*
                    [(gen/list gen/int)] list-vector-round-trip-equiv))))))
 
@@ -147,7 +156,7 @@
     "For all keywords, turning them into a string and back is equivalent
     to the original string (save for the `:` bit)"
     (is (:result
-          (sc/quick-check 1000 (prop/for-all*
+          (tc/quick-check 1000 (prop/for-all*
                                 [gen/keyword] keyword-string-roundtrip-equiv))))))
 
 ;; Boolean and/or
@@ -156,14 +165,14 @@
 (deftest boolean-or
   (testing
     "`or` with true and anything else should be true"
-    (is (:result (sc/quick-check
+    (is (:result (tc/quick-check
                    1000 (prop/for-all*
                           [gen/boolean] #(or % true)))))))
 
 (deftest boolean-and
   (testing
     "`and` with false and anything else should be false"
-    (is (:result (sc/quick-check
+    (is (:result (tc/quick-check
                    1000 (prop/for-all*
                           [gen/boolean] #(not (and % false))))))))
 
@@ -178,7 +187,7 @@
   (testing
     "For all vectors V, sorted(V) should have the elements in order"
     (is (:result
-          (sc/quick-check
+          (tc/quick-check
             1000
             (prop/for-all*
               [(gen/vector gen/int)] elements-are-in-order-after-sorting))))))
@@ -196,7 +205,7 @@
   (testing
     "Generators created with `gen/return` should not shrink"
     (is (= [42]
-           (let [result (sc/quick-check 100
+           (let [result (tc/quick-check 100
                                         (prop/for-all
                                           [a (gen/return 42)]
                                           false))]
@@ -211,7 +220,7 @@
 
 (defn unique-test
   [seed]
-  (sc/quick-check 1000
+  (tc/quick-check 1000
                   (prop/for-all*
                     [(gen/vector gen/int)] vector-elements-are-unique)
                   :seed seed))
@@ -224,13 +233,13 @@
   (testing "If two runs are started with the same seed, they should
            return the same results."
            (is (:result
-                 (sc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
+                 (tc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
 
 ;; Generating basic generators
 ;; --------------------------------------------------------------------------
 (deftest generators-test
   (let [t (fn [generator klass]
-            (:result (sc/quick-check 100 (prop/for-all [x generator]
+            (:result (tc/quick-check 100 (prop/for-all [x generator]
                                                        (instance? klass x)))))]
 
     (testing "keyword"              (t gen/keyword clojure.lang.Keyword))
@@ -263,7 +272,7 @@
 (deftest proper-matrix-test
   (testing
     "can generate proper matrices"
-    (is (:result (sc/quick-check
+    (is (:result (tc/quick-check
                   100 (prop/for-all
                        [mtx (gen/vector (gen/vector gen/int 3) 3)]
                        (proper-matrix? mtx)))))))
@@ -279,7 +288,7 @@
 (deftest proper-vector-test
   (testing
     "can generate vectors with sizes in a provided range"
-    (is (:result (sc/quick-check
+    (is (:result (tc/quick-check
                   100 (prop/for-all
                        [b-and-v bounds-and-vector]
                        (let [[[minimum maximum] v] b-and-v
@@ -313,7 +322,7 @@
 
 (defspec tuples-retain-size-during-shrinking 1000
   (prop/for-all [index (gen/choose 1 6)]
-                (let [result (sc/quick-check
+                (let [result (tc/quick-check
                                100 (inner-tuple-property index))]
                   (= index (count (-> result
                                     :shrunk :smallest first))))))
@@ -345,7 +354,7 @@
     "Generators created fmap should have that function applied
     during shrinking"
     (is (= [50]
-           (let [result (sc/quick-check 100
+           (let [result (tc/quick-check 100
                                         (prop/for-all
                                           [a plus-fifty]
                                           false))]
@@ -374,7 +383,7 @@
 
 (defn run-no-shrink
   [i]
-  (sc/quick-check 100
+  (tc/quick-check 100
                   (prop/for-all [coll (gen/vector gen/nat)]
                                 (some #{i} coll))))
 

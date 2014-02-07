@@ -1,8 +1,17 @@
-(ns simple-check.clojure-test-test
+;   Copyright (c) Rich Hickey, Reid Draper, and contributors.
+;   All rights reserved.
+;   The use and distribution terms for this software are covered by the
+;   Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;   which can be found in the file epl-v10.html at the root of this distribution.
+;   By using this software in any fashion, you are agreeing to be bound by
+;   the terms of this license.
+;   You must not remove this notice, or any other, from this software.
+
+(ns clojure.test.check.clojure-test-test
   (:use clojure.test)
-  (:require [simple-check.generators :as gen]
-            [simple-check.properties :as prop]
-            [simple-check.clojure-test :as ct :refer (defspec)]))
+  (:require [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]
+            [clojure.test.check.clojure-test :as ct :refer (defspec)]))
 
 (defspec default-trial-counts
   (prop/for-all* [gen/int] (constantly true)))
@@ -54,7 +63,7 @@
   (let [[report-counters stdout]
         (binding [ct/*report-shrinking* true
                   ; need to keep the failure of this-is-supposed-to-fail from
-                  ; affecting the simple-check test run
+                  ; affecting the clojure.test.check test run
                   *report-counters* (ref *initial-report-counters*)]
           [*report-counters* (capture-test-var #'this-is-supposed-to-fail)])]
     (is (== 1 (:fail @report-counters)))
