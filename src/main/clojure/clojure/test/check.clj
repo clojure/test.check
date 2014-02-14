@@ -7,7 +7,7 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.test.check.core
+(ns clojure.test.check
   (:require [clojure.test.check.generators :as gen]
             [clojure.test.check.clojure-test :as ct]))
 

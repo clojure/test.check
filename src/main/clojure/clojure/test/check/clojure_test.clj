@@ -34,14 +34,14 @@
       ;; consider my shame for introducing a cyclical dependency like this...
       ;; Don't think we'll know what the solution is until clojure.test.check
       ;; integration with another test framework is attempted.
-      (require 'clojure.test.check.core)
+      (require 'clojure.test.check)
       (defn ~(vary-meta name assoc
                         ::defspec true
                         :test `#(#'assert-check (assoc (~name) :test-var (str '~name))))
         ([] (~name ~default-times))
         ([times# & {:keys [seed# max-size#] :as quick-check-opts#}]
          (apply
-           clojure.test.check.core/quick-check
+           clojure.test.check/quick-check
            times#
            (vary-meta ~property assoc :name (str '~property))
            (flatten (seq quick-check-opts#))))))))
@@ -52,7 +52,7 @@
 
   * false - no reporting of trials (default)
   * a function - will be passed a clojure.test/report-style map containing
-  :clojure.test.check.core/property and :simple-check.core/trial slots
+  :clojure.test.check/property and :simple-check.core/trial slots
   * true - provides quickcheck-style trial reporting (dots) via
   `trial-report-dots`
 

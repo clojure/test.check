@@ -16,7 +16,7 @@ the output should be in ascending order. We also might want to make sure that
 the count of the input is preserved. Our test might look like:
 
 ```clojure
-(require '[test.check.core :as sc])
+(require '[test.check :as tc])
 (require '[test.check.generators :as gen])
 (require '[test.check.properties :as prop])
 
