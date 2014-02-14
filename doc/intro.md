@@ -1,8 +1,8 @@
-# Introduction to simple-check
+# Introduction to test.check
 
-simple-check is a tool for writing property-based tests. This differs from
+test.check is a tool for writing property-based tests. This differs from
 traditional unit-testing, where you write individual test-cases. With
-simple-check you write universal quantifications, properties that should hold
+test.check you write universal quantifications, properties that should hold
 true for all input. For example, for all vectors, reversing the vector should
 preserve the count. Reversing it twice should equal the input. In this guide,
 we'll cover the thought process for coming up with properties, as well as the
@@ -16,9 +16,9 @@ the output should be in ascending order. We also might want to make sure that
 the count of the input is preserved. Our test might look like:
 
 ```clojure
-(require '[simple-check.core :as sc])
-(require '[simple-check.generators :as gen])
-(require '[simple-check.properties :as prop])
+(require '[test.check.core :as sc])
+(require '[test.check.generators :as gen])
+(require '[test.check.properties :as prop])
 
 (defn ascending?
   "clojure.core/sorted? doesn't do what we might expect, so we write our
@@ -39,9 +39,9 @@ the count of the input is preserved. Our test might look like:
 ```
 
 What if we were to forget to actually sort our vector? The test will fail, and
-then simple-check will try and find 'smaller' inputs that still cause the test
+then test.check will try and find 'smaller' inputs that still cause the test
 to fail. For example, the function might originally fail with input:
-`[5 4 2 2 2]`, but simple-check will shrink this down to `[0 -1]` (or `[1 0]`).
+`[5 4 2 2 2]`, but test.check will shrink this down to `[0 -1]` (or `[1 0]`).
 
 ```clojure
 (def bad-property
@@ -60,14 +60,14 @@ generators that we write ourselves.
 ## Generators
 
 In order to write our property, we'll use generators. A generator knows how to
-generate random values for a specific type. The `simple-check.generators`
+generate random values for a specific type. The `test.check.generators`
 namespace has many built-in generators, as well as combinators for creating
 your own new generators. You can write sophisticated generators just by
 combining the existing generators with the given combinators. As we write
 generators, we can see them in practice with the `sample` function:
 
 ```clojure
-(require '[simple-check.generators :as gen])
+(require '[test.check.generators :as gen])
 
 (gen/sample gen/int)
 ;; => (0 1 -1 0 -1 4 4 2 7 1)
@@ -89,7 +89,7 @@ or get a lazy-seq of values:
 ```
 
 You may notice that as you ask for more values, the 'size' of the generated
-values increases. As simple-check generates more values, it increases the
+values increases. As test.check generates more values, it increases the
 'size' of the generated values. This allows tests to fail early, for simple
 values, and only increase the size as the test continues to pass.
 
@@ -259,7 +259,7 @@ And if we try and `sample` our generator:
 
 ```clojure
 (gen/sample tree)
-;; => NullPointerException   simple-check.generators/gen-bind/fn--1244 (generators.clj:147)
+;; => NullPointerException   test.check.generators/gen-bind/fn--1244 (generators.clj:147)
 ```
 
 It turns out, we can't create recursive values (tree refers to itself in it's
@@ -279,12 +279,12 @@ And now if we try and `sample`:
 
 ```clojure
 (gen/sample (tree)) ;; we now have to 'call' tree to get our generator
-;; => StackOverflowError   simple-check.generators/return (generators.clj:161)
+;; => StackOverflowError   test.check.generators/return (generators.clj:161)
 ```
 
 Progress. It turns out, we don't have a deterministic way to stop our
 recursion. Our tree can just be created deeper and deeper. What we'd like is
-some way to control the maximum depth of the tree. Fortunately, _simple-check_
+some way to control the maximum depth of the tree. Fortunately, _test.check_
 provides a function to help: `sized`. `sized` takes a function that takes an
 integer size, and returns a generator based on this size. We can use this size
 parameter to decide when to stop recurring. We'll say that when size is 0,
