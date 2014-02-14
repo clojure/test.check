@@ -8,11 +8,11 @@ docs:
 	lein doc
 
 pages: docs
-	rm -rf /tmp/reiddraper-simple-check-docs
-	mkdir -p /tmp/reiddraper-simple-check-docs
-	cp -R doc/ /tmp/reiddraper-simple-check-docs
+	rm -rf /tmp/org.clojure-test.check-docs
+	mkdir -p /tmp/org.clojure-test.check-docs
+	cp -R doc/ /tmp/org.clojure-test.check-docs
 	git checkout gh-pages
-	cp -R /tmp/reiddraper-simple-check-docs/* .
+	cp -R /tmp/org.clojure-test.check-docs/* .
 	git add .
 	git add -u
 	git commit
