@@ -252,7 +252,7 @@ Here's a first translation of our requirements:
     [gen/nat
      (gen/tuple gen/nat
                 (gen/one-of [(gen/return nil) tree])
-                (gen/one-of [(gen/return nil) tree]))))
+                (gen/one-of [(gen/return nil) tree]))]))
 ```
 
 And if we try and `sample` our generator:
