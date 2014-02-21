@@ -25,14 +25,12 @@ things:
     with `clojure.test.check`. Let's make it easy:
 
     ```shell
-    find test -name "*.clj" | xargs sed -i '' \
+    find test -name '*.clj' -print0 | xargs -0 sed -i.bak \
     -e 's/simple-check.core/clojure.test.check/' \
     -e 's/simple-check/clojure.test.check/'
     ```
 
-    Be careful with the above snippet: only run it in a directory under version
-    control. Further, review what it updates, as it will replace all strings with
-    'simple-check'.
+    Review the updates.
 
 ### Version numbers
 
