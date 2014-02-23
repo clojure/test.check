@@ -10,6 +10,11 @@
 (ns clojure.test.check.scheduler
   (:import [java.util.concurrent Semaphore SynchronousQueue]))
 
+
+;; ---------------------------------------------------------------------------
+;; concurrency-helpers
+;; ---------------------------------------------------------------------------
+
 (defn semaphore
   ([]
    (semaphore 1))
@@ -38,6 +43,15 @@
   [queue]
   (.take ^SynchronousQueue queue))
 
+(defn thread-id!
+  "Return the id of the calling thread."
+  []
+  (.getId (Thread/currentThread)))
+
+;; ---------------------------------------------------------------------------
+;; thread/scheduler communication
+;; ---------------------------------------------------------------------------
+
 (defn thread-state
   []
   {:semaphore (semaphore)
@@ -45,6 +59,7 @@
 
 (defn yield
   [{sem :semaphore sync-queue :sync-queue} value]
+  ;; (println "the sync-queue is: " sync-queue)
   (put! sync-queue value)
   (acquire! sem)
   (release! sem))
@@ -55,6 +70,68 @@
     (release! sem)
     (acquire! sem)
     value))
+
+
+;; ---------------------------------------------------------------------------
+;; with-redef
+;; ---------------------------------------------------------------------------
+
+;; NOTE: I was hoping to be able to use closures in the redefined functions,
+;; but I just realized that each time a new with-redef is used, it will
+;; trample over the other one... Maybe I can use `binding`?
+
+(def core-swap! swap!)
+
+(defn get-state
+  ([state-atom-map]
+   (let [thread-ident (thread-id!)]
+     (get-state state-atom-map thread-ident)))
+  ([state-atom-map thread-ident]
+     (get @state-atom-map thread-ident)))
+
+(defn swap!-redef
+  [state-atom-map]
+  (let [old-swap! swap!]
+    (fn [& args]
+      (let [state (get-state state-atom-map)]
+        ;; (println "yielding with state: " state)
+        (yield state :swap!)
+        (apply old-swap! args)))))
+
+(defn wrap-thread-fn
+  [function state-atom-map]
+  ;; By the time we've gotten here, the scheduler
+  ;; already knows about us. But we do need to let
+  ;; the scheduler know when we exit
+  (fn []
+    (let [state (get-state state-atom-map)]
+      ;; (println "my thread is: " (thread-id!))
+      ;; (println "the state is: " state)
+      (yield state :thread-start)
+      (function)
+      (yield state [:thread-completed (thread-id!)]))))
+
+(defn future-call-redef
+  [state-atom-map]
+  (fn [f]
+    (let [state (get-state state-atom-map)
+          wrapped-fn (wrap-thread-fn f state-atom-map)
+          new-thread (Thread. ^Thread wrapped-fn)
+          new-thread-id (.getId new-thread)]
+      (swap! state-atom-map #(assoc % new-thread-id (thread-state)))
+      (yield state [:thread-start new-thread-id])
+      (.start new-thread)
+      (yield state :thread-started))))
+
+(defn concurrency-redef
+  [state-atom-map func]
+  (with-redefs-fn {#'swap! (swap!-redef state-atom-map)} func))
+
+;; ---------------------------------------------------------------------------
+;; scheduler
+;; ---------------------------------------------------------------------------
+
+(declare schedule-loop)
 
 ;; The scheduler will maintain a Semaphore and a SynchronousQueue with each
 ;; thread created. The SynchronousQueue is used for the thread to tell the
@@ -86,49 +163,35 @@
   ""
   [function]
   (let [state-atom-map (atom {})
-        thread-id-promise (promise)]
-    ))
+        first-thread-state (thread-state)
+        thread (Thread. ^Thread (wrap-thread-fn function state-atom-map))
+        thread-ident (.getId thread)]
+    (swap! state-atom-map #(assoc % thread-ident first-thread-state))
+    ;; (println "The state-atom-map is: " @state-atom-map)
+    (concurrency-redef
+      state-atom-map
+      (fn []
+        (.start thread)
+        (schedule-loop state-atom-map [thread-ident] [])))))
 
+(defn schedule-loop
+  [state-atom-map thread-ids history]
+  ;; this first implementation will simply run each thread to completion
+  ;; before moving on to the next one. Its really unfair.
+  (println "thread ids: " thread-ids)
+  (if-not (empty? thread-ids)
+    (let [first-id (first thread-ids)
+          state (get-state state-atom-map first-id)]
+      (let [value (advance state)]
+        (println "the value is: " value)
+        (cond
+          (keyword? value)
+          (recur state-atom-map thread-ids (conj history value))
 
-;; ---------------------------------------------------------------------------
-;; with-redef
-;; ---------------------------------------------------------------------------
+          (= (first value) :thread-start)
+          (recur state-atom-map (conj thread-ids (second value)) (conj history value))
 
-;; NOTE: I was hoping to be able to use closures in the redefined functions,
-;; but I just realized that each time a new with-redef is used, it will
-;; trample over the other one... Maybe I can use `binding`?
-
-(defn get-state
-  [state-atom-map
-   (let [thread-id (.getId (Thread/currentThread))]
-     (get @state-atom-map thread-id))])
-
-(defn swap!-redef
-  [state-atom-map]
-  (let [old-swap! swap!]
-    (fn [& args]
-      (let [state (get-state state-atom-map)]
-        (yield state nil)
-        (apply old-swap! args)))))
-
-(defn future-call-wrapped-fun
-  [fun state-atom-map prom]
-  (let [thread-id (.getId (Thread/currentThread))]
-    (fn []
-      (deliver prom thread-id))
-))
-
-(defn future-call-redef
-  [state-atom-map]
-  (let [old-future-call future-call]
-    (fn [f]
-      (let [state (get-state state-atom-map)
-            prom (promise)
-            wrapped-fun (future-call-wrapped-fun f state-atom-map prom)]
-        (yield state [:future-call prom])
-        (future-call wrapped-fun)))))
-
-
-(defn concurrency-redef
-  [state-atom-map func]
-  (with-redefs-fn {#'swap! (swap!-redef state-atom-map)} func))
+          (= (first value) :thread-completed)
+          (recur state-atom-map (remove #(= (second value) %) thread-ids) (conj history value))
+          )))
+    history))
