@@ -60,10 +60,34 @@
 ;; thread created. The SynchronousQueue is used for the thread to tell the
 ;; scheduler what non-deterministic action it wants to take. The Semaphore
 ;; is then used for the scheduler to tell the thread when it can run again.
+;; Since `with-redefs-fn` affects all threads, we must create an
+;; implementation that can be shared across threads. The current idea is to
+;; use thread-ids to key into a map stored in atom. This will allow each
+;; thread to access its 'thread-state' (Semaphore and SynchronousQueue).
+;; When a thread wants to do some concurrency work, it yields to the
+;; scheduler. This is a process of sending a message to the scheduler
+;; (over the SynchronousQueue), and then waiting on a Semaphore. Once
+;; the thread has acquired the semaphore, it proceeds concurrently until
+;; it reaches another yield. Depending on what concurrency function is making
+;; the thread yield, it will send `nil`, or some other message to the
+;; scheduler. `nil` is sent when the thread simply needs to wait its turn,
+;; and doesn't need to alert the scheduler of any new or completed threads.
+;; Some functions, like `future-call` introduce new threads. This message
+;; to the scheduler is a chance for a thread to notify the scheduler of this
+;; new thread. Since we don't actually know the thread-id until the thread
+;; is running, we deliver a promise to the scheduler. The new (or pooled)
+;; thread will deliver its thread-id to this promise. The scheduler will
+;; block indefinitely waiting for the thread-id to be delivered.
+;;
+;; NOTE: maybe instead of actually using future-call, we can just
+;; spawn threads ourselves. That way we can make note of the thread-id
+;; before it actually starts.
 (defn schedule
   ""
   [function]
-  true)
+  (let [state-atom-map (atom {})
+        thread-id-promise (promise)]
+    ))
 
 
 ;; ---------------------------------------------------------------------------
@@ -74,14 +98,37 @@
 ;; but I just realized that each time a new with-redef is used, it will
 ;; trample over the other one... Maybe I can use `binding`?
 
+(defn get-state
+  [state-atom-map
+   (let [thread-id (.getId (Thread/currentThread))]
+     (get @state-atom-map thread-id))])
+
 (defn swap!-redef
-  [state]
+  [state-atom-map]
   (let [old-swap! swap!]
     (fn [& args]
-      (println "swap! replacement called")
-      (yield state "yield!")
-      (apply old-swap! args))))
+      (let [state (get-state state-atom-map)]
+        (yield state nil)
+        (apply old-swap! args)))))
+
+(defn future-call-wrapped-fun
+  [fun state-atom-map prom]
+  (let [thread-id (.getId (Thread/currentThread))]
+    (fn []
+      (deliver prom thread-id))
+))
+
+(defn future-call-redef
+  [state-atom-map]
+  (let [old-future-call future-call]
+    (fn [f]
+      (let [state (get-state state-atom-map)
+            prom (promise)
+            wrapped-fun (future-call-wrapped-fun f state-atom-map prom)]
+        (yield state [:future-call prom])
+        (future-call wrapped-fun)))))
+
 
 (defn concurrency-redef
-  [state func]
-  (with-redefs-fn {#'swap! (swap!-redef state)} func))
+  [state-atom-map func]
+  (with-redefs-fn {#'swap! (swap!-redef state-atom-map)} func))
