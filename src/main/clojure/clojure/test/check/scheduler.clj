@@ -125,7 +125,9 @@
 
 (defn concurrency-redef
   [state-atom-map func]
-  (with-redefs-fn {#'swap! (swap!-redef state-atom-map)} func))
+  (with-redefs-fn {#'swap! (swap!-redef state-atom-map)
+                   #'future-call (future-call-redef state-atom-map)}
+                  func))
 
 ;; ---------------------------------------------------------------------------
 ;; scheduler
@@ -183,7 +185,7 @@
     (let [first-id (first thread-ids)
           state (get-state state-atom-map first-id)]
       (let [value (advance state)]
-        (println "the value is: " value)
+        ;; (println "the value is: " value)
         (cond
           (keyword? value)
           (recur state-atom-map thread-ids (conj history value))
@@ -192,6 +194,6 @@
           (recur state-atom-map (conj thread-ids (second value)) (conj history value))
 
           (= (first value) :thread-completed)
-          (recur state-atom-map (remove #(= (second value) %) thread-ids) (conj history value))
+          (recur state-atom-map (vec (remove #(= (second value) %) thread-ids)) (conj history value))
           )))
     history))
