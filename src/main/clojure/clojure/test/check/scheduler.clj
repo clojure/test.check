@@ -129,6 +129,7 @@
                    #'future-call (future-call-redef state-atom-map)}
                   func))
 
+
 ;; ---------------------------------------------------------------------------
 ;; scheduler
 ;; ---------------------------------------------------------------------------
@@ -161,6 +162,36 @@
 ;; NOTE: maybe instead of actually using future-call, we can just
 ;; spawn threads ourselves. That way we can make note of the thread-id
 ;; before it actually starts.
+;;
+;;
+;; Whenever a thread yields, it notifies the scheduler of its side-effect.
+;; This serves several purposes:
+;;
+;;   1. Pause execution of the thread
+;;   2. Alert the scheduler of some share-state change the thread would like
+;;      to make.
+;;   3. Alert the scheduler of something the thread would like to wait on.
+;;
+;; Many times, all three of these circumstances are true. For example, an
+;; acquire on a Semaphore needs to alert the scheduler that the permits are
+;; taken, and it needs to wait until the permits are available.
+;;
+;;
+;; The scheduler maintains several bits of state. Some of this state is
+;; internal, some shared with the scheduled threads themselves (via an atom).
+;; Internally, the scheduler stores two things, primarily:
+;;
+;;   1. A shared-variable map. This is map stores shared-variable -> state.
+;;      For example, the state for a given semaphore might share the number
+;;      of available permits. For a deref'able object, it might store
+;;      whether the value is ready, and what it is.
+;;  2. A piece of state for each scheduled thread. This is in addition to the
+;;     communication (Semaphore and SynchronousQueue) stored for each thread.
+;;     For each thread, two things are stored:
+;;
+;;       1. runnable? A boolean of whether or not the action the thread
+;;          wants to run is current runnable. ie., it's not blocked waiting
+;;          for something else to occur.
 (defn schedule
   ""
   [function]
