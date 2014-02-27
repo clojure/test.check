@@ -52,7 +52,7 @@
 
   * false - no reporting of trials (default)
   * a function - will be passed a clojure.test/report-style map containing
-  :clojure.test.check/property and :simple-check.core/trial slots
+  :clojure.test.check/property and :clojure.test.check/trial slots
   * true - provides quickcheck-style trial reporting (dots) via
   `trial-report-dots`
 
