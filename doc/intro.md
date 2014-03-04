@@ -16,9 +16,9 @@ the output should be in ascending order. We also might want to make sure that
 the count of the input is preserved. Our test might look like:
 
 ```clojure
-(require '[test.check :as tc])
-(require '[test.check.generators :as gen])
-(require '[test.check.properties :as prop])
+(require '[clojure.test.check :as tc])
+(require '[clojure.test.check.generators :as gen])
+(require '[clojure.test.check.properties :as prop])
 
 (defn ascending?
   "clojure.core/sorted? doesn't do what we might expect, so we write our
@@ -67,7 +67,7 @@ combining the existing generators with the given combinators. As we write
 generators, we can see them in practice with the `sample` function:
 
 ```clojure
-(require '[test.check.generators :as gen])
+(require '[clojure.test.check.generators :as gen])
 
 (gen/sample gen/int)
 ;; => (0 1 -1 0 -1 4 4 2 7 1)
