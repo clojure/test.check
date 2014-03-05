@@ -176,11 +176,8 @@ Release notes for each version are available in
 
 ## Contributing
 
-_test.check_ [uses Jira](http://dev.clojure.org/jira/browse/TCHECK) for bugs,
-enhancements and contributions. Further, pull-requests will _not_ be accepted.
-Contributors must have a [signed Clojure CA](http://clojure.org/contributing).
-You can read more about the [patch
-process](http://dev.clojure.org/display/community/Developing+Patches).
+We can not accept pull requests. Please see [CONTRIBUTING.md](CONTRIBUTING.md)
+for details.
 
 ## License
 
