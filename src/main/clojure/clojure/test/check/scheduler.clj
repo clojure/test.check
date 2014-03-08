@@ -52,24 +52,34 @@
 ;; thread/scheduler communication
 ;; ---------------------------------------------------------------------------
 
-(defn thread-state
+(defn thread-communicator
   []
   {:semaphore (semaphore)
    :sync-queue (synchronous-queue)})
 
 (defn yield
   [{sem :semaphore sync-queue :sync-queue} value]
-  ;; (println "the sync-queue is: " sync-queue)
+  ;;(println "yield from: " (thread-id!))
   (put! sync-queue value)
   (acquire! sem)
   (release! sem))
 
+(defn get-next-action
+  [thread-state]
+  (println "get next action: " (:id thread-state))
+  (take! (-> thread-state :communicator :sync-queue)))
+
+(defn update-action
+  [thread-state]
+  (assoc thread-state :next-action (get-next-action thread-state)))
+
 (defn advance
-  [{sem :semaphore sync-queue :sync-queue}]
-  (let [value (take! sync-queue)]
+  [thread-state]
+  (println "advance: " (:id thread-state))
+  (let [sem (-> thread-state :communicator :semaphore)]
     (release! sem)
     (acquire! sem)
-    value))
+    thread-state))
 
 ;; ---------------------------------------------------------------------------
 ;; with-redef
@@ -102,8 +112,8 @@
     (let [state (get-state state-atom-map)]
       ;; (println "my thread is: " (thread-id!))
       ;; (println "the state is: " state)
-      (yield state :thread-start)
       (function)
+      (println "finishing thread: " (thread-id!))
       (yield state [:thread-completed (thread-id!)]))))
 
 (defn future-call-redef
@@ -113,10 +123,7 @@
           wrapped-fn (wrap-thread-fn f state-atom-map)
           new-thread (Thread. ^Thread wrapped-fn)
           new-thread-id (.getId new-thread)]
-      (swap! state-atom-map #(assoc % new-thread-id (thread-state)))
-      (yield state [:thread-start new-thread-id])
-      (.start new-thread)
-      (yield state :thread-started))))
+      (yield state [:thread-start new-thread]))))
 
 (defn concurrency-redef
   [state-atom-map func]
@@ -129,6 +136,19 @@
 ;; scheduler
 ;; ---------------------------------------------------------------------------
 
+(defn new-thread-state
+  [thread-ident]
+  {:id thread-ident
+   :communicator (thread-communicator)
+   :state :runnable
+   :pending nil
+   :next-action nil
+   })
+
+(defn runnable?
+  [thread-state]
+  (= (:state thread-state) :runnable))
+
 (declare schedule-loop)
 
 ;; The scheduler will maintain a Semaphore and a SynchronousQueue with each
@@ -138,7 +158,7 @@
 ;; Since `with-redefs-fn` affects all threads, we must create an
 ;; implementation that can be shared across threads. The current idea is to
 ;; use thread-ids to key into a map stored in atom. This will allow each
-;; thread to access its 'thread-state' (Semaphore and SynchronousQueue).
+;; thread to access its 'thread-communicator' (Semaphore and SynchronousQueue).
 ;; When a thread wants to do some concurrency work, it yields to the
 ;; scheduler. This is a process of sending a message to the scheduler
 ;; (over the SynchronousQueue), and then waiting on a Semaphore. Once
@@ -202,35 +222,59 @@
   ""
   [function]
   (let [state-atom-map (atom {})
-        first-thread-state (thread-state)
         thread (Thread. ^Thread (wrap-thread-fn function state-atom-map))
-        thread-ident (.getId thread)]
-    (swap! state-atom-map #(assoc % thread-ident first-thread-state))
-    ;; (println "The state-atom-map is: " @state-atom-map)
+        thread-ident (.getId thread)
+        first-thread-state (new-thread-state thread-ident)]
+    (swap! state-atom-map #(assoc % thread-ident (:communicator first-thread-state)))
     (concurrency-redef
       state-atom-map
       (fn []
         (.start thread)
-        (schedule-loop state-atom-map [thread-ident] [])))))
+        (schedule-loop state-atom-map
+                       {thread-ident (update-action first-thread-state)}
+                       [])))))
 
 (defn schedule-loop
-  [state-atom-map thread-ids history]
+  [state-atom-map thread-states history]
   ;; this first implementation will simply run each thread to completion
   ;; before moving on to the next one. Its really unfair.
-  (println "thread ids: " thread-ids)
-  (if-not (empty? thread-ids)
-    (let [first-id (first thread-ids)
-          state (get-state state-atom-map first-id)]
-      (let [value (advance state)]
-        ;; (println "the value is: " value)
+  (println "")
+  (println "Schedule loop **************")
+  (println "thread ids: " (keys thread-states))
+  (println "history: " history)
+  (if-not (empty? thread-states)
+    (let [first-runnable (first (filter runnable? (vals thread-states)))]
+      (println "operating on thread: " (:id first-runnable))
+      (let [value (:next-action first-runnable)
+            history-value [(:id first-runnable) value]]
+        (println "the value is: " value)
         (cond
           (keyword? value)
-          (recur state-atom-map thread-ids (conj history value))
+          (let [new-thread-states (assoc thread-states
+                                         (:id first-runnable)
+                                         ;; NOTE: in some cases, is it too early
+                                         ;; to 'advance' the thread here?
+                                         (-> first-runnable advance update-action))]
+            (recur state-atom-map new-thread-states (conj history history-value)))
 
           (= (first value) :thread-start)
-          (recur state-atom-map (conj thread-ids (second value)) (conj history value))
+          (let [thread-ident (.getId (second value))
+                thread-state-1 (new-thread-state thread-ident)
+                _ (core-swap! state-atom-map #(assoc % thread-ident (:communicator thread-state-1)))
+                _ (.start (second value))
+                thread-state (update-action thread-state-1)
+                new-thread-states (assoc thread-states
+                                         (:id first-runnable)
+                                         ;; NOTE: in some cases, is it too early
+                                         ;; to 'advance' the thread here?
+                                         (-> first-runnable advance update-action))]
+            (recur state-atom-map
+                   (assoc new-thread-states thread-ident thread-state)
+                   (conj history [(:id first-runnable) [:thread-start thread-ident]])))
 
           (= (first value) :thread-completed)
-          (recur state-atom-map (vec (remove #(= (second value) %) thread-ids)) (conj history value))
-          )))
+          (let [thread-ident (second value)]
+            (println "removing thread: " thread-ident)
+            (core-swap! state-atom-map #(dissoc % thread-ident))
+            (recur state-atom-map (dissoc thread-states thread-ident) (conj history history-value))))))
     history))
