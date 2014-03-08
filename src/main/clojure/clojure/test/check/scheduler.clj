@@ -192,6 +192,17 @@
 ;;       1. runnable? A boolean of whether or not the action the thread
 ;;          wants to run is current runnable. ie., it's not blocked waiting
 ;;          for something else to occur.
+;;
+;;
+;;  Concurrency primitives in Clojure:
+;;
+;;  atoms: atom swap! reset! compare-and-set!
+;;  futures: future future-(call|done|cancel|cancelled) future?
+;;  threads: (binding stuff not interesting now)
+;;  misc: locking pcalls pvalues pmap seque promise deliver
+;;  refs: ref deref sync dosync io!
+;;  agents: agent agent-error send send-off restart-agent send-via await ...
+;;  watches: add-watch remove-watch
 (defn schedule
   ""
   [function]
