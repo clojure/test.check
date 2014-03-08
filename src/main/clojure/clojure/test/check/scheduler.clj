@@ -71,14 +71,9 @@
     (acquire! sem)
     value))
 
-
 ;; ---------------------------------------------------------------------------
 ;; with-redef
 ;; ---------------------------------------------------------------------------
-
-;; NOTE: I was hoping to be able to use closures in the redefined functions,
-;; but I just realized that each time a new with-redef is used, it will
-;; trample over the other one... Maybe I can use `binding`?
 
 (def core-swap! swap!)
 
