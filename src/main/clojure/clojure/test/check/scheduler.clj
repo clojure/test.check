@@ -137,8 +137,9 @@
 ;; ---------------------------------------------------------------------------
 
 (defn new-thread-state
-  [thread-ident]
+  [thread-ident local-thread-id]
   {:id thread-ident
+   :local-id local-thread-id
    :communicator (thread-communicator)
    :state :runnable
    :pending nil
@@ -224,7 +225,7 @@
   (let [state-atom-map (atom {})
         thread (Thread. ^Thread (wrap-thread-fn function state-atom-map))
         thread-ident (.getId thread)
-        first-thread-state (new-thread-state thread-ident)]
+        first-thread-state (new-thread-state thread-ident 0)]
     (swap! state-atom-map #(assoc % thread-ident (:communicator first-thread-state)))
     (concurrency-redef
       state-atom-map
@@ -232,10 +233,11 @@
         (.start thread)
         (schedule-loop state-atom-map
                        {thread-ident (update-action first-thread-state)}
-                       [])))))
+                       []
+                       1)))))
 
 (defn schedule-loop
-  [state-atom-map thread-states history]
+  [state-atom-map thread-states history local-thread-id]
   ;; this first implementation will simply run each thread to completion
   ;; before moving on to the next one. Its really unfair.
   (println "")
@@ -243,10 +245,10 @@
   (println "thread ids: " (keys thread-states))
   (println "history: " history)
   (if-not (empty? thread-states)
-    (let [first-runnable (first (filter runnable? (vals thread-states)))]
+    (let [first-runnable (first (filter runnable? (sort-by :local-id (vals thread-states))))]
       (println "operating on thread: " (:id first-runnable))
       (let [value (:next-action first-runnable)
-            history-value [(:id first-runnable) value]]
+            history-value [(:local-id first-runnable) value]]
         (println "the value is: " value)
         (cond
           (keyword? value)
@@ -255,11 +257,13 @@
                                          ;; NOTE: in some cases, is it too early
                                          ;; to 'advance' the thread here?
                                          (-> first-runnable advance update-action))]
-            (recur state-atom-map new-thread-states (conj history history-value)))
+            (recur state-atom-map new-thread-states
+                   (conj history history-value)
+                   local-thread-id))
 
           (= (first value) :thread-start)
           (let [thread-ident (.getId (second value))
-                thread-state-1 (new-thread-state thread-ident)
+                thread-state-1 (new-thread-state thread-ident local-thread-id)
                 _ (core-swap! state-atom-map #(assoc % thread-ident (:communicator thread-state-1)))
                 _ (.start (second value))
                 thread-state (update-action thread-state-1)
@@ -270,11 +274,15 @@
                                          (-> first-runnable advance update-action))]
             (recur state-atom-map
                    (assoc new-thread-states thread-ident thread-state)
-                   (conj history [(:id first-runnable) [:thread-start thread-ident]])))
+                   (conj history [(:local-id first-runnable) [:thread-start thread-ident]])
+                   (inc local-thread-id)))
 
           (= (first value) :thread-completed)
           (let [thread-ident (second value)]
             (println "removing thread: " thread-ident)
             (core-swap! state-atom-map #(dissoc % thread-ident))
-            (recur state-atom-map (dissoc thread-states thread-ident) (conj history history-value))))))
+            (recur state-atom-map
+                   (dissoc thread-states thread-ident)
+                   (conj history history-value)
+                   local-thread-id)))))
     history))
