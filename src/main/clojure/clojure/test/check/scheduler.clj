@@ -8,6 +8,7 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.scheduler
+  (:require [clojure.test.check.generators :as gen])
   (:import [java.util.concurrent Semaphore SynchronousQueue]))
 
 
@@ -66,7 +67,7 @@
 
 (defn get-next-action
   [thread-state]
-  (println "get next action: " (:id thread-state))
+  ;;(println "get next action: " (:id thread-state))
   (take! (-> thread-state :communicator :sync-queue)))
 
 (defn update-action
@@ -75,7 +76,7 @@
 
 (defn advance
   [thread-state]
-  (println "advance: " (:id thread-state))
+  ;;(println "advance: " (:id thread-state))
   (let [sem (-> thread-state :communicator :semaphore)]
     (release! sem)
     (acquire! sem)
@@ -113,10 +114,19 @@
       ;; (println "my thread is: " (thread-id!))
       ;; (println "the state is: " state)
       (function)
-      (println "finishing thread: " (thread-id!))
+      ;;(println "finishing thread: " (thread-id!))
       (yield state [:thread-completed (thread-id!)]))))
 
 (defn future-call-redef
+  "TODO: return a value similar to what 'future-call' returns.
+  We'll probably need to use reify to implement:
+
+  * clojure.lang.IDeref
+  * clojure.lang.IBlockingDeref
+  * clojure.lang.IPending
+  * java.util.concurrent.Future
+
+  like 'future-call' does"
   [state-atom-map]
   (fn [f]
     (let [state (get-state state-atom-map)
@@ -240,16 +250,16 @@
   [state-atom-map thread-states history local-thread-id]
   ;; this first implementation will simply run each thread to completion
   ;; before moving on to the next one. Its really unfair.
-  (println "")
-  (println "Schedule loop **************")
-  (println "thread ids: " (keys thread-states))
-  (println "history: " history)
+;;  (println "")
+;;  (println "Schedule loop **************")
+;;  (println "thread ids: " (keys thread-states))
+;;  (println "history: " history)
   (if-not (empty? thread-states)
     (let [first-runnable (first (filter runnable? (sort-by :local-id (vals thread-states))))]
-      (println "operating on thread: " (:id first-runnable))
+      ;;(println "operating on thread: " (:id first-runnable))
       (let [value (:next-action first-runnable)
             history-value [(:local-id first-runnable) value]]
-        (println "the value is: " value)
+        ;;(println "the value is: " value)
         (cond
           (keyword? value)
           (let [new-thread-states (assoc thread-states
@@ -279,10 +289,41 @@
 
           (= (first value) :thread-completed)
           (let [thread-ident (second value)]
-            (println "removing thread: " thread-ident)
+            ;;(println "removing thread: " thread-ident)
             (core-swap! state-atom-map #(dissoc % thread-ident))
             (recur state-atom-map
                    (dissoc thread-states thread-ident)
                    (conj history history-value)
                    local-thread-id)))))
     history))
+
+
+;; ---------------------------------------------------------------------------
+;; testing
+;; ---------------------------------------------------------------------------
+
+
+(def gen-swap (gen/tuple (gen/return :swap) gen/int))
+
+(defn gen-actions
+  [size]
+  (if (= size 0)
+    (gen/vector gen-swap)
+    (let [new-size (quot size 2)
+          smaller-tree (gen/resize new-size (gen/sized gen-actions))]
+      (gen/one-of
+        [(gen/vector gen-swap)
+         (gen/tuple (gen/return :future)
+                    smaller-tree)]))))
+
+(defn apply-actions
+  [coll i]
+  (if (seq coll)
+    (let [[hd & more] coll]
+      (if (= hd :future)
+        (if (seq more)
+          (future (apply-actions (first more) i))
+          (recur (rest more) i))
+        (let [swap-val (second hd)]
+          (swap! i #(+ % swap-val))
+          (recur more i))))))
