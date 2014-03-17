@@ -8,7 +8,8 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.scheduler
-  (:require [clojure.test.check.generators :as gen])
+  (:require [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop])
   (:import [java.util.concurrent Semaphore SynchronousQueue]))
 
 
@@ -52,6 +53,8 @@
 ;; ---------------------------------------------------------------------------
 ;; thread/scheduler communication
 ;; ---------------------------------------------------------------------------
+;;
+;; NOTE: mark side-effecting with !
 
 (defn thread-communicator
   []
@@ -75,6 +78,7 @@
   (assoc thread-state :next-action (get-next-action thread-state)))
 
 (defn advance
+  "TODO: change this to advance!"
   [thread-state]
   ;;(println "advance: " (:id thread-state))
   (let [sem (-> thread-state :communicator :semaphore)]
@@ -246,55 +250,62 @@
                        []
                        1)))))
 
+(defn update-states
+  [value state-atom-map runnable-thread local-thread-id thread-states history history-value]
+  (cond
+    (keyword? value)
+    (let [new-thread-states (assoc thread-states
+                                   (:id runnable-thread)
+                                   ;; NOTE: in some cases, is it too early
+                                   ;; to 'advance' the thread here?
+                                   (-> runnable-thread advance update-action))]
+      [new-thread-states (conj history history-value) local-thread-id])
+
+    (= (first value) :thread-start)
+    (let [thread-ident (.getId (second value))
+          thread-state-1 (new-thread-state thread-ident local-thread-id)
+          _ (core-swap! state-atom-map #(assoc % thread-ident (:communicator thread-state-1)))
+          _ (.start (second value))
+          thread-state (update-action thread-state-1)
+          new-thread-states (assoc thread-states
+                                   (:id runnable-thread)
+                                   (-> runnable-thread advance update-action))]
+      [(assoc new-thread-states thread-ident thread-state)
+       (conj history [(:local-id runnable-thread) [:thread-start thread-ident]])
+       (inc local-thread-id)])
+
+    (= (first value) :thread-completed)
+    (let [thread-ident (second value)]
+      ;;(println "removing thread: " thread-ident)
+      (core-swap! state-atom-map #(dissoc % thread-ident))
+      [(dissoc thread-states thread-ident)
+       (conj history history-value)
+       local-thread-id])))
+
 (defn schedule-loop
   [state-atom-map thread-states history local-thread-id]
   ;; this first implementation will simply run each thread to completion
   ;; before moving on to the next one. Its really unfair.
-;;  (println "")
-;;  (println "Schedule loop **************")
-;;  (println "thread ids: " (keys thread-states))
-;;  (println "history: " history)
+  ;;  (println "")
+  ;;  (println "Schedule loop **************")
+  ;;  (println "thread ids: " (keys thread-states))
+  ;;  (println "history: " history)
   (if-not (empty? thread-states)
     (let [first-runnable (first (filter runnable? (sort-by :local-id (vals thread-states))))]
       ;;(println "operating on thread: " (:id first-runnable))
       (let [value (:next-action first-runnable)
-            history-value [(:local-id first-runnable) value]]
+            history-value [(:local-id first-runnable) value]
+            [new-thread-states new-history new-thread-id]
+            (update-states value
+                           state-atom-map
+                           first-runnable
+                           local-thread-id
+                           thread-states
+                           history
+                           history-value)]
+        (recur state-atom-map new-thread-states new-history new-thread-id)
         ;;(println "the value is: " value)
-        (cond
-          (keyword? value)
-          (let [new-thread-states (assoc thread-states
-                                         (:id first-runnable)
-                                         ;; NOTE: in some cases, is it too early
-                                         ;; to 'advance' the thread here?
-                                         (-> first-runnable advance update-action))]
-            (recur state-atom-map new-thread-states
-                   (conj history history-value)
-                   local-thread-id))
-
-          (= (first value) :thread-start)
-          (let [thread-ident (.getId (second value))
-                thread-state-1 (new-thread-state thread-ident local-thread-id)
-                _ (core-swap! state-atom-map #(assoc % thread-ident (:communicator thread-state-1)))
-                _ (.start (second value))
-                thread-state (update-action thread-state-1)
-                new-thread-states (assoc thread-states
-                                         (:id first-runnable)
-                                         ;; NOTE: in some cases, is it too early
-                                         ;; to 'advance' the thread here?
-                                         (-> first-runnable advance update-action))]
-            (recur state-atom-map
-                   (assoc new-thread-states thread-ident thread-state)
-                   (conj history [(:local-id first-runnable) [:thread-start thread-ident]])
-                   (inc local-thread-id)))
-
-          (= (first value) :thread-completed)
-          (let [thread-ident (second value)]
-            ;;(println "removing thread: " thread-ident)
-            (core-swap! state-atom-map #(dissoc % thread-ident))
-            (recur state-atom-map
-                   (dissoc thread-states thread-ident)
-                   (conj history history-value)
-                   local-thread-id)))))
+        ))
     history))
 
 
@@ -327,3 +338,13 @@
         (let [swap-val (second hd)]
           (swap! i #(+ % swap-val))
           (recur more i))))))
+
+(defn sum-actions
+  [ac]
+  (apply + (filter number? (flatten ac))))
+
+(def p
+  (prop/for-all
+  [ac (gen/sized gen-actions)]
+    (let [a (atom 0)]
+      (schedule #(apply-actions ac a)) (= (sum-actions ac)))))
