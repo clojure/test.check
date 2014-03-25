@@ -48,11 +48,11 @@
           (cond
             (instance? Throwable result) (failure
                                            property result-map-rose
-                                           so-far size)
+                                           so-far size created-seed)
             result (do
                      (ct/report-trial property so-far num-tests)
                      (recur (inc so-far) rest-size-seq))
-            :default (failure property result-map-rose so-far size)))))))
+            :default (failure property result-map-rose so-far size created-seed)))))))
 
 (defn- smallest-shrink
   [total-nodes-visited depth smallest]
@@ -102,7 +102,7 @@
                   (recur children (gen/rose-root head) (inc total-nodes-visited) (inc depth)))))))))))
 
 (defn- failure
-  [property failing-rose-tree trial-number size]
+  [property failing-rose-tree trial-number size seed]
   (let [root (gen/rose-root failing-rose-tree)
         result (:result root)
         failing-args (:args root)]
@@ -110,6 +110,7 @@
     (ct/report-failure property result trial-number failing-args)
 
     {:result result
+     :seed seed
      :failing-size size
      :num-tests (inc trial-number)
      :fail (vec failing-args)
