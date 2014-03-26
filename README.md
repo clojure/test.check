@@ -102,7 +102,7 @@ action:
 
 ```clojure
 (def prop-sorted-first-less-than-last
-  (prop/for-all [v (gen/such-that not-empty (gen/vector gen/int))]
+  (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
     (let [s (sort v)]
       (< (first s) (last s)))))
 
