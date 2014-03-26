@@ -27,13 +27,11 @@
 
 (defn- apply-gen
   [function]
-  (fn [args-rose]
-    (gen/gen-pure
-      (gen/rose-fmap
-        (fn [args] (let [result (try (apply function args) (catch Throwable t t))]
-                     {:result result
-                      :function function
-                      :args args})) args-rose))))
+  (fn [args]
+    (let [result (try (apply function args) (catch Throwable t t))]
+      {:result result
+       :function function
+       :args args})))
 
 (defn for-all*
   "Creates a property (properties are also generators). A property
@@ -46,8 +44,9 @@
   (for-all* [gen/int gen/int] (fn [a b] (>= (+ a b) a)))
   "
   [args function]
-  (gen/gen-bind (apply gen/tuple args)
-                (apply-gen function)))
+  (gen/fmap
+    (apply-gen function)
+    (apply gen/tuple args)))
 
 (defn binding-vars
   [bindings]
