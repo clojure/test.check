@@ -119,7 +119,7 @@
 
 (deftest interpose-creates-sequence-twice-the-length
   (testing
-    "Interposing a collection with a value makes it's count
+    "Interposing a collection with a value makes its count
     twice the original collection, or ones less."
     (is (:result
           (tc/quick-check 1000 (prop/for-all [v (gen/vector gen/int)] (interpose-twice-the-length v)))))))

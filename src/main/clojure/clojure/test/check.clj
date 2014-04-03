@@ -75,7 +75,7 @@
   Additional rules added to depth-first search:
   * If a node passes the property, you may continue searching at this depth,
   but not backtrack
-  * If a node fails the property, search it's children
+  * If a node fails the property, search its children
   The value returned is the left-most failing example at the depth where a
   passing example was found."
   [rose-tree]
@@ -90,7 +90,7 @@
               tail (rest nodes)]
           (let [result (:result (gen/rose-root head))]
             (if (not-falsey-or-exception? result)
-              ;; this node passed the test, so now try testing it's right-siblings
+              ;; this node passed the test, so now try testing its right-siblings
               (recur tail current-smallest (inc total-nodes-visited) depth)
               ;; this node failed the test, so check if it has children,
               ;; if so, traverse down them. If not, save this as the best example
