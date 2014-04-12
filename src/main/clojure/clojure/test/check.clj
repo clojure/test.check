@@ -25,6 +25,11 @@
   (ct/report-trial property num-trials num-trials)
   {:result true :num-tests num-trials :seed seed})
 
+(defn not-falsey-or-exception?
+  "True if the value is not falsy or an exception"
+  [value]
+  (and value (not (instance? Throwable value))))
+
 (defn quick-check
   "Tests `property` `num-tests` times.
 
@@ -45,14 +50,11 @@
               result-map (gen/rose-root result-map-rose)
               result (:result result-map)
               args (:args result-map)]
-          (cond
-            (instance? Throwable result) (failure
-                                           property result-map-rose
-                                           so-far size created-seed)
-            result (do
-                     (ct/report-trial property so-far num-tests)
-                     (recur (inc so-far) rest-size-seq))
-            :default (failure property result-map-rose so-far size created-seed)))))))
+          (if (not-falsey-or-exception? result)
+            (do
+              (ct/report-trial property so-far num-tests)
+              (recur (inc so-far) rest-size-seq))
+            (failure property result-map-rose so-far size created-seed)))))))
 
 (defn- smallest-shrink
   [total-nodes-visited depth smallest]
@@ -60,11 +62,6 @@
    :depth depth
    :result (:result smallest)
    :smallest (:args smallest)})
-
-(defn not-falsey-or-exception?
-  "True if the value is not falsy or an exception"
-  [value]
-  (and value (not (instance? Throwable value))))
 
 (defn- shrink-loop
   "Shrinking a value produces a sequence of smaller values of the same type.
@@ -86,20 +83,19 @@
            depth 0]
       (if (empty? nodes)
         (smallest-shrink total-nodes-visited depth current-smallest)
-        (let [head (first nodes)
-              tail (rest nodes)]
-          (let [result (:result (gen/rose-root head))]
-            (if (not-falsey-or-exception? result)
-              ;; this node passed the test, so now try testing its right-siblings
-              (recur tail current-smallest (inc total-nodes-visited) depth)
-              ;; this node failed the test, so check if it has children,
-              ;; if so, traverse down them. If not, save this as the best example
-              ;; seen now and then look at the right-siblings
-              ;; children
-              (let [children (gen/rose-children head)]
-                (if (empty? children)
-                  (recur tail (gen/rose-root head) (inc total-nodes-visited) depth)
-                  (recur children (gen/rose-root head) (inc total-nodes-visited) (inc depth)))))))))))
+        (let [[head & tail] nodes
+              result (:result (gen/rose-root head))]
+          (if (not-falsey-or-exception? result)
+            ;; this node passed the test, so now try testing its right-siblings
+            (recur tail current-smallest (inc total-nodes-visited) depth)
+            ;; this node failed the test, so check if it has children,
+            ;; if so, traverse down them. If not, save this as the best example
+            ;; seen now and then look at the right-siblings
+            ;; children
+            (let [children (gen/rose-children head)]
+              (if (empty? children)
+                (recur tail (gen/rose-root head) (inc total-nodes-visited) depth)
+                (recur children (gen/rose-root head) (inc total-nodes-visited) (inc depth))))))))))
 
 (defn- failure
   [property failing-rose-tree trial-number size seed]
