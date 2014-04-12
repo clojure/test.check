@@ -44,7 +44,7 @@
            clojure.test.check/quick-check
            times#
            (vary-meta ~property assoc :name (str '~property))
-           (flatten (seq quick-check-opts#))))))))
+           (apply concat quick-check-opts#)))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
