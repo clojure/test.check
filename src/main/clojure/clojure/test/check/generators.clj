@@ -173,9 +173,11 @@
 ;; (internal functions)
 ;; ---------------------------------------------------------------------------
 
+(defrecord Generator [gen])
+
 (defn make-gen
-  ([generator-fn]
-   {:gen generator-fn}))
+  [generator-fn]
+  (Generator. generator-fn))
 
 (defn call-gen
   {:no-doc true}
