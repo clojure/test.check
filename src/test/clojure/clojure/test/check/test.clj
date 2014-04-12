@@ -15,6 +15,18 @@
             [clojure.test.check.clojure-test :as ct :refer (defspec)]
             [clojure.edn :as edn]))
 
+(deftest generators-are-generators
+  (testing "generator? returns true when called with a generator"
+           (is (gen/generator? gen/int))
+           (is (gen/generator? (gen/vector gen/int)))
+           (is (gen/generator? (gen/return 5)))))
+
+(deftest values-are-not-generators
+  (testing "generator? returns false when called with a value"
+           (is (not (gen/generator? 5)))
+           (is (not (gen/generator? int)))
+           (is (not (gen/generator? [1 2 3])))))
+
 ;; plus and 0 form a monoid
 ;; ---------------------------------------------------------------------------
 

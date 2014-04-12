@@ -173,9 +173,16 @@
 ;; (internal functions)
 ;; ---------------------------------------------------------------------------
 
+(defrecord Generator [gen])
+
+(defn generator?
+  "Test is `x` is a generator. Generators should be treated as opaque values."
+  [x]
+  (instance? Generator x))
+
 (defn make-gen
-  ([generator-fn]
-   {:gen generator-fn}))
+  [generator-fn]
+  (Generator. generator-fn))
 
 (defn call-gen
   {:no-doc true}
