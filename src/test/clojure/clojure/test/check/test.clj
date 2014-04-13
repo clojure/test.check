@@ -12,6 +12,7 @@
   (:require [clojure.test.check       :as tc]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
+            [clojure.test.check.rose-tree :as rose]
             [clojure.test.check.clojure-test :as ct :refer (defspec)]
             [clojure.edn :as edn]))
 
@@ -433,7 +434,7 @@
                              size)]
                   (every?
                     #(and (<= mini %) (>= maxi %))
-                    (gen/rose-seq tree)))))
+                    (rose/seq tree)))))
 
 
 ;; rand-range copes with full range of longs as bounds

@@ -12,7 +12,8 @@
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             not-empty])
-  (:require [clojure.core :as core]))
+  (:require [clojure.core :as core]
+            [clojure.test.check.rose-tree :as rose]))
 
 ;; Generic helpers
 ;; ---------------------------------------------------------------------------
@@ -33,142 +34,6 @@
           (return-fn [])
           ms))
 
-(defn- exclude-nth
-  "Exclude the nth value in a collection."
-  [n coll]
-  (lazy-seq
-    (when-let [s (seq coll)]
-      (if (zero? n)
-        (rest coll)
-        (cons (first s)
-              (exclude-nth (dec n) (rest s)))))))
-
-;; Rose tree
-;; ---------------------------------------------------------------------------
-;;
-;; A Rose tree is an n-ary tree.
-;; These are all internal functions
-
-(defn join-rose
-  "Turn a tree of trees into a single tree. Does this by concatenating
-  children of the inner and outer trees."
-  {:no-doc true}
-  [[[inner-root inner-children] children]]
-  [inner-root (concat (core/map join-rose children)
-                      inner-children)])
-
-(defn rose-root
-  "Returns the root of a Rose tree."
-  {:no-doc true}
-  [[root _children]]
-  root)
-
-(defn rose-children
-  "Returns the children of the root of the Rose tree."
-  {:no-doc true}
-  [[_root children]]
-  children)
-
-(defn rose-pure
-  "Puts a value `x` into a Rose tree, with no children."
-  {:no-doc true}
-  [x]
-  [x []])
-
-(defn rose-fmap
-  "Applies functions `f` to all values in the tree."
-  {:no-doc true}
-  [f [root children]]
-  [(f root) (core/map (partial rose-fmap f) children)])
-
-(defn rose-bind
-  "Takes a Rose tree (m) and a function (k) from
-  values to Rose tree and returns a new Rose tree.
-  This is the monadic bind (>>=) for Rose trees."
-  {:no-doc true}
-  [m k]
-  (join-rose (rose-fmap k m)))
-
-(defn rose-filter
-  "Returns a new Rose tree whose values pass `pred`. Values who
-  do not pass `pred` have their children cut out as well.
-  Takes a list of roses, not a rose"
-  {:no-doc true}
-  [pred [root children]]
-  [root (core/map (partial rose-filter pred)
-                  (core/filter (comp pred rose-root) children))])
-(defn rose-permutations
-  "Create a seq of vectors, where each rose in turn, has been replaced
-  by its children."
-  {:no-doc true}
-  [roses]
-  (apply concat
-         (for [[rose index]
-               (core/map core/vector roses (range))]
-           (for [child (rose-children rose)] (assoc roses index child)))))
-
-(defn zip-rose
-  "Apply `f` to the sequence of Rose trees `roses`."
-  {:no-doc true}
-  [f roses]
-  [(apply f (core/map rose-root roses))
-   (core/map (partial zip-rose f)
-             (rose-permutations roses))])
-
-(defn remove-roses
-  {:no-doc true}
-  [roses]
-  (concat
-    (map-indexed (fn [index _] (exclude-nth index roses)) roses)
-    (rose-permutations (vec roses))))
-
-(defn shrink-rose
-  {:no-doc true}
-  [f roses]
-  (if (seq roses)
-    [(apply f (core/map rose-root roses))
-     (core/map (partial shrink-rose f) (remove-roses roses))]
-    [(f) []]))
-
-(defn collapse-rose
-  "Return a new rose-tree whose depth-one children
-  are the children from depth one _and_ two of the input
-  tree."
-  {:no-doc true}
-  [[root children]]
-  [root (concat (core/map collapse-rose children)
-                (core/map collapse-rose
-                          (core/mapcat rose-children children)))])
-
-(defn- make-stack
-  [children stack]
-  (if-let [s (seq children)]
-    (cons children stack)
-    stack))
-
-(defn rose-seq
-  "Create a lazy-seq of all of the (unique) nodes in a shrink-tree.
-  This assumes that two nodes with the same value have the same children.
-  While it's not common, it's possible to create trees that don't
-  fit that description. This function is significantly faster than
-  brute-force enumerating all of the nodes in a tree, as there will
-  be many duplicates."
-  [root]
-  (let [helper (fn helper [[node children] seen stack]
-                 (lazy-seq
-                   (if-not (seen node)
-                     (cons node
-                           (if (seq children)
-                             (helper (first children) (conj seen node) (make-stack (rest children) stack))
-                             (when-let [s (seq stack)]
-                               (let [f (ffirst s)
-                                     r (rest (first s))]
-                                 (helper f (conj seen node) (make-stack r (rest s)))))))
-                     (when-let [s (seq stack)]
-                       (let [f (ffirst s)
-                             r (rest (first s))]
-                         (helper f seen (make-stack r (rest s))))))))]
-    (helper root #{} '())))
 
 ;; Gen
 ;; (internal functions)
@@ -218,7 +83,7 @@
 
 (defn fmap
   [f gen]
-  (gen-fmap (partial rose-fmap f) gen))
+  (gen-fmap (partial rose/fmap f) gen))
 
 
 (defn return
@@ -226,16 +91,16 @@
   and never shrinks. You can think of this as
   the `constantly` of generators."
   [value]
-  (gen-pure (rose-pure value)))
+  (gen-pure (rose/pure value)))
 
 (defn bind-helper
   [k]
   (fn [rose]
-    (gen-fmap join-rose
+    (gen-fmap rose/join
               (make-gen
                 (fn [rnd size]
-                  (rose-fmap #(call-gen % rnd size)
-                             (rose-fmap k rose)))))))
+                  (rose/fmap #(call-gen % rnd size)
+                             (rose/fmap k rose)))))))
 
 (defn bind
   "Create a new generator that passes the result of `gen` into function
@@ -273,7 +138,7 @@
   ([generator max-size]
    (let [r (random)
          size-seq (make-size-range-seq max-size)]
-     (core/map (comp rose-root (partial call-gen generator r)) size-seq))))
+     (core/map (comp rose/root (partial call-gen generator r)) size-seq))))
 
 (defn sample
   "Return a sequence of `num-samples` (default 10)
@@ -333,7 +198,7 @@
   (make-gen
     (fn [^Random rnd _size]
       (let [value (rand-range rnd lower upper)]
-        (rose-filter
+        (rose/filter
           #(and (>= % lower) (<= % upper))
           [value (core/map int-rose-tree (shrink-int value))])))))
 
@@ -370,7 +235,7 @@
   [pairs]
   (let [total (apply + (core/map first pairs))]
     (gen-bind (choose 1 total)
-              #(pick pairs (rose-root %)))))
+              #(pick pairs (rose/root %)))))
 
 (defn elements
   "Create a generator that randomly chooses an element from `coll`.
@@ -384,7 +249,7 @@
     (throw (ex-info "clojure.test.check.generators/elements called with empty collection!"
                     {:collection coll})))
   (gen-bind (choose 0 (dec (count coll)))
-            #(gen-pure (rose-fmap (partial nth coll) %))))
+            #(gen-pure (rose/fmap (partial nth coll) %))))
 
 (defn such-that
   "Create a generator that generates values from `gen` that satisfy predicate
@@ -402,8 +267,8 @@
   (make-gen
     (fn [rand-seed size]
       (let [value (call-gen gen rand-seed size)]
-        (if (pred (rose-root value))
-          (rose-filter pred value)
+        (if (pred (rose/root value))
+          (rose/filter pred value)
           (recur rand-seed (inc size)))))))
 
 (def not-empty
@@ -430,7 +295,7 @@
   "Create a new generator like `gen`, but will consider nodes for shrinking
   even if their parent passes the test (up to one additional level)."
   [gen]
-  (gen-bind gen (comp gen-pure collapse-rose)))
+  (gen-bind gen (comp gen-pure rose/collapse)))
 
 (def boolean
   "Generates one of `true` or `false`. Shrinks to `false`."
@@ -451,7 +316,7 @@
   [& generators]
   (gen-bind (sequence gen-bind gen-pure generators)
             (fn [roses]
-              (gen-pure (zip-rose core/vector roses)))))
+              (gen-pure (rose/zip core/vector roses)))))
 
 (def int
   "Generates a positive or negative integer bounded by the generator's
@@ -489,10 +354,10 @@
      (sized #(choose 0 %))
      (fn [num-elements-rose]
        (gen-bind (sequence gen-bind gen-pure
-                           (repeat (rose-root num-elements-rose)
+                           (repeat (rose/root num-elements-rose)
                                    generator))
                  (fn [roses]
-                   (gen-pure (shrink-rose core/vector
+                   (gen-pure (rose/shrink core/vector
                                           roses)))))))
   ([generator num-elements]
    (apply tuple (repeat num-elements generator)))
@@ -501,14 +366,14 @@
      (choose min-elements max-elements)
      (fn [num-elements-rose]
        (gen-bind (sequence gen-bind gen-pure
-                           (repeat (rose-root num-elements-rose)
+                           (repeat (rose/root num-elements-rose)
                                    generator))
                  (fn [roses]
                    (gen-bind
-                     (gen-pure (shrink-rose core/vector
+                     (gen-pure (rose/shrink core/vector
                                             roses))
                      (fn [rose]
-                       (gen-pure (rose-filter
+                       (gen-pure (rose/filter
                                    (fn [v] (and (>= (count v) min-elements)
                                                 (<= (count v) max-elements))) rose))))))))))
 
@@ -518,10 +383,10 @@
   (gen-bind (sized #(choose 0 %))
             (fn [num-elements-rose]
               (gen-bind (sequence gen-bind gen-pure
-                                  (repeat (rose-root num-elements-rose)
+                                  (repeat (rose/root num-elements-rose)
                                           generator))
                         (fn [roses]
-                          (gen-pure (shrink-rose core/list
+                          (gen-pure (rose/shrink core/list
                                                  roses)))))))
 
 (def byte
