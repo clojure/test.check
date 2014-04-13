@@ -9,7 +9,8 @@
 
 (ns clojure.test.check
   (:require [clojure.test.check.generators :as gen]
-            [clojure.test.check.clojure-test :as ct]))
+            [clojure.test.check.clojure-test :as ct]
+            [clojure.test.check.rose-tree :as rose]))
 
 (declare shrink-loop failure)
 
@@ -47,7 +48,7 @@
         (complete property num-tests created-seed)
         (let [[size & rest-size-seq] size-seq
               result-map-rose (gen/call-gen property rng size)
-              result-map (gen/rose-root result-map-rose)
+              result-map (rose/root result-map-rose)
               result (:result result-map)
               args (:args result-map)]
           (if (not-falsey-or-exception? result)
@@ -76,15 +77,15 @@
   The value returned is the left-most failing example at the depth where a
   passing example was found."
   [rose-tree]
-  (let [shrinks-this-depth (gen/rose-children rose-tree)]
+  (let [shrinks-this-depth (rose/children rose-tree)]
     (loop [nodes shrinks-this-depth
-           current-smallest (gen/rose-root rose-tree)
+           current-smallest (rose/root rose-tree)
            total-nodes-visited 0
            depth 0]
       (if (empty? nodes)
         (smallest-shrink total-nodes-visited depth current-smallest)
         (let [[head & tail] nodes
-              result (:result (gen/rose-root head))]
+              result (:result (rose/root head))]
           (if (not-falsey-or-exception? result)
             ;; this node passed the test, so now try testing its right-siblings
             (recur tail current-smallest (inc total-nodes-visited) depth)
@@ -92,14 +93,14 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (gen/rose-children head)]
+            (let [children (rose/children head)]
               (if (empty? children)
-                (recur tail (gen/rose-root head) (inc total-nodes-visited) depth)
-                (recur children (gen/rose-root head) (inc total-nodes-visited) (inc depth))))))))))
+                (recur tail (rose/root head) (inc total-nodes-visited) depth)
+                (recur children (rose/root head) (inc total-nodes-visited) (inc depth))))))))))
 
 (defn- failure
   [property failing-rose-tree trial-number size seed]
-  (let [root (gen/rose-root failing-rose-tree)
+  (let [root (rose/root failing-rose-tree)
         result (:result root)
         failing-args (:args root)]
 
