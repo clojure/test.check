@@ -33,6 +33,13 @@
 
 (defn quick-check
   "Tests `property` `num-tests` times.
+  Takes optional keys `:seed` and `:max-size`. The seed parameter
+  can be used to re-run previous tests, as the seed used is returned
+  after a test is run. The max-size can be used to control the 'size'
+  of generated values. The size will start at 0, and grow up to
+  max-size, as the number of tests increases. Generators will use
+  the size parameter to bound their growth. This prevents, for example,
+  generating a five-thousand element vector on the very first test.
 
   Examples:
 
