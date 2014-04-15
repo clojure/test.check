@@ -43,7 +43,7 @@ _test.check_ version numbers start where _simple-check_ left off: 0.5.7.
     * [byte-transforms](https://github.com/ztellman/byte-transforms/blob/c5b9613eebac722447593530531b9aa7976a0592/test/byte_transforms_simple_check.clj)
     * [collection-check](https://github.com/ztellman/collection-check)
   * Blog posts and videos (some of these may refer to simple-check):
-    * [Powerful Testing with test.check - Clojure/West](https://www.youtube.com/watch?v=JMhNINPo__g)
+    * [Powerful Testing with test.check - Clojure/West](https://www.youtube.com/watch?v=JMhNINPo__g) -- [Slides](https://speakerdeck.com/reiddraper/powerful-testing-with-test-dot-check)
     * [Check your work - 8th Light](http://blog.8thlight.com/connor-mendenhall/2013/10/31/check-your-work.html)
     * [Writing simple-check - Reid Draper](http://reiddraper.com/writing-simple-check/)
     * [Generative testing in Clojure - Youtube](https://www.youtube.com/watch?v=u0TkAw8QqrQ)
