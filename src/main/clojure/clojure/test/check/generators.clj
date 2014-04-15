@@ -164,7 +164,7 @@
   [value]
   [value (core/map int-rose-tree (shrink-int value))])
 
-(defn rand-range
+(defn- rand-range
   [^Random rnd lower upper]
   {:pre [(<= lower upper)]}
   (let [factor (.nextDouble rnd)]

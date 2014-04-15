@@ -461,7 +461,7 @@
 
 (deftest rand-range-uses-inclusive-bounds
   (let [bounds [5 7]
-        rand-range (apply partial gen/rand-range (gen/random) bounds)]
+        rand-range (apply partial #'gen/rand-range (gen/random) bounds)]
     (loop [trials 0
            bounds (set bounds)]
       (cond
