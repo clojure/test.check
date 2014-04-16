@@ -435,6 +435,26 @@
                  (choose 65 90)
                  (choose 97 122)])))
 
+(def char-alpha
+  "Generate alpha characters."
+  (fmap core/char
+        (one-of [(choose 65 90)
+                 (choose 97 122)])))
+
+(def char-symbol-special
+  "Generate non-alphanumeric characters that can be in a symbol."
+  (elements [\* \+ \! \- \_ \?]))
+
+(def char-keyword-rest
+  "Generate characters that can be the char following first of a keyword."
+  (frequency [[2 char-alpha-numeric]
+              [1 char-symbol-special]]))
+
+(def char-keyword-first
+  "Generate characters that can be the first char of a keyword."
+  (frequency [[2 char-alpha]
+              [1 char-symbol-special]]))
+
 (def string
   "Generate strings. May generate unprintable characters."
   (fmap clojure.string/join (vector char)))
@@ -449,9 +469,8 @@
 
 (def keyword
   "Generate keywords."
-  (->> string-alpha-numeric
-    (such-that #(not= "" %))
-    (fmap core/keyword)))
+  (->> (tuple char-keyword-first (vector char-keyword-rest))
+       (fmap (fn [[c cs]] (core/keyword (clojure.string/join (cons c cs)))))))
 
 (def ratio
   "Generates a `clojure.lang.Ratio`. Shrinks toward 0. Not all values generated
