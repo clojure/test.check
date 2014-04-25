@@ -319,3 +319,8 @@ trees. And if we do some more sampling, we'll see that we see lots of nils as
 well. We can replace some of our calls to `one-of` with calls to `frequency`
 to start controlling the likelihood of generating different bits of our tree.
 Try playing with this yourself.
+
+---
+
+Check out [page two](generator-examples.md) for more examples of using
+generators in practice.
