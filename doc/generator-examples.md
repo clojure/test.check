@@ -79,7 +79,7 @@ skip over some of the built-in, basic generators.
 ;; =>  [0 true] [4 true] [0 true] [-2 true] [-9 false])
 ```
 
-## Any number but 13
+## Any number but 5
 
 ```clojure
 (def anything-but-five (gen/such-that #(not= % 5) gen/int))
