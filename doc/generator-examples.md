@@ -3,7 +3,7 @@
 The following examples assume you have the following namespace alias:
 
 ```clojure
-(require '[clojure.test.check.generators :as gen]
+(require '[clojure.test.check.generators :as gen])
 ```
 
 For the most part, these are in order of simplest to most complex. They also
