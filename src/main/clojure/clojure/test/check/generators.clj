@@ -251,25 +251,36 @@
   (gen-bind (choose 0 (dec (count coll)))
             #(gen-pure (rose/fmap (partial nth coll) %))))
 
+(defn- such-that-helper
+  [max-tries pred gen tries-left rand-seed size]
+  (if (zero? tries-left)
+    (throw (ex-info (str "Couldn't satisfy such-that predicate after "
+                         max-tries " tries.") {}))
+    (let [value (call-gen gen rand-seed size)]
+      (if (pred (rose/root value))
+        (rose/filter pred value)
+        (recur max-tries pred gen (dec tries-left) rand-seed (inc size))))))
+
 (defn such-that
   "Create a generator that generates values from `gen` that satisfy predicate
-  `f`. Care is needed to ensure there is a high chance `gen` will satisfy `f`,
-  otherwise it will keep trying forever. Eventually we will add another
-  generator combinator that only tries N times before giving up. In the Haskell
-  version this is called `suchThatMaybe`.
+  `pred`. Care is needed to ensure there is a high chance `gen` will satisfy
+  `pred`. By default, `such-that` will try 10 times to generate a value that
+  satisfies the predicate. If no value passes this predicate after this number
+  of iterations, a runtime exception will be throw. You can pass an optional
+  third argument to change the number of times tried. Note also that each
+  time such-that retries, it will increase the size parameter.
 
   Examples:
 
       ;; generate non-empty vectors of integers
       (such-that not-empty (gen/vector gen/int))
   "
-  [pred gen]
-  (make-gen
-    (fn [rand-seed size]
-      (let [value (call-gen gen rand-seed size)]
-        (if (pred (rose/root value))
-          (rose/filter pred value)
-          (recur rand-seed (inc size)))))))
+  ([pred gen]
+   (such-that pred gen 10))
+  ([pred gen max-tries]
+   (make-gen
+     (fn [rand-seed size]
+       (such-that-helper max-tries pred gen max-tries rand-seed size)))))
 
 (def not-empty
   "Modifies a generator so that it doesn't generate empty collections.
