@@ -1,10 +1,10 @@
 # Changelog
 
-0.5.7
+* 0.5.7
     * Rename project to clojure.test.check. See README for mirgrating
     from _simple-check_.
 
-0.5.6
+* 0.5.6
     * Fix `choose` bug introduced in 0.5.4, the upper-bound was not inclusive.
 
 * 0.5.5
