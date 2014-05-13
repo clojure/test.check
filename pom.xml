@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test.check</artifactId>
-  <version>0.5.8-SNAPSHOT</version>
+  <version>0.5.8</version>
   <name>${project.artifactId}</name>
   <description>A QuickCheck inspired property-based testing library</description>
 
@@ -40,6 +40,6 @@
     <connection>scm:git:git://github.com/clojure/test.check.git</connection>
     <developerConnection>scm:git:git://github.com/clojure/test.check.git</developerConnection>
     <url>http://github.com/clojure/test.check</url>
-    <tag>HEAD</tag>
+    <tag>test.check-0.5.8</tag>
   </scm>
 </project>
