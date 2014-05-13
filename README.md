@@ -13,7 +13,7 @@ _test.check_ used to be called
 ### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.5.7"]
+[org.clojure/test.check "0.5.8"]
 ```
 
 ### Maven
@@ -22,7 +22,7 @@ _test.check_ used to be called
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.5.7</version>
+  <version>0.5.8</version>
 </dependency>
 ```
 
@@ -57,7 +57,7 @@ things:
 * Update project.clj
 
     In your `project.clj` replace `[reiddraper/simple-check "0.5.6"]` with
-    `[org.clojure/test.check "0.5.7"]` (note: your version numbers may be
+    `[org.clojure/test.check "0.5.8"]` (note: your version numbers may be
     different).
 
 * Update namespace declarations
