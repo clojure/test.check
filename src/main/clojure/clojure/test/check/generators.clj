@@ -248,8 +248,9 @@
   (when (empty? coll)
     (throw (ex-info "clojure.test.check.generators/elements called with empty collection!"
                     {:collection coll})))
-  (gen-bind (choose 0 (dec (count coll)))
-            #(gen-pure (rose/fmap (partial nth coll) %))))
+  (let [v (vec coll)]
+    (gen-bind (choose 0 (dec (count v)))
+              #(gen-pure (rose/fmap v %)))))
 
 (defn- such-that-helper
   [max-tries pred gen tries-left rand-seed size]

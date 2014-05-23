@@ -408,12 +408,16 @@
                     (= (:fail result)
                        (-> result :shrunk :smallest))))))
 
-;; elements throws a helpful exception when called on an empty collection
+;; elements works with a variety of input
 ;; ---------------------------------------------------------------------------
 
 (deftest elements-with-empty
   (let [t (is (thrown? clojure.lang.ExceptionInfo (gen/elements ())))]
     (is (= () (-> t ex-data :collection)))))
+
+(defspec elements-with-a-set 100
+  (prop/for-all [num (gen/elements #{9 10 11 12})]
+    (<= 9 num 12)))
 
 
 ;; choose respects bounds during shrinking
