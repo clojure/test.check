@@ -504,20 +504,43 @@
            (list inner-type)
            (map inner-type inner-type)]))
 
-(defn sized-container
-  {:no-doc true}
-  [inner-type]
-  (fn [size]
-    (if (zero? size)
-      inner-type
-      (one-of [inner-type
-               (container-type (resize (quot size 2) (sized (sized-container inner-type))))]))))
+(defn recursive-helper
+  [container-gen-fn scalar-gen scalar-size children-size height]
+  (if (zero? height)
+    (resize scalar-size scalar-gen)
+    (resize children-size
+            (container-gen-fn
+              (recursive-helper
+                container-gen-fn scalar-gen
+                scalar-size children-size (dec height))))))
+
+(defn recursive-gen
+  "This is a helper for writing recursive (tree-shaped) generators. The first
+  argument should be a function that takes a generator as an argument, and
+  produces another generator that 'contains' that generator. The vector function
+  in this namespace is a simple example. The second argument is a scalar
+  generator, like boolean. For example, to produce a tree of booleans:
+
+    (gen/recursive-gen gen/vector gen/boolean)
+
+  Vectors or maps either recurring or containing booleans or integers:
+
+    (gen/recursive-gen (fn [inner] (gen/one-of [(gen/vector inner)
+                                                (gen/map inner inner)]))
+                       (gen/one-of [gen/boolean gen/int]))
+  "
+  [container-gen-fn scalar-gen]
+  (sized (fn [size]
+           (bind (choose 1 5)
+                 (fn [height] (let [children-size (Math/pow size (/ 1 height))]
+                                (recursive-helper container-gen-fn scalar-gen size
+                                                  children-size height)))))))
 
 (def any
   "A recursive generator that will generate many different, often nested, values"
-  (sized (sized-container simple-type)))
+  (recursive-gen container-type simple-type))
 
 (def any-printable
   "Like any, but avoids characters that the shell will interpret as actions,
   like 7 and 14 (bell and alternate character set command)"
-  (sized (sized-container simple-type-printable)))
+  (recursive-gen container-type simple-type-printable))
