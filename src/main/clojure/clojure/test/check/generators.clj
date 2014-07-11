@@ -11,7 +11,7 @@
   (:import java.util.Random)
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
-                            not-empty])
+                            not-empty symbol namespace])
   (:require [clojure.core :as core]
             [clojure.test.check.rose-tree :as rose]))
 
@@ -479,10 +479,74 @@
   "Generate alpha-numeric strings."
   (fmap clojure.string/join (vector char-alpha-numeric)))
 
-(def keyword
-  "Generate keywords."
+(defn- +-or---digit?
+  "Returns true if c is \\+ or \\- and d is non-nil and a digit.
+
+  Symbols that start with +3 or -2 are not readable because they look
+  like numbers."
+  [c ^Character d]
+  (core/boolean (and d
+                     (or (= \+ c)
+                         (= \- c))
+                     (Character/isDigit d))))
+
+(def namespace-segment
+  "Generate the segment of a namespace."
   (->> (tuple char-keyword-first (vector char-keyword-rest))
-       (fmap (fn [[c cs]] (core/keyword (clojure.string/join (cons c cs)))))))
+       (such-that (fn [[c [d]]] (not (+-or---digit? c d))))
+       (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
+
+(def namespace
+  "Generate a namespace (or nil for no namespace)."
+  (->> (vector namespace-segment)
+       (fmap (fn [v] (when (seq v)
+                       (clojure.string/join "." v))))))
+
+(def keyword-segment-rest
+  "Generate segments of a keyword (between \\:)"
+  (->> (tuple char-keyword-rest (vector char-keyword-rest))
+       (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
+
+(def keyword-segment-first
+  "Generate segments of a keyword that can be first (between \\:)"
+  (->> (tuple char-keyword-first (vector char-keyword-rest))
+       (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
+
+(def keyword
+  "Generate keywords without namespaces."
+  (->> (tuple keyword-segment-first (vector keyword-segment-rest))
+       (fmap (fn [[c cs]]
+               (core/keyword (clojure.string/join ":" (cons c cs)))))))
+
+(def keyword-ns
+  "Generate keywords with optional namespaces."
+  (->> (tuple namespace char-keyword-first (vector char-keyword-rest))
+       (fmap (fn [[ns c cs]]
+               (core/keyword ns (clojure.string/join (cons c cs)))))))
+
+(def char-symbol-first
+  (frequency [[10 char-alpha]
+              [5 char-symbol-special]
+              [1 (return \.)]]))
+
+(def char-symbol-rest
+  (frequency [[10 char-alpha-numeric]
+              [5 char-symbol-special]
+              [1 (return \.)]]))
+
+(def symbol
+  "Generate symbols without namespaces."
+  (frequency [[100 (->> (tuple char-symbol-first (vector char-symbol-rest))
+                        (such-that (fn [[c [d]]] (not (+-or---digit? c d))))
+                        (fmap (fn [[c cs]] (core/symbol (clojure.string/join (cons c cs))))))]
+              [1 (return '/)]]))
+
+(def symbol-ns
+  "Generate symbols with optional namespaces."
+  (frequency [[100 (->> (tuple namespace char-symbol-first (vector char-symbol-rest))
+                        (such-that (fn [[_ c [d]]] (not (+-or---digit? c d))))
+                        (fmap (fn [[ns c cs]] (core/symbol ns (clojure.string/join (cons c cs))))))]
+              [1 (return '/)]]))
 
 (def ratio
   "Generates a `clojure.lang.Ratio`. Shrinks toward 0. Not all values generated
@@ -493,10 +557,10 @@
            (such-that (complement zero?) int))))
 
 (def simple-type
-  (one-of [int char string ratio boolean keyword]))
+  (one-of [int char string ratio boolean keyword keyword-ns symbol symbol-ns]))
 
 (def simple-type-printable
-  (one-of [int char-ascii string-ascii ratio boolean keyword]))
+  (one-of [int char-ascii string-ascii ratio boolean keyword keyword-ns symbol symbol-ns]))
 
 (defn container-type
   [inner-type]
