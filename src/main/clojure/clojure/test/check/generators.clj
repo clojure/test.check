@@ -453,16 +453,16 @@
         (one-of [(choose 65 90)
                  (choose 97 122)])))
 
-(def char-symbol-special
+(def ^{:private true} char-symbol-special
   "Generate non-alphanumeric characters that can be in a symbol."
   (elements [\* \+ \! \- \_ \?]))
 
-(def char-keyword-rest
+(def ^{:private true} char-keyword-rest
   "Generate characters that can be the char following first of a keyword."
   (frequency [[2 char-alpha-numeric]
               [1 char-symbol-special]]))
 
-(def char-keyword-first
+(def ^{:private true} char-keyword-first
   "Generate characters that can be the first char of a keyword."
   (frequency [[2 char-alpha]
               [1 char-symbol-special]]))
@@ -490,24 +490,24 @@
                          (= \- c))
                      (Character/isDigit d))))
 
-(def namespace-segment
+(def ^{:private true} namespace-segment
   "Generate the segment of a namespace."
   (->> (tuple char-keyword-first (vector char-keyword-rest))
        (such-that (fn [[c [d]]] (not (+-or---digit? c d))))
        (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
 
-(def namespace
+(def ^{:private true} namespace
   "Generate a namespace (or nil for no namespace)."
   (->> (vector namespace-segment)
        (fmap (fn [v] (when (seq v)
                        (clojure.string/join "." v))))))
 
-(def keyword-segment-rest
+(def ^{:private true} keyword-segment-rest
   "Generate segments of a keyword (between \\:)"
   (->> (tuple char-keyword-rest (vector char-keyword-rest))
        (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
 
-(def keyword-segment-first
+(def ^{:private true} keyword-segment-first
   "Generate segments of a keyword that can be first (between \\:)"
   (->> (tuple char-keyword-first (vector char-keyword-rest))
        (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
@@ -524,12 +524,12 @@
        (fmap (fn [[ns c cs]]
                (core/keyword ns (clojure.string/join (cons c cs)))))))
 
-(def char-symbol-first
+(def ^{:private true} char-symbol-first
   (frequency [[10 char-alpha]
               [5 char-symbol-special]
               [1 (return \.)]]))
 
-(def char-symbol-rest
+(def ^{:private true} char-symbol-rest
   (frequency [[10 char-alpha-numeric]
               [5 char-symbol-special]
               [1 (return \.)]]))
