@@ -518,7 +518,9 @@
        (fmap (fn [[c cs]]
                (core/keyword (clojure.string/join ":" (cons c cs)))))))
 
-(def keyword-ns
+(def
+  ^{:added "0.5.9"}
+  keyword-ns
   "Generate keywords with optional namespaces."
   (->> (tuple namespace char-keyword-first (vector char-keyword-rest))
        (fmap (fn [[ns c cs]]
@@ -541,7 +543,9 @@
                         (fmap (fn [[c cs]] (core/symbol (clojure.string/join (cons c cs))))))]
               [1 (return '/)]]))
 
-(def symbol-ns
+(def
+  ^{:added "0.5.9"}
+  symbol-ns
   "Generate symbols with optional namespaces."
   (frequency [[100 (->> (tuple namespace char-symbol-first (vector char-symbol-rest))
                         (such-that (fn [[_ c [d]]] (not (+-or---digit? c d))))
@@ -578,7 +582,9 @@
                 container-gen-fn scalar-gen
                 scalar-size children-size (dec height))))))
 
-(defn recursive-gen
+(defn
+  ^{:added "0.5.9"}
+  recursive-gen
   "This is a helper for writing recursive (tree-shaped) generators. The first
   argument should be a function that takes a generator as an argument, and
   produces another generator that 'contains' that generator. The vector function
