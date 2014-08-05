@@ -248,7 +248,7 @@ generator will be `gen/vector` and our scalar will be `gen/boolean`:
 
 Now, let's make our own, JSON-like generator. We'll allow `gen/list` and
 `gen/map` as our compound types and `gen/int` and `gen/boolean` as our scalar
-types. Since `recursive-gen` only excepts one of each type of generator, we'll
+types. Since `recursive-gen` only accepts one of each type of generator, we'll
 combine our compound types with a simple function, and the two scalars with
 `gen/one-of`.
 
