@@ -1,5 +1,12 @@
 # Changelog
 
+* 0.5.9
+    * Better sizing for recursive generators
+    * Add `gen/recursive-gen` function for writing recursive generators
+    * Add keyword and symbol generators that may include namespaces
+        * `gen/keyword-ns`
+        * `gen/symbol-ns`
+
 * 0.5.8
     * Limit the number of retries for gen/such-that. A two-arity version is
       provided if you need to retry more than 10 times. This should be a
