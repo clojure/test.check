@@ -137,7 +137,7 @@ create a vector of natural numbers (using the `nat` generator), and then use
 ```
 
 Imagine you have a record, that has a convenience creation function, `foo`. You
-can create random `foo`s by generated the types of the arguments to `foo` with
+can create random `foo`s by generating the types of the arguments to `foo` with
 `tuple`, and then using `(fmap foo (tuple ...))`.
 
 #### such-that

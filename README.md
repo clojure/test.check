@@ -76,7 +76,7 @@ things:
 
 ## Examples
 
-Let's say we're testing a sort function. We want want to check that that our
+Let's say we're testing a sort function. We want to check that that our
 sort function is idempotent, that is, applying sort twice should be
 equivalent to applying it once: `(= (sort a) (sort (sort a)))`. Let's write a
 quick test to make sure this is the case:
