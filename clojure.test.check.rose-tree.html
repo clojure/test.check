@@ -1,6 +1,6 @@
 <html lang="en">
   <head>
-    <title>clojure.test.check.clojure-test-test documentation</title>
+    <title>clojure.test.check.rose-tree documentation</title>
     <link href="css/default.css" type="text/css" rel="stylesheet" />
     <link href="css/codox-md.css" type="text/css" rel="stylesheet" />
     <script type="text/javascript" src="js/jquery.min.js"></script>
@@ -22,17 +22,30 @@
       <div id="vars" class="sidebar">
         <h3>Public Vars</h3>
         <ul class="ns-var-links">
-          
+          <li class="ns-var-list"><a class="ns-var-link ns-var-name" href="clojure.test.check.rose-tree.html#var-seq">seq</a></li>
         </ul>
       </div>
     </navigation>
     <article>
       <div id="content" class="namespace-docs">
-        <h2 class="namespace-title">clojure.test.check.clojure-test-test documentation</h2>
-        <div class="doc">
+        <h2 class="namespace-title">clojure.test.check.rose-tree documentation</h2>
+        <div class="doc"><p>A lazy tree data structure used for shrinking.</p>
 </div>
         <div class="ns-vars">
-          
+          <div class="public">
+            <h3><a id="var-seq" class="source var-name" href="/">seq</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[root]</div>
+            
+            
+            <div class="doc"><p>Create a lazy-seq of all of the (unique) nodes in a shrink-tree.
+This assumes that two nodes with the same value have the same children.
+While it's not common, it's possible to create trees that don't
+fit that description. This function is significantly faster than
+brute-force enumerating all of the nodes in a tree, as there will
+be many duplicates.</p>
+</div>
+          </div>
         </div>
       </div>
     </article>

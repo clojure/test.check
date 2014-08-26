@@ -34,7 +34,7 @@ the count of the input is preserved. Our test might look like:
            (ascending? s)))))
 
 ;; test our property
-(sc/quick-check 100 property)
+(tc/quick-check 100 property)
 ;; => {:result true, :num-tests 100, :seed 1381894143051}
 ```
 
@@ -48,7 +48,7 @@ to fail. For example, the function might originally fail with input:
   (prop/for-all [v (gen/vector gen/int)]
     (ascending? v)))
 
-(sc/quick-check 100 bad-property)
+(tc/quick-check 100 bad-property)
 ;; => {:result false, :failing-size 7, :num-tests 8, :fail [[-2 4 -7 5 -2 7 -4]],
 ;; =>  :shrunk {:total-nodes-visited 19, :depth 8, :result false,
 ;; =>           :smallest [[0 -1]]}}
@@ -137,7 +137,7 @@ create a vector of natural numbers (using the `nat` generator), and then use
 ```
 
 Imagine you have a record, that has a convenience creation function, `foo`. You
-can create random `foo`s by generated the types of the arguments to `foo` with
+can create random `foo`s by generating the types of the arguments to `foo` with
 `tuple`, and then using `(fmap foo (tuple ...))`.
 
 #### such-that
@@ -227,95 +227,49 @@ To put it all together, we'll use `fmap` to call our record constructor, and
 
 ### Recursive generators
 
-Imagine we have some tree data-type that we want to generate: an (unbalanced)
-binary tree of natural numbers. Our tree representation uses vectors of count
-three for nodes ([value, left-tree, right-tree]), and raw integers for leaf
-nodes. Some example trees are
+---
+NOTE: Writing recursive generators was significantly simplified in version
+0.5.9. For the old way, see the [0.5.8
+documentation](https://github.com/clojure/test.check/blob/v0.5.8/doc/intro.md#recursive-generators).
+
+---
+
+Writing recursive, or tree-shaped generators is easy using `gen/recursive-gen`.
+`recursive-gen` takes two arguments, a compound generator, and a scalar
+generator. We'll start with a simple example, and then move into something more
+complex. First, let's generate a nested vector of booleans. So our compound
+generator will be `gen/vector` and our scalar will be `gen/boolean`:
 
 ```clojure
-7
-[5 [2 2] 1]
-[10 nil 3]
-[3 [1 [3 4 3] [1 5 nil]] [5 4 3]]
+(def nested-vector-of-boolean (gen/recursive-gen gen/vector gen/boolean))
+(last (gen/sample nested-vector-of-boolean 20))
+;; => [[true] [false true true] [false]]
 ```
 
-Let's try and rephrase our goals a little more formally:
-
-1. A tree is either a natural number, or a natural number and two children.
-2. A child is either `nil`, or a tree.
-
-Here's a first translation of our requirements:
+Now, let's make our own, JSON-like generator. We'll allow `gen/list` and
+`gen/map` as our compound types and `gen/int` and `gen/boolean` as our scalar
+types. Since `recursive-gen` only accepts one of each type of generator, we'll
+combine our compound types with a simple function, and the two scalars with
+`gen/one-of`.
 
 ```clojure
-(def tree
-  (gen/one-of ;; choose either a natural number, or a node
-    [gen/nat
-     (gen/tuple gen/nat
-                (gen/one-of [(gen/return nil) tree])
-                (gen/one-of [(gen/return nil) tree]))]))
+(def compound (fn [inner-gen]
+                  (gen/one-of [(gen/list inner-gen)
+                               (gen/map inner-gen inner-gen)])))
+(def scalars (gen/one-of [gen/int gen/boolean]))
+(def my-json-like-thing (gen/recursive-gen compound scalars))
+(last (gen/sample my-json-like-thing 20))
+;; =>
+;; (()
+;;  {{4 -11, 1 -19} (false),
+;;  {} {1 6},
+;;  (false false) {true -3, false false, -7 1}})
 ```
 
-And if we try and `sample` our generator:
+And we see we got a list whose first element is the empty the list. The second
+element is a map with int keys and values. Etc.
 
-```clojure
-(gen/sample tree)
-;; => NullPointerException   test.check.generators/gen-bind/fn--1244 (generators.clj:147)
-```
+---
 
-It turns out, we can't create recursive values (tree refers to itself in it's
-definition). Well, we can simply wrap it in a nullary function:
-
-```clojure
-(defn tree
-  []
-  (gen/one-of ;; choose either a natural number, or a node
-    [gen/nat
-     (gen/tuple gen/nat
-                (gen/one-of [(gen/return nil) (tree)])
-                (gen/one-of [(gen/return nil) (tree)]))]))
-```
-
-And now if we try and `sample`:
-
-```clojure
-(gen/sample (tree)) ;; we now have to 'call' tree to get our generator
-;; => StackOverflowError   test.check.generators/return (generators.clj:161)
-```
-
-Progress. It turns out, we don't have a deterministic way to stop our
-recursion. Our tree can just be created deeper and deeper. What we'd like is
-some way to control the maximum depth of the tree. Fortunately, _test.check_
-provides a function to help: `sized`. `sized` takes a function that takes an
-integer size, and returns a generator based on this size. We can use this size
-parameter to decide when to stop recurring. We'll say that when size is 0,
-we'll only return leaf nodes. Further, when we recur, calling our own
-generator, we'll decrease the size (half it, in this case). We can do this
-with the `resize` function, which allows us to create a new generator with
-size always bound to a particular value. Let's see how this looks:
-
-```clojure
-(defn tree
-  [size]
-  (if (= size 0)
-    gen/nat
-    (let [new-size (quot size 2)
-          smaller-tree (gen/resize new-size (gen/sized tree))]
-      (gen/one-of ;; choose either a natural number, or a node
-        [gen/nat
-         (gen/tuple gen/nat
-                    (gen/one-of [(gen/return nil) smaller-tree])
-                    (gen/one-of [(gen/return nil) smaller-tree]))]))))
-```
-
-Now let's see where we are:
-
-```clojure
-(gen/sample (gen/sized tree))
-;; => (0 [1 nil 0] [1 nil 0] [1 nil 1] 1 1 4 3 8 [7 nil [1 nil nil]])
-```
-
-Excellent. We see ten trees printed. But we're seeing lots of one-element
-trees. And if we do some more sampling, we'll see that we see lots of nils as
-well. We can replace some of our calls to `one-of` with calls to `frequency`
-to start controlling the likelihood of generating different bits of our tree.
-Try playing with this yourself.
+Check out [page two](generator-examples.md) for more examples of using
+generators in practice.

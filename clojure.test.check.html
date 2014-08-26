@@ -9,14 +9,14 @@
   <body>
     <header>
       <div id="header">
-        <h1 class="project-title">Test.check 0.5.8-SNAPSHOT API documentation</h1>
+        <h1 class="project-title">Test.check 0.5.9 API documentation</h1>
       </div>
     </header>
     <navigation>
       <div id="namespaces" class="sidebar">
         <h3>Namespaces</h3>
         <ul class="ns-links">
-          <li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.html">clojure.test.check</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.clojure-test.html">clojure.test.check.clojure-test</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.generators.html">clojure.test.check.generators</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.properties.html">clojure.test.check.properties</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.clojure-test-test.html">clojure.test.check.clojure-test-test</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.rose-tree-test.html">clojure.test.check.rose-tree-test</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.test.html">clojure.test.check.test</a></li>
+          <li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.html">clojure.test.check</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.clojure-test.html">clojure.test.check.clojure-test</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.generators.html">clojure.test.check.generators</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.properties.html">clojure.test.check.properties</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.rose-tree.html">clojure.test.check.rose-tree</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.clojure-test-test.html">clojure.test.check.clojure-test-test</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.rose-tree-test.html">clojure.test.check.rose-tree-test</a></li><li class="ns-list"><a class="ns-link ns-name" href="clojure.test.check.test.html">clojure.test.check.test</a></li>
         </ul>
       </div>
       <div id="vars" class="sidebar">
@@ -46,7 +46,14 @@
             <div class="usage">[num-tests property &amp; {:keys [seed max-size], :or {max-size 200}}]</div>
             
             
-            <div class="doc"><p>Tests <code>property</code> <code>num-tests</code> times.</p>
+            <div class="doc"><p>Tests <code>property</code> <code>num-tests</code> times.
+Takes optional keys <code>:seed</code> and <code>:max-size</code>. The seed parameter
+can be used to re-run previous tests, as the seed used is returned
+after a test is run. The max-size can be used to control the 'size'
+of generated values. The size will start at 0, and grow up to
+max-size, as the number of tests increases. Generators will use
+the size parameter to bound their growth. This prevents, for example,
+generating a five-thousand element vector on the very first test.</p>
 
 <p>Examples:</p>
 
