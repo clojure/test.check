@@ -191,7 +191,7 @@ Let's go through an example of generating random values of our own
 
 We can use the `->User` helper function to construct our user. First, let's
 look at the generators we'll use for the arguments. For the user-name, we can
-just use an alpha-numeric string, user IDs will be natural numbers, we'll
+just use an alphanumeric string, user IDs will be natural numbers, we'll
 construct our own simple email generator, and we'll use booleans to denote
 whether the user account is active. Let's write a simple email address
 generator:
@@ -201,7 +201,7 @@ generator:
 (def email-gen
   (gen/fmap (fn [[name domain-name]]
               (str name "@" domain-name))
-            (gen/tuple (gen/not-empty gen/string-alpha-numeric) domain)))
+            (gen/tuple (gen/not-empty gen/string-alphanumeric) domain)))
 
 (last (gen/sample email-gen))
 ;; => "CW6161Q6@hotmail.com"
@@ -213,7 +213,7 @@ To put it all together, we'll use `fmap` to call our record constructor, and
 ```clojure
 (def user-gen
   (gen/fmap (partial apply ->User)
-            (gen/tuple (gen/not-empty gen/string-alpha-numeric)
+            (gen/tuple (gen/not-empty gen/string-alphanumeric)
                        gen/nat
                        email-gen
                        gen/boolean)))

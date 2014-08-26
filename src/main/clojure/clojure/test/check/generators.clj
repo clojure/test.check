@@ -459,12 +459,19 @@
   "Generate only ascii character."
   (fmap core/char (choose 32 126)))
 
-(def char-alpha-numeric
-  "Generate alpha-numeric characters."
+(def char-alphanumeric
+  "Generate alphanumeric characters."
   (fmap core/char
         (one-of [(choose 48 57)
                  (choose 65 90)
                  (choose 97 122)])))
+
+(def ^{:deprecated "0.6.0"}
+  char-alpha-numeric
+  "Deprecated - use char-alphanumeric instead.
+
+  Generate alphanumeric characters."
+  char-alphanumeric)
 
 (def char-alpha
   "Generate alpha characters."
@@ -478,7 +485,7 @@
 
 (def ^{:private true} char-keyword-rest
   "Generate characters that can be the char following first of a keyword."
-  (frequency [[2 char-alpha-numeric]
+  (frequency [[2 char-alphanumeric]
               [1 char-symbol-special]]))
 
 (def ^{:private true} char-keyword-first
@@ -494,9 +501,16 @@
   "Generate ascii strings."
   (fmap clojure.string/join (vector char-ascii)))
 
-(def string-alpha-numeric
-  "Generate alpha-numeric strings."
-  (fmap clojure.string/join (vector char-alpha-numeric)))
+(def string-alphanumeric
+  "Generate alphanumeric strings."
+  (fmap clojure.string/join (vector char-alphanumeric)))
+
+(def ^{:deprecated "0.6.0"}
+  string-alpha-numeric
+  "Deprecated - use string-alphanumeric instead.
+
+  Generate alphanumeric strings."
+  string-alphanumeric)
 
 (defn- +-or---digit?
   "Returns true if c is \\+ or \\- and d is non-nil and a digit.
@@ -551,7 +565,7 @@
               [1 (return \.)]]))
 
 (def ^{:private true} char-symbol-rest
-  (frequency [[10 char-alpha-numeric]
+  (frequency [[10 char-alphanumeric]
               [5 char-symbol-special]
               [1 (return \.)]]))
 

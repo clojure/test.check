@@ -262,10 +262,10 @@
 
     (testing "char"                 (t gen/char                 Character))
     (testing "char-ascii"           (t gen/char-ascii           Character))
-    (testing "char-alpha-numeric"   (t gen/char-alpha-numeric   Character))
+    (testing "char-alphanumeric"    (t gen/char-alphanumeric    Character))
     (testing "string"               (t gen/string               String))
     (testing "string-ascii"         (t gen/string-ascii         String))
-    (testing "string-alpha-numeric" (t gen/string-alpha-numeric String))
+    (testing "string-alphanumeric"  (t gen/string-alphanumeric  String))
 
     (testing "vector" (t (gen/vector gen/int) clojure.lang.IPersistentVector))
     (testing "list"   (t (gen/list gen/int)   clojure.lang.IPersistentList))
