@@ -145,7 +145,7 @@ To learn more, check out the [documentation](#documentation) links.
 
 ### `clojure.test` Integration
 
-There is a macro called `defspec` that allows you to succinctly write
+The macro `clojure.test.check.clojure-test/defspec` allows you to succinctly write
 properties that run under the `clojure.test` runner, for example:
 
 ```clojure
