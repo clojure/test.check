@@ -11,7 +11,7 @@
   (:import java.util.Random)
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
-                            not-empty symbol namespace])
+                            shuffle not-empty symbol namespace])
   (:require [clojure.core :as core]
             [clojure.test.check.rose-tree :as rose]))
 
@@ -400,6 +400,25 @@
                         (fn [roses]
                           (gen-pure (rose/shrink core/list
                                                  roses)))))))
+
+(defn- swap
+  [coll [i1 i2]]
+  (assoc coll i2 (coll i1) i1 (coll i2)))
+
+(defn
+  ^{:added "0.6.0"}
+  shuffle
+  "Create a generator that generates random permutations of `coll`. Shrinks
+  toward the original collection: `coll`."
+  [coll]
+  (let [index-gen (choose 0 (dec (count coll)))]
+    (fmap (partial reduce swap coll)
+          ;; a vector of swap instructions, with count between
+          ;; zero and 2 * count. This means that the average number
+          ;; of instructions is count, which should provide sufficient
+          ;; (though perhaps not 'perfect') shuffling. This still gives us
+          ;; nice, relatively quick shrinks.
+          (vector (tuple index-gen index-gen) 0 (* 2 (count coll))))))
 
 (def byte
   "Generates `java.lang.Byte`s, using the full byte-range."

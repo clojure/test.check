@@ -489,3 +489,14 @@
              "it is possible for this to fail without there being a problem, "
              "but we should be able to rely upon probability to not bother us "
              "too frequently."))))
+
+;; shuffling a vector generates a permutation of that vector
+;; ---------------------------------------------------------------------------
+
+(def original-vector-and-permutation
+  (gen/bind (gen/vector gen/int)
+        #(gen/tuple (gen/return %) (gen/shuffle %))))
+
+(defspec shuffled-vector-is-a-permutation-of-original 100
+  (prop/for-all [[coll permutation] original-vector-and-permutation]
+                (= (sort coll) (sort permutation))))
