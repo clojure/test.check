@@ -23,28 +23,43 @@
   "Defines a new clojure.test test var that uses `quick-check` to verify
   [property] with the given [args] (should be a sequence of generators),
   [default-times] times by default.  You can call the function defined as [name]
-  with no arguments to trigger this test directly (i.e.  without starting a
-  wider clojure.test run), or with a single argument that will override
-  [default-times]."
-  ([name property]
-   `(defspec ~name ~*default-test-count* ~property))
+  with no arguments to trigger this test directly (i.e., without starting a
+  wider clojure.test run), with a single argument that will override
+  [default-times], or with a map containing any of the keys
+  [:seed :max-size :num-tests]."
+  {:arglists '([name property] [name num-tests? property] [name options? property])}
+  [name & args]
+  (let [property           (second args)
+        [options property] (if property
+                             [(first args) property]
+                             [*default-test-count* (first args)])
+        options            (cond (nil? options)
+                                 {:num-tests *default-test-count*}
 
-  ([name default-times property]
-   `(do
-      ;; consider my shame for introducing a cyclical dependency like this...
-      ;; Don't think we'll know what the solution is until clojure.test.check
-      ;; integration with another test framework is attempted.
-      (require 'clojure.test.check)
-      (defn ~(vary-meta name assoc
-                        ::defspec true
-                        :test `#(#'assert-check (assoc (~name) :test-var (str '~name))))
-        ([] (~name ~default-times))
-        ([times# & {:keys [seed# max-size#] :as quick-check-opts#}]
-         (apply
-           clojure.test.check/quick-check
-           times#
-           (vary-meta ~property assoc :name (str '~property))
-           (apply concat quick-check-opts#)))))))
+                                 (integer? options)
+                                 {:num-tests options}
+
+                                 (map? options)
+                                 (if (:num-tests options)
+                                   options
+                                   (assoc options :num-tests
+                                          *default-test-count*)))]
+    `(do
+       ;; consider my shame for introducing a cyclical dependency like this...
+       ;; Don't think we'll know what the solution is until clojure.test.check
+       ;; integration with another test framework is attempted.
+       (require 'clojure.test.check)
+       (defn ~(vary-meta name assoc
+                         ::defspec true
+                         :test `#(#'assert-check (assoc (~name)
+                                                   :test-var (str '~name))))
+         ([] (apply ~name (:num-tests ~options) (apply concat ~options)))
+         ([~'times & {:keys [~'seed ~'max-size] :as ~'quick-check-opts}]
+            (apply
+             clojure.test.check/quick-check
+             ~'times
+             (vary-meta ~property assoc :name (str '~property))
+             (apply concat ~'quick-check-opts)))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
