@@ -500,3 +500,17 @@
 (defspec shuffled-vector-is-a-permutation-of-original 100
   (prop/for-all [[coll permutation] original-vector-and-permutation]
                 (= (sort coll) (sort permutation))))
+
+;; defspec macro
+;; ---------------------------------------------------------------------------
+
+(defspec run-only-once 1 (prop/for-all* [gen/int] (constantly true)))
+
+(defspec run-default-times (prop/for-all* [gen/int] (constantly true)))
+
+(defspec run-with-map {:num-tests 1} (prop/for-all* [gen/int] (constantly true)))
+
+(defspec run-with-map {:num-tests 1
+                       :seed 1}
+  (prop/for-all [a gen/int]
+                (= a 0)))
