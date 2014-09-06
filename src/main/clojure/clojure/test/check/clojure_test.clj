@@ -35,10 +35,10 @@
                              [*default-test-count* (first args)])
         options            (cond (nil? options)
                                  {:num-tests *default-test-count*}
-                                 
+
                                  (integer? options)
                                  {:num-tests options}
-                                 
+
                                  (map? options)
                                  (if (:num-tests options)
                                    options
