@@ -151,9 +151,9 @@ write properties that run under the `clojure.test` runner, for example:
 ```clojure
 (defspec first-element-is-min-after-sorting ;; the name of the test
          100 ;; the number of iterations for test.check to test
-         (prop/for-all [v (such-that not-empty (gen/vector gen/int))]
+         (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
            (= (apply min v)
-              (first (sorted v)))))
+              (first (sort v)))))
 ```
 
 ## Release Notes
