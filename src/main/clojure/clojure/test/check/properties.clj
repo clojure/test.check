@@ -8,13 +8,47 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.properties
+  (:import clojure.test.check.generators.Generator)
   (:require [clojure.test.check.generators :as gen]))
+
+(defrecord Result [result pass? message stamps])
+
+(defprotocol ToResult
+  (to-result [a]))
+
+(extend java.lang.Object
+  ToResult
+  {:to-result (fn [b]
+               ;; not checking for caught exceptions here
+               (->Result b (not (false? b)) nil nil))})
+
+(extend nil
+  ToResult
+  {:to-result (fn [b]
+               (->Result b false nil nil))})
+
+(extend java.lang.Boolean
+  ToResult
+  {:to-result (fn [b]
+               (->Result b b nil nil))})
+
+(extend Generator
+  ToResult
+  {:to-result identity})
+
+(extend Result
+  ToResult
+  {:to-result identity})
+
+(defn message
+  [m property]
+  (assoc property :message m))
 
 (defn- apply-gen
   [function]
   (fn [args]
-    (let [result (try (apply function args) (catch Throwable t t))]
-      {:result result
+    (let [result (to-result (try (apply function args) (catch Throwable t t)))]
+      {:result (:result result)
        :function function
        :args args})))
 
@@ -29,9 +63,18 @@
   (for-all* [gen/int gen/int] (fn [a b] (>= (+ a b) a)))
   "
   [args function]
-  (gen/fmap
-    (apply-gen function)
-    (apply gen/tuple args)))
+  (gen/bind
+    (apply gen/tuple args)
+    (fn [a]
+      (let [result ((apply-gen function) a)]
+        (cond (gen/generator? result) (gen/fmap (fn [r] (println "foo") (update-in r :args #(conj % a))) result)
+              ;; NOTE: quick note to myself before I leave this code for the night,
+              ;; this :else is getting hit because we're wrapping the result
+              ;; with a {:result ...} map. Should probably do that conditionally.
+              ;; We also need two result types I think, a result to return from
+              ;; a property itself, and a reuslt that tacks the 'args' on top of this.
+              :else (do (println "bar") (gen/return result)))))
+    ))
 
 (defn binding-vars
   [bindings]
