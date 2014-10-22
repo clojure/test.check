@@ -83,6 +83,7 @@
 
 (defn fmap
   [f gen]
+  (assert (generator? gen) "Second arg to fmap must be a generator")
   (gen-fmap (partial rose/fmap f) gen))
 
 
@@ -117,6 +118,7 @@
 
   "
   [generator k]
+  (assert (generator? generator) "First arg to bind must be a generator")
   (gen-bind generator (bind-helper k)))
 
 ;; Helpers
@@ -186,10 +188,12 @@
 
 (defn resize
   "Create a new generator with `size` always bound to `n`."
-  [n {gen :gen}]
-  (make-gen
-    (fn [rnd _size]
-      (gen rnd n))))
+  [n generator]
+  (assert (generator? generator) "Second arg to resize must be a generator")
+  (let [{:keys [gen]} generator]
+    (make-gen
+     (fn [rnd _size]
+       (gen rnd n)))))
 
 (defn choose
   "Create a generator that returns numbers in the range
@@ -213,6 +217,8 @@
 
   "
   [generators]
+  (assert (every? generator? generators)
+          "Arg to one-of must be a collection of generators")
   (bind (choose 0 (dec (count generators)))
         (partial nth generators)))
 
@@ -233,6 +239,9 @@
       (gen/frequency [[5 gen/int] [3 (gen/vector gen/int)] [2 gen/boolean]])
   "
   [pairs]
+  (assert (every? (fn [[x g]] (and (number? x) (generator? g)))
+                  pairs)
+          "Arg to frequency must be a list of [num generator] pairs")
   (let [total (apply + (core/map first pairs))]
     (gen-bind (choose 1 total)
               #(pick pairs (rose/root %)))))
@@ -245,9 +254,7 @@
       (gen/elements [:foo :bar :baz])
   "
   [coll]
-  (when (empty? coll)
-    (throw (ex-info "clojure.test.check.generators/elements called with empty collection!"
-                    {:collection coll})))
+  (assert (seq coll) "elements cannot be called with an empty collection")
   (let [v (vec coll)]
     (gen-bind (choose 0 (dec (count v)))
               #(gen-pure (rose/fmap v %)))))
@@ -279,11 +286,12 @@
   ([pred gen]
    (such-that pred gen 10))
   ([pred gen max-tries]
+   (assert (generator? gen) "Second arg to such-that must be a generator")
    (make-gen
      (fn [rand-seed size]
        (such-that-helper max-tries pred gen max-tries rand-seed size)))))
 
-(def not-empty
+(defn not-empty
   "Modifies a generator so that it doesn't generate empty collections.
 
   Examples:
@@ -291,13 +299,16 @@
       ;; generate a vector of booleans, but never the empty vector
       (gen/not-empty (gen/vector gen/boolean))
   "
-  (partial such-that core/not-empty))
+  [gen]
+  (assert (generator? gen) "Arg to not-empty must be a generator")
+  (such-that core/not-empty gen))
 
 (defn no-shrink
   "Create a new generator that is just like `gen`, except does not shrink
   at all. This can be useful when shrinking is taking a long time or is not
   applicable to the domain."
   [gen]
+  (assert (generator? gen) "Arg to no-shrink must be a generator")
   (gen-bind gen
             (fn [[root _children]]
               (gen-pure
@@ -307,6 +318,7 @@
   "Create a new generator like `gen`, but will consider nodes for shrinking
   even if their parent passes the test (up to one additional level)."
   [gen]
+  (assert (generator? gen) "Arg to shrink-2 must be a generator")
   (gen-bind gen (comp gen-pure rose/collapse)))
 
 (def boolean
@@ -326,6 +338,8 @@
       ;; =>  [3 true] [-4 false] [9 true]))
   "
   [& generators]
+  (assert (every? generator? generators)
+          "Args to tuple must be generators")
   (gen-bind (sequence gen-bind gen-pure generators)
             (fn [roses]
               (gen-pure (rose/zip core/vector roses)))))
@@ -362,6 +376,7 @@
   "Create a generator whose elements are chosen from `gen`. The count of the
   vector will be bounded by the `size` generator parameter."
   ([generator]
+   (assert (generator? generator) "Arg to vector must be a generator")
    (gen-bind
      (sized #(choose 0 %))
      (fn [num-elements-rose]
@@ -372,8 +387,10 @@
                    (gen-pure (rose/shrink core/vector
                                           roses)))))))
   ([generator num-elements]
+   (assert (generator? generator) "First arg to vector must be a generator")
    (apply tuple (repeat num-elements generator)))
   ([generator min-elements max-elements]
+   (assert (generator? generator) "First arg to vector must be a generator")
    (gen-bind
      (choose min-elements max-elements)
      (fn [num-elements-rose]
@@ -392,6 +409,7 @@
 (defn list
   "Like `vector`, but generators lists."
   [generator]
+  (assert (generator? generator) "First arg to list must be a generator")
   (gen-bind (sized #(choose 0 %))
             (fn [num-elements-rose]
               (gen-bind (sequence gen-bind gen-pure
@@ -448,6 +466,8 @@
   (assert (even? (count kvs)))
   (let [ks (take-nth 2 kvs)
         vs (take-nth 2 (rest kvs))]
+    (assert (every? generator? vs)
+            "Value args to hash-map must be generators")
     (fmap (partial zipmap ks)
           (apply tuple vs))))
 
@@ -633,6 +653,8 @@
                        (gen/one-of [gen/boolean gen/int]))
   "
   [container-gen-fn scalar-gen]
+  (assert (generator? scalar-gen)
+          "Second arg to recursive-gen must be a generator")
   (sized (fn [size]
            (bind (choose 1 5)
                  (fn [height] (let [children-size (Math/pow size (/ 1 height))]

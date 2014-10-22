@@ -412,8 +412,7 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest elements-with-empty
-  (let [t (is (thrown? clojure.lang.ExceptionInfo (gen/elements ())))]
-    (is (= () (-> t ex-data :collection)))))
+  (is (thrown? AssertionError (gen/elements ()))))
 
 (defspec elements-with-a-set 100
   (prop/for-all [num (gen/elements #{9 10 11 12})]
