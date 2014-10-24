@@ -36,6 +36,7 @@ _test.check_ version numbers start where _simple-check_ left off: 0.5.7.
 
 ## Documentation
 
+  * [API Docs](http://clojure.github.io/test.check/)
   * [Generator writing guide](doc/intro.md)
   * Examples (some of these may refer to simple-check):
     * [core.matrix](https://github.com/mikera/core.matrix/blob/c45ee6b551a50a509e668f46a1ae52ade2c52a82/src/test/clojure/clojure/core/matrix/properties.clj)
