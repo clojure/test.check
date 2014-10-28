@@ -6,8 +6,7 @@
   :dependencies []
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
-                                  [codox-md "0.2.0" :exclusions [org.clojure/clojure]]]}}
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]]}}
   :global-vars {*warn-on-reflection* true}
-  :codox {:writer codox-md.writer/write-docs}
-  :plugins [[codox "0.6.4"]])
+  :plugins [[codox "0.8.10"]]
+  :codox {:defaults {:doc/format :markdown}})
