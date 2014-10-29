@@ -148,6 +148,7 @@
   ([generator]
    (sample generator 10))
   ([generator num-samples]
+   (assert (generator? generator) "First arg to sample must be a generator")
    (take num-samples (sample-seq generator))))
 
 
