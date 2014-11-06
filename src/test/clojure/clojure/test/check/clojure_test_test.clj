@@ -48,7 +48,7 @@
   (is (-> (capture-test-var #'trial-counts)
           read-string
           (select-keys [:test-var :result :num-tests])
-          (= {:test-var 'trial-counts, :result true, :num-tests 5000})))
+          (= {:test-var "trial-counts", :result true, :num-tests 5000})))
 
   (binding [ct/*report-trials* true]
      (let [output (capture-test-var #'trial-counts)]

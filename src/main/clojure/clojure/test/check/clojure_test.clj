@@ -12,7 +12,7 @@
 
 (defn- assert-check
   [{:keys [result] :as m}]
-  (println m)
+  (prn m)
   (if (instance? Throwable result)
     (throw result)
     (ct/is result)))
