@@ -1,5 +1,30 @@
 # Changelog
 
+* 0.6.0
+    * Add a `shuffle` generator, which generates permutations of a given
+      sequence.
+    * Rename `alpha-numeric` functions to `alphanumeric`. `char-alpha-numeric`
+      and `string-alpha-numeric` are now deprecated in favor of
+      `char-alphanumeric` and `string-alphanumeric`. The deprecated versions
+      will be removed in a future version of `test.check`.
+    * Update the `defspec` macro to allow an optional map argument, which
+      allows for the setting of `:seed`, `:num-tests` and `:max-size`. Examples
+      below:
+
+      ```clojure
+      (defspec run-with-map {:num-tests 1} (prop/for-all* [gen/int] (constantly true)))
+
+      (defspec run-with-map {:num-tests 1
+                             :seed 1}
+        my-prop)
+      ```
+    * Provide better error-messages for the misuse of generator combinators.
+      Many of the functions now test that their arguments are of the
+      appropriate type, and will throw a runtime error otherwise.
+    * Print test failures that can be copied directly. For example, print the
+      empty string as `""`, instead of a blank value. This is fixed by using
+      `prn` instead of `println`.
+
 * 0.5.9
     * Better sizing for recursive generators
     * Add `gen/recursive-gen` function for writing recursive generators
