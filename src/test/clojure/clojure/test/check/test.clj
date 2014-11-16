@@ -507,9 +507,19 @@
 
 (defspec run-default-times (prop/for-all* [gen/int] (constantly true)))
 
-(defspec run-with-map {:num-tests 1} (prop/for-all* [gen/int] (constantly true)))
+(defspec run-with-map1 {:num-tests 1} (prop/for-all* [gen/int] (constantly true)))
 
 (defspec run-with-map {:num-tests 1
                        :seed 1}
   (prop/for-all [a gen/int]
                 (= a 0)))
+
+(def my-defspec-options {:num-tests 1 :seed 1})
+
+(defspec run-with-symbolic-options my-defspec-options
+  (prop/for-all [a gen/int]
+                (= a 0)))
+
+(defspec run-with-no-options
+  (prop/for-all [a gen/int]
+                (integer? a)))

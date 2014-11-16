@@ -19,6 +19,17 @@
 
 (def ^:dynamic *default-test-count* 100)
 
+(defn process-options
+  {:no-doc true}
+  [options]
+  (cond (nil? options) {:num-tests *default-test-count*}
+        (integer? options) {:num-tests options}
+        (map? options) (if (:num-tests options)
+                         options
+                         (assoc options :num-tests *default-test-count*))
+        :else (throw (ex-info (str "Invalid defspec options: " (pr-str options))
+                              {:bad-options options}))))
+
 (defmacro defspec
   "Defines a new clojure.test test var that uses `quick-check` to verify
   [property] with the given [args] (should be a sequence of generators),
@@ -32,18 +43,7 @@
   (let [property           (second args)
         [options property] (if property
                              [(first args) property]
-                             [*default-test-count* (first args)])
-        options            (cond (nil? options)
-                                 {:num-tests *default-test-count*}
-
-                                 (integer? options)
-                                 {:num-tests options}
-
-                                 (map? options)
-                                 (if (:num-tests options)
-                                   options
-                                   (assoc options :num-tests
-                                          *default-test-count*)))]
+                             [nil (first args)])]
     `(do
        ;; consider my shame for introducing a cyclical dependency like this...
        ;; Don't think we'll know what the solution is until clojure.test.check
@@ -53,7 +53,8 @@
                          ::defspec true
                          :test `#(#'assert-check (assoc (~name)
                                                    :test-var (str '~name))))
-         ([] (apply ~name (:num-tests ~options) (apply concat ~options)))
+         ([] (let [options# (process-options ~options)]
+               (apply ~name (:num-tests options#) (apply concat options#))))
          ([~'times & {:keys [~'seed ~'max-size] :as ~'quick-check-opts}]
             (apply
              clojure.test.check/quick-check
