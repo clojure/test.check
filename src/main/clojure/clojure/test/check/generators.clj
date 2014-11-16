@@ -15,25 +15,6 @@
   (:require [clojure.core :as core]
             [clojure.test.check.rose-tree :as rose]))
 
-;; Generic helpers
-;; ---------------------------------------------------------------------------
-
-(defn- sequence
-  "Haskell type:
-  Monad m => [m a] -> m [a]
-
-  Specfically used here to turn a list of generators
-  into a generator of a list."
-  [bind-fn return-fn ms]
-  (reduce (fn [acc elem]
-            (bind-fn acc
-                     (fn [xs]
-                       (bind-fn elem
-                                (fn [y]
-                                  (return-fn (conj xs y)))))))
-          (return-fn [])
-          ms))
-
 
 ;; Gen
 ;; (internal functions)
@@ -77,6 +58,14 @@
       (let [inner (h rnd size)
             {result :gen} (k inner)]
         (result rnd size)))))
+
+(defn- gen-seq->seq-gen
+  "Takes a sequence of generators and returns a generator of sequences (er, vectors)."
+  [gens]
+  (make-gen
+   (fn [rnd size]
+     ;; could make this lazy once we have immutable RNGs
+     (mapv #(call-gen % rnd size) gens))))
 
 ;; Exported generator functions
 ;; ---------------------------------------------------------------------------
@@ -341,7 +330,7 @@
   [& generators]
   (assert (every? generator? generators)
           "Args to tuple must be generators")
-  (gen-bind (sequence gen-bind gen-pure generators)
+  (gen-bind (gen-seq->seq-gen generators)
             (fn [roses]
               (gen-pure (rose/zip core/vector roses)))))
 
@@ -381,9 +370,9 @@
    (gen-bind
      (sized #(choose 0 %))
      (fn [num-elements-rose]
-       (gen-bind (sequence gen-bind gen-pure
-                           (repeat (rose/root num-elements-rose)
-                                   generator))
+       (gen-bind (gen-seq->seq-gen
+                  (repeat (rose/root num-elements-rose)
+                          generator))
                  (fn [roses]
                    (gen-pure (rose/shrink core/vector
                                           roses)))))))
@@ -395,9 +384,9 @@
    (gen-bind
      (choose min-elements max-elements)
      (fn [num-elements-rose]
-       (gen-bind (sequence gen-bind gen-pure
-                           (repeat (rose/root num-elements-rose)
-                                   generator))
+       (gen-bind (gen-seq->seq-gen
+                  (repeat (rose/root num-elements-rose)
+                          generator))
                  (fn [roses]
                    (gen-bind
                      (gen-pure (rose/shrink core/vector
@@ -413,9 +402,9 @@
   (assert (generator? generator) "First arg to list must be a generator")
   (gen-bind (sized #(choose 0 %))
             (fn [num-elements-rose]
-              (gen-bind (sequence gen-bind gen-pure
-                                  (repeat (rose/root num-elements-rose)
-                                          generator))
+              (gen-bind (gen-seq->seq-gen
+                         (repeat (rose/root num-elements-rose)
+                                 generator))
                         (fn [roses]
                           (gen-pure (rose/shrink core/list
                                                  roses)))))))

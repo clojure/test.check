@@ -500,6 +500,15 @@
   (prop/for-all [[coll permutation] original-vector-and-permutation]
                 (= (sort coll) (sort permutation))))
 
+;; vector can generate large vectors; regression for TCHECK-49
+;; ---------------------------------------------------------------------------
+
+(deftest large-vector-test
+  (is (= 100000
+         (count (first (gen/sample
+                        (gen/vector gen/nat 100000)
+                        1))))))
+
 ;; defspec macro
 ;; ---------------------------------------------------------------------------
 
