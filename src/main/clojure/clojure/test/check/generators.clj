@@ -271,7 +271,8 @@
   Examples:
 
       ;; generate non-empty vectors of integers
-      (such-that not-empty (gen/vector gen/int))
+      ;; (note, gen/not-empty does exactly this)
+      (gen/such-that not-empty (gen/vector gen/int))
   "
   ([pred gen]
    (such-that pred gen 10))
