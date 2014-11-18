@@ -398,7 +398,7 @@
                                                 (<= (count v) max-elements))) rose))))))))))
 
 (defn list
-  "Like `vector`, but generators lists."
+  "Like `vector`, but generates lists."
   [generator]
   (assert (generator? generator) "First arg to list must be a generator")
   (gen-bind (sized #(choose 0 %))
