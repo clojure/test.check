@@ -48,9 +48,11 @@
   [function]
   (fn [args]
     (let [result (to-result (try (apply function args) (catch Throwable t t)))]
-      {:result (:result result)
-       :function function
-       :args args})))
+      (if (gen/generator? result)
+        result
+        {:result (:result result)
+         :function function
+         :args args}))))
 
 (defn for-all*
   "Creates a property (properties are also generators). A property
@@ -67,13 +69,10 @@
     (apply gen/tuple args)
     (fn [a]
       (let [result ((apply-gen function) a)]
-        (cond (gen/generator? result) (gen/fmap (fn [r] (println "foo") (update-in r :args #(conj % a))) result)
-              ;; NOTE: quick note to myself before I leave this code for the night,
-              ;; this :else is getting hit because we're wrapping the result
-              ;; with a {:result ...} map. Should probably do that conditionally.
-              ;; We also need two result types I think, a result to return from
-              ;; a property itself, and a reuslt that tacks the 'args' on top of this.
-              :else (do (println "bar") (gen/return result)))))
+        (cond (gen/generator? result)
+              (gen/fmap (fn [r]
+                          (update-in r [:args] #(vec (concat a %)))) result)
+              :else (gen/return result))))
     ))
 
 (defn binding-vars
@@ -92,8 +91,8 @@
   Examples
 
   (for-all [a gen/int
-            b gen/int]
-    (>= (+ a b) a))
+  b gen/int]
+  (>= (+ a b) a))
   "
   [bindings & body]
   `(for-all* ~(vec (binding-gens bindings))
