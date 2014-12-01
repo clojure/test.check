@@ -418,10 +418,11 @@
   ^{:added "0.6.0"}
   shuffle
   "Create a generator that generates random permutations of `coll`. Shrinks
-  toward the original collection: `coll`."
+  toward the original collection: `coll`. `coll` will be turned into a vector,
+  if it's not already."
   [coll]
   (let [index-gen (choose 0 (dec (count coll)))]
-    (fmap (partial reduce swap coll)
+    (fmap (partial reduce swap (vec coll))
           ;; a vector of swap instructions, with count between
           ;; zero and 2 * count. This means that the average number
           ;; of instructions is count, which should provide sufficient
