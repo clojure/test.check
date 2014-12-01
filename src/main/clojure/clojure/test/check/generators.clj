@@ -194,7 +194,7 @@
       (let [value (rand-range rnd lower upper)]
         (rose/filter
           #(and (>= % lower) (<= % upper))
-          [value (core/map int-rose-tree (shrink-int value))])))))
+          (int-rose-tree value))))))
 
 (defn one-of
   "Create a generator that randomly chooses a value from the list of
