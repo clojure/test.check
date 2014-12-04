@@ -42,7 +42,7 @@
   {:post [(= (count key) (count block) (count %))]}
   ;; we should be able to separately test the cost of allocation/initialization
   ;; and the cost of the algo itself
-  (let [c (Cipher/getInstance "AES/CBC/NoPadding")
+  (let [c (Cipher/getInstance "AES/ECB/NoPadding")
         k (SecretKeySpec. key "AES")]
     (.init c Cipher/ENCRYPT_MODE k)
     (.doFinal c block)))
