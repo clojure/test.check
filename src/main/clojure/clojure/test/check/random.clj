@@ -71,9 +71,10 @@
             state2 (aes state (set-bit path 127))]
         [(AESRandom. state1 zero-bytes-16 0)
          (AESRandom. state2 zero-bytes-16 0)])
-      (let [path-length' (inc path-length)]
+      (let [path-length' (inc path-length)
+            path2 (set-bit path path-length)]
         [(AESRandom. state path path-length')
-         (AESRandom. state (set-bit zero-bytes-16 path-length) path-length')])))
+         (AESRandom. state path2 path-length')])))
   (rand-long [random]
     (let [bytes (aes state path)]
       (.getLong (doto (ByteBuffer/allocate 8)
