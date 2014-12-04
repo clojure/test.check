@@ -63,6 +63,9 @@
 
 (def ^:private zero-bytes-16 (byte-array 16))
 
+;; state and path are both length-16 byte arrays. Here we are
+;; treating byte arrays as immutable so they can be shared between
+;; objects (the same way that clojure's PersistentVector does).
 (deftype AESRandom [state ^bytes path ^int path-length]
   IRandom
   (split [random]
@@ -73,6 +76,8 @@
          (AESRandom. state2 zero-bytes-16 0)])
       (let [path-length' (inc path-length)
             path2 (set-bit path path-length)]
+        ;; we can reuse the existing path for the first one since the
+        ;; padding bits are already set to 0
         [(AESRandom. state path path-length')
          (AESRandom. state path2 path-length')])))
   (rand-long [random]
