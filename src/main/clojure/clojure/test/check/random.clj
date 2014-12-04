@@ -27,7 +27,7 @@
   Note: to maintain independence you should not call split and rand
   with the same argument"))
 
-(defn blowfish
+(defn ^:private blowfish
   "Inputs and output are byte arrays."
   [key block]
   {:post [(= (count key) (count block) (count %))]}
@@ -36,7 +36,7 @@
     (.init c Cipher/ENCRYPT_MODE k)
     (.doFinal c block)))
 
-(defn aes
+(defn ^:private aes
   "Inputs and output are byte arrays."
   [key block]
   {:post [(= (count key) (count block) (count %))]}
@@ -61,7 +61,7 @@
     (doto byte-array'
       (aset byte-index (byte the-byte')))))
 
-(def zero-bytes-16 (byte-array 16))
+(def ^:private zero-bytes-16 (byte-array 16))
 
 (deftype AESRandom [state ^bytes path ^int path-length]
   IRandom
