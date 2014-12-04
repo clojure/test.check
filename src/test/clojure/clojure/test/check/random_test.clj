@@ -14,11 +14,6 @@
       (recur (case step :left rng1 :right rng2) more))
     rng))
 
-(def gen-splitter
-  "Generates a function that will repeatedly split a rng in random
-  directions."
-  (gen/fmap #(apply comp %) (gen/list gen-split-operation)))
-
 (def gen-seed (gen/choose 0 Integer/MAX_VALUE))
 
 (defspec determinism-spec
