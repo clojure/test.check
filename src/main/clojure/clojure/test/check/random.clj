@@ -83,7 +83,7 @@
 (defn make-random
   "Given one or two long seeds, returns an object that can
   be used with the IRandom protocol."
-  ([^long seed] (make-aes seed seed))
+  ([^long seed] (make-random seed seed))
   ([^long seed1 ^long seed2]
      (let [state (.array (doto (ByteBuffer/allocate 16)
                            (.putLong seed1)
