@@ -253,10 +253,11 @@
   (if (zero? tries-left)
     (throw (ex-info (str "Couldn't satisfy such-that predicate after "
                          max-tries " tries.") {}))
-    (let [value (call-gen gen rand-seed size)]
+    (let [[r1 r2] (random/split rand-seed)
+          value (call-gen gen r1 size)]
       (if (pred (rose/root value))
         (rose/filter pred value)
-        (recur max-tries pred gen (dec tries-left) rand-seed (inc size))))))
+        (recur max-tries pred gen (dec tries-left) r2 (inc size))))))
 
 (defn such-that
   "Create a generator that generates values from `gen` that satisfy predicate
