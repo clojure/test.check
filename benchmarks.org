@@ -19,7 +19,6 @@
                    (recur (dec i) (bit-xor sum (.nextLong r)))))))
     #+END_SRC
 
-    #+RESULTS:
     #+begin_example
     ;; Evaluation count : 5253120 in 60 samples of 87552 calls.
     ;;              Execution time mean : 11.453734 µs
@@ -34,9 +33,9 @@
     ;;  Variance from outliers : 1.6389 % Variance is slightly inflated by outliers
     ;;
     ;;=> nil
-#+end_example
+    #+end_example
 
-*** with linear generation via t.c.random (at f8b94809)
+*** with linear generation via t.c.random
     #+BEGIN_SRC clojure
       (let [r (random/make-random 42)]
         (bench (loop [i 256, sum 0, r r]
@@ -46,18 +45,30 @@
                      (recur (dec i) (bit-xor sum (random/rand-long r1)) r2))))))
     #+END_SRC
 
-    #+RESULTS:
-    #+begin_example
-    ;; Evaluation count : 11040 in 60 samples of 184 calls.
-    ;;              Execution time mean : 5.500240 ms
-    ;;     Execution time std-deviation : 67.106188 µs
-    ;;    Execution time lower quantile : 5.374594 ms ( 2.5%)
-    ;;    Execution time upper quantile : 5.654754 ms (97.5%)
-    ;;                    Overhead used : 13.109376 ns
-    ;;
-    ;; Found 1 outliers in 60 samples (1.6667 %)
-    ;; 	low-severe	 1 (1.6667 %)
-    ;;  Variance from outliers : 1.6389 % Variance is slightly inflated by outliers
-    ;;
-    ;;=> nil
-#+end_example
+**** Initial code (f8b94809)
+     #+begin_example
+       Evaluation count : 11040 in 60 samples of 184 calls.
+                    Execution time mean : 5.500240 ms
+           Execution time std-deviation : 67.106188 µs
+          Execution time lower quantile : 5.374594 ms ( 2.5%)
+          Execution time upper quantile : 5.654754 ms (97.5%)
+                          Overhead used : 13.109376 ns
+
+       Found 1 outliers in 60 samples (1.6667 %)
+        low-severe   1 (1.6667 %)
+        Variance from outliers : 1.6389 % Variance is slightly inflated by outliers
+     #+end_example
+**** ThreadLocal (37fa77a7)
+     #+BEGIN_EXAMPLE
+       Evaluation count : 92280 in 60 samples of 1538 calls.
+                    Execution time mean : 635.110567 µs
+           Execution time std-deviation : 10.881160 µs
+          Execution time lower quantile : 621.942023 µs ( 2.5%)
+          Execution time upper quantile : 662.181206 µs (97.5%)
+                          Overhead used : 13.109376 ns
+
+       Found 6 outliers in 60 samples (10.0000 %)
+        low-severe   3 (5.0000 %)
+        low-mild   3 (5.0000 %)
+        Variance from outliers : 6.2724 % Variance is slightly inflated by outliers
+     #+END_EXAMPLE
