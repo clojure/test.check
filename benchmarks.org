@@ -1,0 +1,63 @@
+* Benchmarks for the new PRNG code
+** Prelude
+   #+BEGIN_SRC clojure
+     (ns user
+       (:require [clojure.test.check.random :as random]
+                 [criterium.core :refer [bench]]))
+   #+END_SRC
+
+   #+RESULTS:
+   : ;;=> nil
+
+** Generating 256 longs
+*** with java.util.Random
+    #+BEGIN_SRC clojure
+      (let [r (java.util.Random. 42)]
+        (bench (loop [i 256 sum 0]
+                 (if (zero? i)
+                   sum
+                   (recur (dec i) (bit-xor sum (.nextLong r)))))))
+    #+END_SRC
+
+    #+RESULTS:
+    #+begin_example
+    ;; Evaluation count : 5253120 in 60 samples of 87552 calls.
+    ;;              Execution time mean : 11.453734 µs
+    ;;     Execution time std-deviation : 84.696027 ns
+    ;;    Execution time lower quantile : 11.365932 µs ( 2.5%)
+    ;;    Execution time upper quantile : 11.589984 µs (97.5%)
+    ;;                    Overhead used : 13.109376 ns
+    ;;
+    ;; Found 2 outliers in 60 samples (3.3333 %)
+    ;; 	low-severe	 1 (1.6667 %)
+    ;; 	low-mild	 1 (1.6667 %)
+    ;;  Variance from outliers : 1.6389 % Variance is slightly inflated by outliers
+    ;;
+    ;;=> nil
+#+end_example
+
+*** with linear generation via t.c.random (at f8b94809)
+    #+BEGIN_SRC clojure
+      (let [r (random/make-random 42)]
+        (bench (loop [i 256, sum 0, r r]
+                 (if (zero? i)
+                   sum
+                   (let [[r1 r2] (random/split r)]
+                     (recur (dec i) (bit-xor sum (random/rand-long r1)) r2))))))
+    #+END_SRC
+
+    #+RESULTS:
+    #+begin_example
+    ;; Evaluation count : 11040 in 60 samples of 184 calls.
+    ;;              Execution time mean : 5.500240 ms
+    ;;     Execution time std-deviation : 67.106188 µs
+    ;;    Execution time lower quantile : 5.374594 ms ( 2.5%)
+    ;;    Execution time upper quantile : 5.654754 ms (97.5%)
+    ;;                    Overhead used : 13.109376 ns
+    ;;
+    ;; Found 1 outliers in 60 samples (1.6667 %)
+    ;; 	low-severe	 1 (1.6667 %)
+    ;;  Variance from outliers : 1.6389 % Variance is slightly inflated by outliers
+    ;;
+    ;;=> nil
+#+end_example
