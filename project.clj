@@ -1,4 +1,4 @@
-(defproject org.clojure/test.check "0.5.9"
+(defproject org.clojure/test.check "0.6.2-SNAPSHOT"
   :description "A QuickCheck inspired property-based testing library."
   :url "https://github.com/clojure/test.check"
   :license {:name "Eclipse Public License"
@@ -6,8 +6,7 @@
   :dependencies []
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
-                                  [codox-md "0.2.0" :exclusions [org.clojure/clojure]]]}}
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.6.0"]]}}
   :global-vars {*warn-on-reflection* true}
-  :codox {:writer codox-md.writer/write-docs}
-  :plugins [[codox "0.6.4"]])
+  :plugins [[codox "0.8.10"]]
+  :codox {:defaults {:doc/format :markdown}})

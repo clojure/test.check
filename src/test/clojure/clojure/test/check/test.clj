@@ -413,8 +413,7 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest elements-with-empty
-  (let [t (is (thrown? clojure.lang.ExceptionInfo (gen/elements ())))]
-    (is (= () (-> t ex-data :collection)))))
+  (is (thrown? AssertionError (gen/elements ()))))
 
 (defspec elements-with-a-set 100
   (prop/for-all [num (gen/elements #{9 10 11 12})]
@@ -501,3 +500,36 @@
 (defspec shuffled-vector-is-a-permutation-of-original 100
   (prop/for-all [[coll permutation] original-vector-and-permutation]
                 (= (sort coll) (sort permutation))))
+
+;; vector can generate large vectors; regression for TCHECK-49
+;; ---------------------------------------------------------------------------
+
+(deftest large-vector-test
+  (is (= 100000
+         (count (first (gen/sample
+                        (gen/vector gen/nat 100000)
+                        1))))))
+
+;; defspec macro
+;; ---------------------------------------------------------------------------
+
+(defspec run-only-once 1 (prop/for-all* [gen/int] (constantly true)))
+
+(defspec run-default-times (prop/for-all* [gen/int] (constantly true)))
+
+(defspec run-with-map1 {:num-tests 1} (prop/for-all* [gen/int] (constantly true)))
+
+(defspec run-with-map {:num-tests 1
+                       :seed 1}
+  (prop/for-all [a gen/int]
+                (= a 0)))
+
+(def my-defspec-options {:num-tests 1 :seed 1})
+
+(defspec run-with-symbolic-options my-defspec-options
+  (prop/for-all [a gen/int]
+                (= a 0)))
+
+(defspec run-with-no-options
+  (prop/for-all [a gen/int]
+                (integer? a)))

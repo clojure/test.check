@@ -13,7 +13,7 @@ _test.check_ used to be called
 ### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.5.9"]
+[org.clojure/test.check "0.6.1"]
 ```
 
 ### Maven
@@ -22,7 +22,7 @@ _test.check_ used to be called
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.5.9</version>
+  <version>0.6.1</version>
 </dependency>
 ```
 
@@ -36,6 +36,7 @@ _test.check_ version numbers start where _simple-check_ left off: 0.5.7.
 
 ## Documentation
 
+  * [API Docs](http://clojure.github.io/test.check/)
   * [Generator writing guide](doc/intro.md)
   * Examples (some of these may refer to simple-check):
     * [core.matrix](https://github.com/mikera/core.matrix/blob/c45ee6b551a50a509e668f46a1ae52ade2c52a82/src/test/clojure/clojure/core/matrix/properties.clj)
@@ -151,9 +152,9 @@ write properties that run under the `clojure.test` runner, for example:
 ```clojure
 (defspec first-element-is-min-after-sorting ;; the name of the test
          100 ;; the number of iterations for test.check to test
-         (prop/for-all [v (such-that not-empty (gen/vector gen/int))]
+         (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
            (= (apply min v)
-              (first (sorted v)))))
+              (first (sort v)))))
 ```
 
 ## Release Notes
