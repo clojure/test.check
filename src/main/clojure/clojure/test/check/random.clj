@@ -92,6 +92,7 @@
 (defn make-random
   "Given one or two long seeds, returns an object that can
   be used with the IRandom protocol."
+  ([] (make-random (.nextLong (java.util.Random.))))
   ([^long seed] (make-random seed seed))
   ([^long seed1 ^long seed2]
      (let [state (.array (doto (ByteBuffer/allocate 16)

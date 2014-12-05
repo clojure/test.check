@@ -8,11 +8,11 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.generators
-  (:import java.util.Random)
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace])
   (:require [clojure.core :as core]
+            [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]))
 
 ;; Generic helpers
@@ -74,9 +74,10 @@
   [{h :gen} k]
   (make-gen
     (fn [rnd size]
-      (let [inner (h rnd size)
+      (let [[r1 r2] (random/split rnd)
+            inner (h r1 size)
             {result :gen} (k inner)]
-        (result rnd size)))))
+        (result r2 size)))))
 
 ;; Exported generator functions
 ;; ---------------------------------------------------------------------------
@@ -122,11 +123,6 @@
 ;; Helpers
 ;; ---------------------------------------------------------------------------
 
-(defn random
-  {:no-doc true}
-  ([] (Random.))
-  ([seed] (Random. seed)))
-
 (defn make-size-range-seq
   {:no-doc true}
   [max-size]
@@ -136,7 +132,7 @@
   "Return a sequence of realized values from `generator`."
   ([generator] (sample-seq generator 100))
   ([generator max-size]
-   (let [r (random)
+   (let [r (random/make-random)
          size-seq (make-size-range-seq max-size)]
      (core/map (comp rose/root (partial call-gen generator r)) size-seq))))
 
@@ -165,9 +161,9 @@
   [value (core/map int-rose-tree (shrink-int value))])
 
 (defn- rand-range
-  [^Random rnd lower upper]
+  [rnd lower upper]
   {:pre [(<= lower upper)]}
-  (let [factor (.nextDouble rnd)]
+  (let [factor (/ (random/rand-long rnd) (double Long/MAX_VALUE))]
     (long (Math/floor (+ lower (- (* factor (+ 1.0 upper))
                                   (* factor lower)))))))
 
@@ -196,7 +192,7 @@
   `min-range` to `max-range`, inclusive."
   [lower upper]
   (make-gen
-    (fn [^Random rnd _size]
+    (fn [rnd _size]
       (let [value (rand-range rnd lower upper)]
         (rose/filter
           #(and (>= % lower) (<= % upper))

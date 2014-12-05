@@ -13,6 +13,7 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
             [clojure.test.check.rose-tree :as rose]
+            [clojure.test.check.random :as random]
             [clojure.test.check.clojure-test :as ct :refer (defspec)]
             [clojure.edn :as edn]))
 
@@ -434,7 +435,7 @@
                  size gen/nat]
                 (let [tree (gen/call-gen
                              (gen/choose mini maxi)
-                             (gen/random random-seed)
+                             (random/make-random random-seed)
                              size)]
                   (every?
                     #(and (<= mini %) (>= maxi %))
@@ -465,7 +466,7 @@
 
 (deftest rand-range-uses-inclusive-bounds
   (let [bounds [5 7]
-        rand-range (apply partial #'gen/rand-range (gen/random) bounds)]
+        rand-range (apply partial #'gen/rand-range (random/make-random) bounds)]
     (loop [trials 0
            bounds (set bounds)]
       (cond

@@ -10,6 +10,7 @@
 (ns clojure.test.check
   (:require [clojure.test.check.generators :as gen]
             [clojure.test.check.clojure-test :as ct]
+            [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]))
 
 (declare shrink-loop failure)
@@ -17,9 +18,9 @@
 (defn make-rng
   [seed]
   (if seed
-    [seed (gen/random seed)]
+    [seed (random/make-random seed)]
     (let [non-nil-seed (System/currentTimeMillis)]
-      [non-nil-seed (gen/random non-nil-seed)])))
+      [non-nil-seed (random/make-random non-nil-seed)])))
 
 (defn- complete
   [property num-trials seed]
