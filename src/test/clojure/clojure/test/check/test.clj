@@ -465,9 +465,10 @@
 
 (deftest rand-range-uses-inclusive-bounds
   (let [bounds [5 7]
-        rand-range (apply partial #'gen/rand-range (random/make-random) bounds)]
+        rand-range (fn [r] (apply #'gen/rand-range r bounds))]
     (loop [trials 0
-           bounds (set bounds)]
+           bounds (set bounds)
+           r (random/make-random)]
       (cond
        (== trials 10000)
        (is nil (str "rand-range didn't return both of its bounds after 10000 trials; "
@@ -475,7 +476,8 @@
                     "but we should be able to rely upon probability to not bother us "
                     "too frequently."))
        (empty? bounds) (is true)
-       :else (recur (inc trials) (disj bounds (rand-range)))))))
+       :else (let [[r1 r2] (random/split r)]
+               (recur (inc trials) (disj bounds (rand-range r1)) r2))))))
 
 (deftest elements-generates-all-provided-values
   (let [options [:a 42 'c/d "foo"]]
