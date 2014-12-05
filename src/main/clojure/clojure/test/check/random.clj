@@ -36,13 +36,16 @@
     (.init c Cipher/ENCRYPT_MODE k)
     (.doFinal c block)))
 
+(def ^ThreadLocal ^:private aes-cipher-thread-local
+  (proxy [ThreadLocal] []
+    (initialValue []
+      (Cipher/getInstance "AES/ECB/NoPadding"))))
+
 (defn ^:private aes
   "Inputs and output are byte arrays."
   [key block]
   {:post [(= (count key) (count block) (count %))]}
-  ;; we should be able to separately test the cost of allocation/initialization
-  ;; and the cost of the algo itself
-  (let [c (Cipher/getInstance "AES/ECB/NoPadding")
+  (let [^Cipher c (.get aes-cipher-thread-local)
         k (SecretKeySpec. key "AES")]
     (.init c Cipher/ENCRYPT_MODE k)
     (.doFinal c block)))
