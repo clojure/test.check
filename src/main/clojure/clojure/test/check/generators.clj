@@ -60,13 +60,19 @@
             {result :gen} (k inner)]
         (result r2 size)))))
 
+(defn- random-states [num-randoms rr]
+  (loop [c 1, res [rr]]
+    (if (>= c num-randoms)
+      (take num-randoms res)
+      (recur (* 2 c) (mapcat random/split res)))))
+
 (defn- gen-seq->seq-gen
   "Takes a sequence of generators and returns a generator of sequences (er, vectors)."
   [gens]
   (make-gen
    (fn [rnd size]
      ;; could make this lazy once we have immutable RNGs
-     (mapv #(call-gen % rnd size) gens))))
+     (mapv #(call-gen % %2 size) gens (random-states (count gens) rnd)))))
 
 ;; Exported generator functions
 ;; ---------------------------------------------------------------------------
