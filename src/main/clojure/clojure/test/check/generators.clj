@@ -66,6 +66,14 @@
       (take num-randoms res)
       (recur (* 2 c) (mapcat random/split res)))))
 
+(defn- lazy-random-states
+  "Exclude the nth value in a collection."
+  [rr]
+  (lazy-seq
+        (let [[r1 r2] (random/split rr)]
+          (cons r1
+                (lazy-random-states r2)))))
+
 (defn- gen-seq->seq-gen
   "Takes a sequence of generators and returns a generator of sequences (er, vectors)."
   [gens]
@@ -131,7 +139,9 @@
   ([generator max-size]
    (let [r (random/make-random)
          size-seq (make-size-range-seq max-size)]
-     (core/map (comp rose/root (partial call-gen generator r)) size-seq))))
+     (core/map (comp rose/root #(call-gen generator %1 %2))
+               (lazy-random-states r)
+               size-seq))))
 
 (defn sample
   "Return a sequence of `num-samples` (default 10)
@@ -161,7 +171,8 @@
 (defn- rand-range
   [rnd lower upper]
   {:pre [(<= lower upper)]}
-  (let [factor (/ (random/rand-long rnd) (double Long/MAX_VALUE))]
+  (let [factor (/ (Math/abs ^long (random/rand-long rnd))
+                  (double Long/MAX_VALUE))]
     (long (Math/floor (+ lower (- (* factor (+ 1.0 upper))
                                   (* factor lower)))))))
 
