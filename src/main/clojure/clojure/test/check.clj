@@ -51,18 +51,20 @@
   (let [[created-seed rng] (make-rng seed)
         size-seq (gen/make-size-range-seq max-size)]
     (loop [so-far 0
-           size-seq size-seq]
+           size-seq size-seq
+           rstate rng]
       (if (== so-far num-tests)
         (complete property num-tests created-seed)
         (let [[size & rest-size-seq] size-seq
-              result-map-rose (gen/call-gen property rng size)
+              [r1 r2] (random/split rstate)
+              result-map-rose (gen/call-gen property r1 size)
               result-map (rose/root result-map-rose)
               result (:result result-map)
               args (:args result-map)]
           (if (not-falsey-or-exception? result)
             (do
               (ct/report-trial property so-far num-tests)
-              (recur (inc so-far) rest-size-seq))
+              (recur (inc so-far) rest-size-seq r2))
             (failure property result-map-rose so-far size created-seed)))))))
 
 (defn- smallest-shrink
