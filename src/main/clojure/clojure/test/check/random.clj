@@ -41,14 +41,28 @@
     (initialValue []
       (Cipher/getInstance "AES/ECB/NoPadding"))))
 
+(def ^ThreadLocal ^:private byte-array-16-thread-local
+  (proxy [ThreadLocal] []
+    (initialValue []
+      (byte-array 16))))
+
+(def ^ThreadLocal ^:private byte-buffer-8-thread-local
+  (proxy [ThreadLocal] []
+    (initialValue []
+      (ByteBuffer/allocate 8))))
+
 (defn ^:private aes
   "Inputs and output are byte arrays."
-  [key block]
-  {:post [(= (count key) (count block) (count %))]}
-  (let [^Cipher c (.get aes-cipher-thread-local)
-        k (SecretKeySpec. key "AES")]
-    (.init c Cipher/ENCRYPT_MODE k)
-    (.doFinal c block)))
+  ([key block]
+     (let [^Cipher c (.get aes-cipher-thread-local)
+           k (SecretKeySpec. key "AES")]
+       (.init c Cipher/ENCRYPT_MODE k)
+       (.doFinal c block)))
+  ([key block out]
+     (let [^Cipher c (.get aes-cipher-thread-local)
+           k (SecretKeySpec. key "AES")]
+       (.init c Cipher/ENCRYPT_MODE k)
+       (.doFinal c block 0 16 out))))
 
 (defn ^:private set-bit
   "Returns a new byte array with the bit at the given index set to 1."
@@ -84,8 +98,11 @@
         [(AESRandom. state path path-length')
          (AESRandom. state path2 path-length')])))
   (rand-long [random]
-    (let [bytes (aes state path)]
-      (.getLong (doto (ByteBuffer/allocate 8)
+    (let [bytes ^bytes (.get byte-array-16-thread-local)
+          buffer ^ByteBuffer (.get byte-buffer-8-thread-local)]
+      (aes state path bytes)
+      (.getLong (doto buffer
+                  (.clear)
                   (.put bytes 0 8)
                   (.flip))))))
 
