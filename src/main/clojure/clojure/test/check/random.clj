@@ -36,20 +36,21 @@
     (.init c Cipher/ENCRYPT_MODE k)
     (.doFinal c block)))
 
-(def ^ThreadLocal ^:private aes-cipher-thread-local
-  (proxy [ThreadLocal] []
-    (initialValue []
-      (Cipher/getInstance "AES/ECB/NoPadding"))))
+(defmacro ^:private def-thread-local
+  [name init-expr]
+  `(def ~(vary-meta name assoc :private true :tag 'ThreadLocal)
+     (proxy [ThreadLocal] []
+       (initialValue []
+         ~init-expr))))
 
-(def ^ThreadLocal ^:private byte-array-16-thread-local
-  (proxy [ThreadLocal] []
-    (initialValue []
-      (byte-array 16))))
+(def-thread-local aes-cipher-thread-local
+  (Cipher/getInstance "AES/ECB/NoPadding"))
 
-(def ^ThreadLocal ^:private byte-buffer-8-thread-local
-  (proxy [ThreadLocal] []
-    (initialValue []
-      (ByteBuffer/allocate 8))))
+(def-thread-local byte-array-16-thread-local
+  (byte-array 16))
+
+(def-thread-local byte-buffer-8-thread-local
+  (ByteBuffer/allocate 8))
 
 (defn ^:private aes
   "Inputs and output are byte arrays."
