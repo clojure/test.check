@@ -2,7 +2,7 @@
 
 * 0.6.1
     * Fix bug introduced in 0.6.0: The `defspec` macro could only accept map or
-      numberic _literals_ as options, instead of a symbol.
+      numeric _literals_ as options, instead of a symbol.
 * 0.6.0
     * Add a `shuffle` generator, which generates permutations of a given
       sequence.
@@ -48,7 +48,7 @@
     * Extract rose-tree code into a separate namespace
 
 * 0.5.7
-    * Rename project to clojure.test.check. See README for mirgrating
+    * Rename project to clojure.test.check. See README for migrating
     from _simple-check_.
 
 * 0.5.6
@@ -88,7 +88,7 @@
     * Bugfix with the byte and bytes generator
     * Create strings of variable length (instead of always length=size)
     * Fix off-by-one error in number of tests reported
-    * Generate sizes starting a 0, not 1
+    * Generate sizes starting at 0, not 1
 
 * 0.4.1
     * When a property fails, add the result of the final shrink to the output
