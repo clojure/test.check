@@ -64,7 +64,7 @@ things:
 * Update namespace declarations
 
     Update your namespaces: `simple-check.core` becomes `clojure.test.check` (note
-    the dropping of 'core'). Everything else you can simply replace `simple-check`
+    the dropping of 'core'). For everything else you can simply replace `simple-check`
     with `clojure.test.check`. Let's make it easy:
 
     ```shell
@@ -99,7 +99,7 @@ In prose, this test reads: for all vectors of integers, `v`, sorting `v` is
 equal to sorting `v` twice.
 
 What happens if our test fails? _test.check_ will try and find 'smaller'
-input that still fails. This process is called shrinking. Let's see it in
+inputs that still fail. This process is called shrinking. Let's see it in
 action:
 
 ```clojure
@@ -119,7 +119,7 @@ the last. Of course, this isn't true: the test fails with input `[3]`, which
 gets shrunk down to `[0]`, as seen in the output above. As your test functions
 require more sophisticated input, shrinking becomes critical to being able
 to understand exactly why a random test failed. To see how powerful shrinking
-is, let's come up with a contrived example: a function that fails if its
+is, let's come up with a contrived example: a function that fails if it's
 passed a sequence that contains the number 42:
 
 ```clojure
