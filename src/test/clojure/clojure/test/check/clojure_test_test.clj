@@ -55,7 +55,7 @@
        (is (re-matches #"(?s)\.{5}.+" output))))
 
   (binding [ct/*report-trials* ct/trial-report-periodic
-            ct/*trial-report-period* 500]
+            ct/*trial-report-period* 100]
     (is (re-seq
           #"(Passing trial \d{3} / 1000 for .+\n)+"
            (capture-test-var #'long-running-spec))))

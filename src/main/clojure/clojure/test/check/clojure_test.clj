@@ -23,7 +23,7 @@
   {:no-doc true}
   [options]
   (cond (nil? options) {:num-tests *default-test-count*}
-        (integer? options) {:num-tests options}
+        (number? options) {:num-tests options}
         (map? options) (if (:num-tests options)
                          options
                          (assoc options :num-tests *default-test-count*))
