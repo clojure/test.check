@@ -11,7 +11,8 @@
   (:require [clojure.test.check.generators :as gen]
             [clojure.test.check.clojure-test :as ct]
             [clojure.test.check.random :as random]
-            [clojure.test.check.rose-tree :as rose]))
+            [clojure.test.check.rose-tree :as rose]
+            [clojure.test.check.parallel :as parallel]))
 
 (declare shrink-loop failure)
 
@@ -47,25 +48,29 @@
       (def p (for-all [a gen/pos-int] (> (* a a) a)))
       (quick-check 100 p)
   "
-  [num-tests property & {:keys [seed max-size] :or {max-size 200}}]
+  [num-tests property & {:keys [seed max-size par] :or {max-size 200 par 1}}]
   (let [[created-seed rng] (make-rng seed)
-        size-seq (gen/make-size-range-seq max-size)]
+        rng-seq (gen/lazy-random-states rng)
+        size-seq (gen/make-size-range-seq max-size)
+        fs (take num-tests
+                 (parallel/execute
+                   par
+                   (map (fn [r size] #(gen/call-gen property r size))
+                        rng-seq size-seq)))]
     (loop [so-far 0
            size-seq size-seq
-           rstate rng]
+           fs fs]
       (if (== so-far num-tests)
         (complete property num-tests created-seed)
-        (let [[size & rest-size-seq] size-seq
-              [r1 r2] (random/split rstate)
-              result-map-rose (gen/call-gen property r1 size)
+        (let [result-map-rose (first fs)
               result-map (rose/root result-map-rose)
               result (:result result-map)
               args (:args result-map)]
           (if (not-falsey-or-exception? result)
             (do
               (ct/report-trial property so-far num-tests)
-              (recur (inc so-far) rest-size-seq r2))
-            (failure property result-map-rose so-far size created-seed)))))))
+              (recur (inc so-far) (rest size-seq) (rest fs)))
+            (failure property result-map-rose so-far (first size-seq) created-seed)))))))
 
 (defn- smallest-shrink
   [total-nodes-visited depth smallest]

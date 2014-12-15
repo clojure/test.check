@@ -66,7 +66,7 @@
       (take num-randoms res)
       (recur (* 2 c) (mapcat random/split res)))))
 
-(defn- lazy-random-states
+(defn lazy-random-states
   "Exclude the nth value in a collection."
   [rr]
   (lazy-seq
