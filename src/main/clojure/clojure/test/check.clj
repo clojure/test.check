@@ -33,6 +33,12 @@
   [value]
   (and value (not (instance? Throwable value))))
 
+(defn unchunk [s]
+  (when (seq s)
+    (lazy-seq
+      (cons (first s)
+            (unchunk (next s))))))
+
 (defn quick-check
   "Tests `property` `num-tests` times.
   Takes optional keys `:seed` and `:max-size`. The seed parameter
@@ -52,11 +58,13 @@
   (let [[created-seed rng] (make-rng seed)
         rng-seq (gen/lazy-random-states rng)
         size-seq (gen/make-size-range-seq max-size)
-        fs (take num-tests
-                 (parallel/execute
-                   par
-                   (map (fn [r size] #(gen/call-gen property r size))
-                        rng-seq size-seq)))]
+        _fs (map (fn [r size]
+                  (gen/call-gen property r size))
+                rng-seq size-seq)
+        fs (parallel/execute
+             par
+             (map (fn [r size] #(gen/call-gen property r size))
+                  rng-seq size-seq))]
     (loop [so-far 0
            size-seq size-seq
            fs fs]

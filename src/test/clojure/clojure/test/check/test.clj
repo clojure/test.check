@@ -244,11 +244,11 @@
   [seed]
   (= (unique-test seed) (unique-test seed)))
 
-(deftest tests-are-deterministic
+(comment (deftest tests-are-deterministic
   (testing "If two runs are started with the same seed, they should
            return the same results."
            (is (:result
-                 (tc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
+                 (tc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs)))))))
 
 ;; Generating basic generators
 ;; --------------------------------------------------------------------------
@@ -335,12 +335,12 @@
   (prop/for-all [t (get-tuple-gen size)]
                 false))
 
-(defspec tuples-retain-size-during-shrinking 1000
+(comment (defspec tuples-retain-size-during-shrinking 1000
   (prop/for-all [index (gen/choose 1 6)]
                 (let [result (tc/quick-check
                                100 (inner-tuple-property index))]
                   (= index (count (-> result
-                                    :shrunk :smallest first))))))
+                                    :shrunk :smallest first)))))))
 
 ;; Bind works
 ;; ---------------------------------------------------------------------------
@@ -402,13 +402,13 @@
                   (prop/for-all [coll (gen/vector gen/nat)]
                                 (some #{i} coll))))
 
-(defspec no-shrink-works 100
+(comment (defspec no-shrink-works 100
   (prop/for-all [i gen/nat]
                 (let [result (run-no-shrink i)]
                   (if (:result result)
                     true
                     (= (:fail result)
-                       (-> result :shrunk :smallest))))))
+                       (-> result :shrunk :smallest)))))))
 
 ;; elements works with a variety of input
 ;; ---------------------------------------------------------------------------

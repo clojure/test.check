@@ -75,6 +75,12 @@
   [f]
   (.execute pool ^Runnable f))
 
+(defn unchunk [s]
+  (when (seq s)
+    (lazy-seq
+      (cons (first s)
+            (unchunk (next s))))))
+
 (defn execute
   "Given a sequence of functions, `fs`, return a lazy sequence of the results
   of `fs`, evaluated with maximum parallelism of `parallelism`."
@@ -95,7 +101,7 @@
   ;
   ; The first set of tasks we fire off immediately.
   (assert (< 0 parallelism))
-  (let [commitments      (repeatedly promise)
+  (let [commitments      (unchunk (map (fn [a b] a) (repeatedly promise) fs))
         workers          (map worker fs commitments)
         [eager deferred] (split-at parallelism workers)]
 
