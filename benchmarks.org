@@ -72,3 +72,22 @@
         low-mild   3 (5.0000 %)
         Variance from outliers : 6.2724 % Variance is slightly inflated by outliers
      #+END_EXAMPLE
+**** Cached KeySpecs (58b22c5e)
+     #+BEGIN_EXAMPLE
+       Evaluation count : 181320 in 60 samples of 3022 calls.
+                    Execution time mean : 313.606120 µs
+           Execution time std-deviation : 19.943579 µs
+          Execution time lower quantile : 282.173587 µs ( 2.5%)
+          Execution time upper quantile : 350.234214 µs (97.5%)
+                          Overhead used : 12.887344 ns
+     #+END_EXAMPLE
+**** Aphyr's custom secret key spec (0e77ac122)
+     #+BEGIN_EXAMPLE
+       WARNING: Final GC required 3.547918714888014 % of runtime
+       Evaluation count : 224880 in 60 samples of 3748 calls.
+                    Execution time mean : 281.458236 µs
+           Execution time std-deviation : 17.272071 µs
+          Execution time lower quantile : 250.376977 µs ( 2.5%)
+          Execution time upper quantile : 312.652149 µs (97.5%)
+                          Overhead used : 12.996586 ns
+     #+END_EXAMPLE
