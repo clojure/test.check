@@ -532,3 +532,7 @@
 (defspec run-with-no-options
   (prop/for-all [a gen/int]
                 (integer? a)))
+
+(defspec run-float-time 1e3
+  (prop/for-all [a gen/int]
+                (integer? a)))
