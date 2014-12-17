@@ -54,15 +54,13 @@
 
 (defn ^:private aes
   "Inputs and output are byte arrays."
-  ([key block]
-     (let [^Cipher c (.get aes-cipher-thread-local)
-           k (SecretKeySpec. key "AES")]
-       (.init c Cipher/ENCRYPT_MODE k)
+  ([k block]
+     (let [^Cipher c (.get aes-cipher-thread-local)]
+       (.init c Cipher/ENCRYPT_MODE ^SecretKeySpec k)
        (.doFinal c block)))
-  ([key block out]
-     (let [^Cipher c (.get aes-cipher-thread-local)
-           k (SecretKeySpec. key "AES")]
-       (.init c Cipher/ENCRYPT_MODE k)
+  ([k block out]
+     (let [^Cipher c (.get aes-cipher-thread-local)]
+       (.init c Cipher/ENCRYPT_MODE ^SecretKeySpec k)
        (.doFinal c block 0 16 out))))
 
 (defn ^:private set-bit
@@ -90,8 +88,8 @@
     (if (= 126 path-length)
       (let [state1 (aes state path)
             state2 (aes state (set-bit path 127))]
-        [(AESRandom. state1 zero-bytes-16 0)
-         (AESRandom. state2 zero-bytes-16 0)])
+        [(AESRandom. (SecretKeySpec. state1 "AES") zero-bytes-16 0)
+         (AESRandom. (SecretKeySpec. state2 "AES") zero-bytes-16 0)])
       (let [path-length' (inc path-length)
             path2 (set-bit path path-length)]
         ;; we can reuse the existing path for the first one since the
@@ -116,4 +114,4 @@
      (let [state (.array (doto (ByteBuffer/allocate 16)
                            (.putLong seed1)
                            (.putLong seed2)))]
-       (->AESRandom state zero-bytes-16 0))))
+       (->AESRandom (SecretKeySpec. state "AES") zero-bytes-16 0))))
