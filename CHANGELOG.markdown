@@ -1,5 +1,14 @@
 # Changelog
 
+* 0.6.2
+    * Fix regression where floating point numbers weren't allowed to describe
+      the number of tests in the defspec macro. Ex: (defspec foo 1e5 ...) now
+      works again.
+    * Allow `gen/shuffle` to work on anything that can be turned into a
+      sequence.
+    * Allow for testing to be cancelled inside the REPL with ctrl-c.
+    * Fix StackOverflow error that would be caused when generating vector with
+      more than about 10k elements.
 * 0.6.1
     * Fix bug introduced in 0.6.0: The `defspec` macro could only accept map or
       numeric _literals_ as options, instead of a symbol.

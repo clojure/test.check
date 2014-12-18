@@ -6,7 +6,7 @@ things:
 * Update project.clj
 
     In your `project.clj` replace `[reiddraper/simple-check "0.5.6"]` with
-    `[org.clojure/test.check "0.5.9"]` (note: your version numbers may be
+    `[org.clojure/test.check "0.6.2"]` (note: your version numbers may be
     different).
 
 * Update namespace declarations

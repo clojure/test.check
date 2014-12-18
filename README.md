@@ -13,7 +13,7 @@ _test.check_ used to be called
 ### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.6.1"]
+[org.clojure/test.check "0.6.2"]
 ```
 
 ### Maven
@@ -22,7 +22,7 @@ _test.check_ used to be called
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.6.1</version>
+  <version>0.6.2</version>
 </dependency>
 ```
 
