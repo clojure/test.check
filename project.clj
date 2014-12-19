@@ -13,7 +13,10 @@
   :plugins [[codox "0.8.10"]
             [cider/cider-nrepl "0.8.1"]
             [lein-cljsbuild "1.0.4-SNAPSHOT"]]
-  :codox {:defaults {:doc/format :markdown}}
+  :codox {:defaults {:doc/format :markdown}
+          :exclude [clojure.test.check.rose-tree
+                    cljs.test.check.cljs-test
+                    cljs.test.check.properties]}
   :cljsbuild
   {:builds
    [{:id "node-dev"
