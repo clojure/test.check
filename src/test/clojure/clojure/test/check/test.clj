@@ -170,7 +170,8 @@
     to the original string (save for the `:` bit)"
     (is (:result
           (tc/quick-check 1000 (prop/for-all*
-                                [gen/keyword] keyword-string-roundtrip-equiv))))))
+                                [gen/keyword] keyword-string-roundtrip-equiv)
+                          :max-size 25)))))
 
 ;; Boolean and/or
 ;; ---------------------------------------------------------------------------
