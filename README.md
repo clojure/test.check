@@ -170,7 +170,7 @@ for details.
 
 ![YourKit](http://www.yourkit.com/images/yklogo.png)
 
-YourKit is kindly supporting core.typed and other open source projects with its
+YourKit is kindly supporting test.check and other open source projects with its
 full-featured Java Profiler.  YourKit, LLC is the creator of innovative and
 intelligent tools for profiling Java and .NET applications. Take a look at
 YourKit's leading software products:
