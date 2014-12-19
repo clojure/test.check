@@ -29,7 +29,7 @@
   [x]
   (instance? Generator x))
 
-(defn make-gen
+(defn- make-gen
   [generator-fn]
   (Generator. generator-fn))
 
@@ -85,7 +85,7 @@
   [value]
   (gen-pure (rose/pure value)))
 
-(defn bind-helper
+(defn- bind-helper
   [k]
   (fn [rose]
     (gen-fmap rose/join
@@ -621,7 +621,7 @@
            (list inner-type)
            (map inner-type inner-type)]))
 
-(defn recursive-helper
+(defn- recursive-helper
   [container-gen-fn scalar-gen scalar-size children-size height]
   (if (zero? height)
     (resize scalar-size scalar-gen)

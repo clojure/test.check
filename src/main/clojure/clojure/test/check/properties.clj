@@ -35,11 +35,11 @@
     (apply-gen function)
     (apply gen/tuple args)))
 
-(defn binding-vars
+(defn- binding-vars
   [bindings]
   (map first (partition 2 bindings)))
 
-(defn binding-gens
+(defn- binding-gens
   [bindings]
   (map second (partition 2 bindings)))
 

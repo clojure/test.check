@@ -9,11 +9,11 @@
 
 (ns cljs.test.check.properties)
 
-(defn binding-vars
+(defn- binding-vars
   [bindings]
   (map first (partition 2 bindings)))
 
-(defn binding-gens
+(defn- binding-gens
   [bindings]
   (map second (partition 2 bindings)))
 

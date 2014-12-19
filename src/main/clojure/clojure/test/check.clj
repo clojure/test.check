@@ -14,7 +14,7 @@
 
 (declare shrink-loop failure)
 
-(defn make-rng
+(defn- make-rng
   [seed]
   (if seed
     [seed (gen/random seed)]
@@ -26,7 +26,7 @@
   (ct/report-trial property num-trials num-trials)
   {:result true :num-tests num-trials :seed seed})
 
-(defn not-falsey-or-exception?
+(defn- not-falsey-or-exception?
   "True if the value is not falsy or an exception"
   [value]
   (and value (not (instance? Throwable value))))
