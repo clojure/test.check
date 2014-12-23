@@ -39,28 +39,25 @@
   [default-times], or with a map containing any of the keys
   [:seed :max-size :num-tests]."
   {:arglists '([name property] [name num-tests? property] [name options? property])}
-  [name & args]
-  (let [property           (second args)
-        [options property] (if property
-                             [(first args) property]
-                             [nil (first args)])]
-    `(do
-       ;; consider my shame for introducing a cyclical dependency like this...
-       ;; Don't think we'll know what the solution is until clojure.test.check
-       ;; integration with another test framework is attempted.
-       (require 'clojure.test.check)
-       (defn ~(vary-meta name assoc
-                         ::defspec true
-                         :test `#(#'assert-check (assoc (~name)
-                                                   :test-var (str '~name))))
-         ([] (let [options# (process-options ~options)]
-               (apply ~name (:num-tests options#) (apply concat options#))))
-         ([~'times & {:keys [~'seed ~'max-size] :as ~'quick-check-opts}]
-            (apply
-             clojure.test.check/quick-check
-             ~'times
-             (vary-meta ~property assoc :name (str '~property))
-             (apply concat ~'quick-check-opts)))))))
+  ([name property] `(defspec ~name nil ~property))
+  ([name options property]
+     `(do
+        ;; consider my shame for introducing a cyclical dependency like this...
+        ;; Don't think we'll know what the solution is until clojure.test.check
+        ;; integration with another test framework is attempted.
+        (require 'clojure.test.check)
+        (defn ~(vary-meta name assoc
+                          ::defspec true
+                          :test `#(#'assert-check (assoc (~name)
+                                                    :test-var (str '~name))))
+          ([] (let [options# (process-options ~options)]
+                (apply ~name (:num-tests options#) (apply concat options#))))
+          ([~'times & {:keys [~'seed ~'max-size] :as ~'quick-check-opts}]
+             (apply
+              clojure.test.check/quick-check
+              ~'times
+              (vary-meta ~property assoc :name (str '~property))
+              (apply concat ~'quick-check-opts)))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
@@ -157,4 +154,3 @@
   (ct/report {:type ::shrinking
               ::property property-fun
               ::params (vec failing-params)}))
-

@@ -70,4 +70,3 @@
     (is (re-seq
           #"(?s)Shrinking vector-elements-are-unique starting with parameters \[\[.+"
           stdout))))
-
