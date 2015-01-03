@@ -63,6 +63,15 @@
        (.init c Cipher/ENCRYPT_MODE ^SecretKeySpec k)
        (.doFinal c block 0 16 out))))
 
+(def-thread-local fast-aes-cipher-thread-local
+  (clojure.test.check.AESCrypt.))
+
+(defn fast-aes
+  ([^bytes k ^bytes block ^bytes out]
+     (let [^clojure.test.check.AESCrypt c (.get fast-aes-cipher-thread-local)]
+       (.init c false "AES" k)
+       (.encryptBlock c block 0 out 0))))
+
 (defn ^:private set-bit
   "Returns a new byte array with the bit at the given index set to 1."
   [^bytes byte-array bit-index]

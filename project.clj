@@ -5,6 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies []
   :source-paths ["src/main/clojure"]
+  :java-source-paths ["src/main/java"]
   :test-paths ["src/test/clojure"]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.6.0"]]}}
   :global-vars {*warn-on-reflection* true}
