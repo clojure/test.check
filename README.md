@@ -144,6 +144,12 @@ write properties that run under the `clojure.test` runner, for example:
 
 ### ClojureScript
 
+ClojureScript support is available in test.check `0.6.3-SNAPSHOT`, and will be
+released officially soon. If you'd like to try a SNAPSHOT version, [add the
+sonatype repository to your
+project](http://dev.clojure.org/display/community/Maven+Settings+and+Repositories).
+
+
 The first _test.check_ example needs only minor modifications for
 ClojureScript:
 
