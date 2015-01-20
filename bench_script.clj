@@ -25,9 +25,9 @@
              (recur (dec i) (bit-xor sum (.nextLong r)))))))
 
 (println "======= AES generation =======")
-(let [r (random/make-random 42)]
+(let [r (r/make-random 42)]
   (bench (loop [i 256, sum 0, r r]
            (if (zero? i)
              sum
-             (let [[r1 r2] (random/split r)]
-               (recur (dec i) (bit-xor sum (random/rand-long r1)) r2))))))
+             (let [[r1 r2] (r/split r)]
+               (recur (dec i) (bit-xor sum (r/rand-long r1)) r2))))))
