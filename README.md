@@ -13,7 +13,7 @@ _test.check_ used to be called
 ### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.6.2"]
+[org.clojure/test.check "0.7.0"]
 ```
 
 ### Maven
@@ -22,7 +22,7 @@ _test.check_ used to be called
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.6.2</version>
+  <version>0.7.0</version>
 </dependency>
 ```
 
@@ -144,11 +144,7 @@ write properties that run under the `clojure.test` runner, for example:
 
 ### ClojureScript
 
-ClojureScript support is available in test.check `0.6.3-SNAPSHOT`, and will be
-released officially soon. If you'd like to try a SNAPSHOT version, [add the
-sonatype repository to your
-project](http://dev.clojure.org/display/community/Maven+Settings+and+Repositories).
-
+ClojureScript support was added in version `0.7.0`.
 
 The first _test.check_ example needs only minor modifications for
 ClojureScript:
