@@ -121,7 +121,28 @@
 
 (defn performance-tests
   []
+  ;; eventually figure out a way to do a separate jvm run for each one
+  ;; of these?
   (println "Running performance tests...")
+  (let [{[mean] :mean} (criterium/benchmark
+                        (let [r (java.util.Random. 42)]
+                          (loop [i 1024 x 0]
+                            (if (zero? i)
+                              x
+                              (recur (dec i) (bit-xor x (.nextLong r))))))
+                        {})]
+    (printf "Mutable JUR generating 1024 longs averaged %.2fµs\n"
+            (* mean 1000000)))
+  (let [rng (r/make-siphash-random 42)
+        {[mean] :mean} (criterium/benchmark
+                        (loop [i 1024 x 0 rng rng]
+                          (if (zero? i)
+                            x
+                            (let [[rng1 rng2] (r/split rng)]
+                              (recur (dec i) (bit-xor x (r/rand-long rng1)) rng2))))
+                        {})]
+    (printf "Low-allocation siphash generated 1024 longs averaged %.2fµs\n"
+            (* mean 1000000)))
   (doseq [[impl-name impl] impls
           [extractor-name extractor-fn] extractors]
     (let [{[mean] :mean} (criterium/benchmark
