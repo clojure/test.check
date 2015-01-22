@@ -1,5 +1,6 @@
 (ns user
-  (:require [clojure.test.check.random :as r])
+  (:require [clojure.test.check.random :as r]
+            [criterium.core :as criterium])
   (:import [java.util Random]
            [org.apache.commons.math3.stat.inference ChiSquareTest]))
 
@@ -27,7 +28,9 @@
    ;; Expecting AES to be high quality by all measures, but poor
    ;; performance.
    :AES
-   (fn [^long seed] (r/make-aes-random seed seed))})
+   (fn [^long seed] (r/make-aes-random seed seed))
+   :siphash
+   (fn [^long seed] (r/make-siphash-random seed))})
 
 (defn stats
   [xs]
@@ -58,7 +61,14 @@
 
 ;; TODO: some third option for unbalanced? how do we do that
 ;; deterministically?
-(def extractors {:linear linear-longs, :balanced balanced-longs})
+(def extractors
+  {:linear (fn [rng-fn seed n] (linear-longs (rng-fn seed) n))
+   :balanced (fn [rng-fn seed n] (balanced-longs (rng-fn seed) n))
+   :sequential-seeds (fn [rng-fn seed n]
+                       (->> (iterate inc seed)
+                            (take n)
+                            (map rng-fn)
+                            (map r/rand-long)))})
 
 (defn chi-square-test
   [expected-value actuals]
@@ -71,21 +81,25 @@
   "These are all good seeds."
   [42 1421867162723 -1539333844256672508])
 
+(defn bin-test
+  [n xs]
+  (let [expected (/ (count xs) (double n))
+        p (chi-square-test expected (->> xs
+                                         (map #(mod % n))
+                                         (frequencies)
+                                         (vals)))]
+    (if (<= 0.05 p 0.95) :pass :fail)))
+
 (def tests
   "Functions that take a collection of supposedly independent random
   longs and return :pass or :fail."
-  {:bin100
-   (fn [xs]
-     (let [expected (/ (count xs) 100.0)
-           p (chi-square-test expected (->> xs
-                                            (map #(mod % 100))
-                                            (frequencies)
-                                            (vals)))]
-       (if (<= 0.05 p 0.95) :pass :fail)))})
+  {:bin100 (partial bin-test 100)
+   :bin101 (partial bin-test 101)
+   :bin20000 (partial bin-test 20000)})
 
-(defn do-everything
+(defn quality-tests
   []
-  (println "Comparing all PRNGs with all tests")
+  (println "Running all quality tests...")
   (doseq [[impl-name impl] impls
           [extractor-name extractor-fn] extractors
           [test-name test-fn] tests]
@@ -95,13 +109,31 @@
                      (take 30))
           {:keys [pass fail] :or {pass 0 fail 0}}
           (->> seeds
-               (map impl)
-               (map #(extractor-fn % 100000))
+               (map #(extractor-fn impl % 200000))
                (map test-fn)
                (frequencies))]
-      (printf "%15s -- %10s -- %10s -- %.2f\n"
+      (printf "%15s -- %16s -- %10s -- %.2f\n"
               (name impl-name)
               (name extractor-name)
               (name test-name)
               (double (/ pass (+ pass fail))))
       (flush))))
+
+(defn performance-tests
+  []
+  (println "Running performance tests...")
+  (doseq [[impl-name impl] impls
+          [extractor-name extractor-fn] extractors]
+    (let [{[mean] :mean} (criterium/benchmark
+                          (reduce bit-xor (extractor-fn impl 42 1024))
+                          {})]
+      (printf "%15s[%16s]: Generating 1024 longs averaged %.2fµs\n"
+              (name impl-name)
+              (name extractor-name)
+              (* mean 1000000))
+      (flush))))
+
+(defn do-everything
+  []
+  (quality-tests)
+  (performance-tests))
