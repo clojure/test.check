@@ -15,4 +15,4 @@
   :global-vars {*warn-on-reflection* true}
   :plugins [[codox "0.8.10"]]
   :codox {:defaults {:doc/format :markdown}}
-  :aliases {"prngs" ["run" "-m" "clojure.main" "-e" "(do (load-file \"prng_compare.clj\") (user/do-everything))"]})
+  :aliases {"prngs" ["run" "-m" "user/do-everything"]})
