@@ -10,7 +10,8 @@
 (ns clojure.test.check.random
   "Purely functional and splittable pseudo-random number generators based on
   http://publications.lib.chalmers.se/records/fulltext/183348/local_183348.pdf."
-  (:import [java.nio ByteBuffer]
+  (:import [clojure.test.check SipHashInline]
+           [java.nio ByteBuffer]
            [java.util Arrays]
            [javax.crypto Cipher]
            [javax.crypto.spec SecretKeySpec]))
@@ -63,6 +64,10 @@
        (.init c Cipher/ENCRYPT_MODE ^SecretKeySpec k)
        (.doFinal c block 0 16 out))))
 
+(defn ^:private siphash
+  [^long k ^long in]
+  (SipHashInline/hash24Long k k in))
+
 (defn ^:private set-bit
   "Returns a new byte array with the bit at the given index set to 1."
   [^bytes byte-array bit-index]
@@ -104,6 +109,29 @@
                   (.clear)
                   (.put bytes 0 8)
                   (.flip))))))
+
+(def ^:const highest-bit (bit-shift-left 1 63))
+
+;; can we avoid using only a 64 bit key by keeping two of these around?
+;; what does that do to perf?
+(deftype SipHashRandom [^long state ^long path ^long path-length]
+  IRandom
+  (split [random]
+    (if (= 63 path-length)
+      (let [state1 (siphash state path)
+            state2 (siphash state (bit-or path highest-bit))]
+        [(SipHashRandom. state1 0 0)
+         (SipHashRandom. state2 0 0)])
+      (let [path-length' (inc path-length)
+            path2 (bit-or path (bit-shift-left 1 path-length))]
+        [(SipHashRandom. state path path-length')
+         (SipHashRandom. state path2 path-length')])))
+  (rand-long [random]
+    (siphash state path)))
+
+(defn make-siphash-random
+  [^long seed]
+  (SipHashRandom. seed 0 0))
 
 (defn make-aes-random
   [^long seed1 ^long seed2]
