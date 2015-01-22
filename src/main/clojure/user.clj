@@ -112,10 +112,9 @@
 (defn bin-test
   [n xs]
   (let [expected (/ (count xs) (double n))
-        p (chi-square-test expected (->> xs
-                                         (map #(mod % n))
-                                         (frequencies)
-                                         (vals)))]
+        freqs (->> xs (map #(mod % n)) (frequencies))
+        actuals (->> (range n) (map #(get freqs % 0)))
+        p (chi-square-test expected actuals)]
     (if (<= 0.05 p 0.95) :pass :fail)))
 
 (def tests
@@ -123,8 +122,6 @@
   longs and return :pass or :fail."
   {:bin100 (partial bin-test 100)
    :bin101 (partial bin-test 101)
-   ;; TODO: I think this won't work right when there's empty bins,
-   ;; which is probably common.
    :bin20000 (partial bin-test 20000)})
 
 (defn quality-tests
