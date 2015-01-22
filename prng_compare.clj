@@ -123,6 +123,8 @@
   longs and return :pass or :fail."
   {:bin100 (partial bin-test 100)
    :bin101 (partial bin-test 101)
+   ;; TODO: I think this won't work right when there's empty bins,
+   ;; which is probably common.
    :bin20000 (partial bin-test 20000)})
 
 (defn quality-tests
