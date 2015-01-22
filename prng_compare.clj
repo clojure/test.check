@@ -43,13 +43,21 @@
                     c)]
     {:mean mean :variance variance}))
 
-(defn linear-longs
+(defn right-linear-longs
   [rng n]
   (when (pos? n)
     (lazy-seq
      (let [[rng1 rng2] (r/split rng)]
        (cons (r/rand-long rng1)
-             (linear-longs rng2 (dec n)))))))
+             (right-linear-longs rng2 (dec n)))))))
+
+(defn left-linear-longs
+  [rng n]
+  (when (pos? n)
+    (lazy-seq
+     (let [[rng1 rng2] (r/split rng)]
+       (cons (r/rand-long rng2)
+             (left-linear-longs rng1 (dec n)))))))
 
 (defn balanced-longs
   [rng n]
@@ -59,11 +67,31 @@
       (take n (map r/rand-long rngs))
       (recur (mapcat r/split rngs) (* 2 count)))))
 
-;; TODO: some third option for unbalanced? how do we do that
-;; deterministically?
+(defn fibonacci-longs
+  "Generates n longs from the given rng in a fashion that is somewhere
+  in between balanced and linear."
+  ([rng n] (fibonacci-longs rng n true))
+  ([rng n left-side-heavy?]
+     (if (= 1 n)
+       [(r/rand-long rng)]
+       (lazy-seq
+        (loop [a 1, b 2]
+          (if (>= b n)
+            (let [heavy-count a
+                  light-count (- n a)
+                  left-count (if left-side-heavy? heavy-count light-count)
+                  right-count (if left-side-heavy? light-count heavy-count)
+                  [rng-left rng-right] (r/split rng)
+                  not-left-side-heavy? (not left-side-heavy?)]
+              (concat (fibonacci-longs rng-left left-count not-left-side-heavy?)
+                      (fibonacci-longs rng-right right-count not-left-side-heavy?)))
+            (recur b (+ a b))))))))
+
 (def extractors
-  {:linear (fn [rng-fn seed n] (linear-longs (rng-fn seed) n))
+  {:left-linear (fn [rng-fn seed n] (left-linear-longs (rng-fn seed) n))
+   :right-linear (fn [rng-fn seed n] (right-linear-longs (rng-fn seed) n))
    :balanced (fn [rng-fn seed n] (balanced-longs (rng-fn seed) n))
+   :fibonacci (fn [rng-fn seed n] (fibonacci-longs (rng-fn seed) n))
    :sequential-seeds (fn [rng-fn seed n]
                        (->> (iterate inc seed)
                             (take n)
