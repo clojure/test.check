@@ -7,21 +7,19 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.test.check
-  (:require [clojure.test.check.generators :as gen]
-            [clojure.test.check.clojure-test :as ct]
-            [clojure.test.check.random :as random]
-            [clojure.test.check.rose-tree :as rose]
-            [clojure.test.check.parallel :as parallel]))
+(ns cljs.test.check
+  (:require [cljs.test.check.generators :as gen]
+            [cljs.test.check.cljs-test :as ct]
+            [cljs.test.check.rose-tree :as rose]))
 
 (declare shrink-loop failure)
 
 (defn- make-rng
   [seed]
   (if seed
-    [seed (random/make-random seed)]
-    (let [non-nil-seed (System/currentTimeMillis)]
-      [non-nil-seed (random/make-random non-nil-seed)])))
+    [seed (gen/random seed)]
+    (let [non-nil-seed (.valueOf (js/Date.))]
+      [non-nil-seed (gen/random non-nil-seed)])))
 
 (defn- complete
   [property num-trials seed]
@@ -31,13 +29,7 @@
 (defn- not-falsey-or-exception?
   "True if the value is not falsy or an exception"
   [value]
-  (and value (not (instance? Throwable value))))
-
-(defn unchunk [s]
-  (when (seq s)
-    (lazy-seq
-      (cons (first s)
-            (unchunk (next s))))))
+  (and value (not (instance? js/Error value))))
 
 (defn quick-check
   "Tests `property` `num-tests` times.
@@ -54,31 +46,23 @@
       (def p (for-all [a gen/pos-int] (> (* a a) a)))
       (quick-check 100 p)
   "
-  [num-tests property & {:keys [seed max-size par] :or {max-size 200 par 1}}]
+  [num-tests property & {:keys [seed max-size] :or {max-size 200}}]
   (let [[created-seed rng] (make-rng seed)
-        rng-seq (gen/lazy-random-states rng)
-        size-seq (gen/make-size-range-seq max-size)
-        _fs (map (fn [r size]
-                  (gen/call-gen property r size))
-                rng-seq size-seq)
-        fs (parallel/execute
-             par
-             (map (fn [r size] #(gen/call-gen property r size))
-                  rng-seq size-seq))]
+        size-seq (gen/make-size-range-seq max-size)]
     (loop [so-far 0
-           size-seq size-seq
-           fs fs]
+           size-seq size-seq]
       (if (== so-far num-tests)
         (complete property num-tests created-seed)
-        (let [result-map-rose (first fs)
+        (let [[size & rest-size-seq] size-seq
+              result-map-rose (gen/call-gen property rng size)
               result-map (rose/root result-map-rose)
               result (:result result-map)
               args (:args result-map)]
           (if (not-falsey-or-exception? result)
             (do
               (ct/report-trial property so-far num-tests)
-              (recur (inc so-far) (rest size-seq) (rest fs)))
-            (failure property result-map-rose so-far (first size-seq) created-seed)))))))
+              (recur (inc so-far) rest-size-seq))
+            (failure property result-map-rose so-far size created-seed)))))))
 
 (defn- smallest-shrink
   [total-nodes-visited depth smallest]

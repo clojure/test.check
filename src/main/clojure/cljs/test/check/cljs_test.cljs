@@ -7,13 +7,13 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.test.check.clojure-test
-  (:require [clojure.test :as ct]))
+(ns cljs.test.check.cljs-test
+  (:require [cljs.test :as ct :include-macros true]))
 
 (defn- assert-check
   [{:keys [result] :as m}]
   (prn m)
-  (if (instance? Throwable result)
+  (if (instance? js/Error result)
     (throw result)
     (ct/is result)))
 
@@ -29,35 +29,6 @@
                          (assoc options :num-tests *default-test-count*))
         :else (throw (ex-info (str "Invalid defspec options: " (pr-str options))
                               {:bad-options options}))))
-
-(defmacro defspec
-  "Defines a new clojure.test test var that uses `quick-check` to verify
-  [property] with the given [args] (should be a sequence of generators),
-  [default-times] times by default.  You can call the function defined as [name]
-  with no arguments to trigger this test directly (i.e., without starting a
-  wider clojure.test run), with a single argument that will override
-  [default-times], or with a map containing any of the keys
-  [:seed :max-size :num-tests]."
-  {:arglists '([name property] [name num-tests? property] [name options? property])}
-  ([name property] `(defspec ~name nil ~property))
-  ([name options property]
-     `(do
-        ;; consider my shame for introducing a cyclical dependency like this...
-        ;; Don't think we'll know what the solution is until clojure.test.check
-        ;; integration with another test framework is attempted.
-        (require 'clojure.test.check)
-        (defn ~(vary-meta name assoc
-                          ::defspec true
-                          :test `#(#'assert-check (assoc (~name)
-                                                    :test-var (str '~name))))
-          ([] (let [options# (process-options ~options)]
-                (apply ~name (:num-tests options#) (apply concat options#))))
-          ([~'times & {:keys [~'seed ~'max-size] :as ~'quick-check-opts}]
-             (apply
-              clojure.test.check/quick-check
-              ~'times
-              (vary-meta ~property assoc :name (str '~property))
-              (apply concat ~'quick-check-opts)))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
@@ -89,9 +60,9 @@
 
 (def ^:private last-trial-report (atom 0))
 
-(let [begin-test-var-method (get-method ct/report :begin-test-var)]
-  (defmethod ct/report :begin-test-var [m]
-    (reset! last-trial-report (System/currentTimeMillis))
+(let [begin-test-var-method (get-method ct/report [::ct/default :begin-test-var])]
+  (defmethod ct/report [::ct/default :begin-test-var] [m]
+    (reset! last-trial-report (.valueOf (js/Date.)))
     (when begin-test-var-method (begin-test-var-method m))))
 
 (defn- get-property-name
@@ -104,11 +75,10 @@
 
   Passing trial 3286 / 5000 for (your-test-var-name-here) (:)"
   [m]
-  (let [t (System/currentTimeMillis)]
+  (let [t (.valueOf (js/Date.))]
     (when (> (- t *trial-report-period*) @last-trial-report)
-      (ct/with-test-out
-        (println "Passing trial" (-> m ::trial first) "/" (-> m ::trial second)
-                 "for" (get-property-name m)))
+      (println "Passing trial" (-> m ::trial first) "/" (-> m ::trial second)
+        "for" (get-property-name m))
       (reset! last-trial-report t))))
 
 (defn trial-report-dots
@@ -121,18 +91,17 @@
       (flush))
     (when (== so-far total) (println))))
 
-(defmethod ct/report ::trial [m]
+(defmethod ct/report [::ct/default ::trial] [m]
   (when-let [trial-report-fn (and *report-trials*
                                   (if (true? *report-trials*)
                                     trial-report-dots
                                     *report-trials*))]
     (trial-report-fn m)))
 
-(defmethod ct/report ::shrinking [m]
+(defmethod ct/report [::ct/default ::shrinking] [m]
   (when *report-shrinking*
-    (ct/with-test-out
-      (println "Shrinking" (get-property-name m)
-               "starting with parameters" (pr-str (::params m))))))
+    (println "Shrinking" (get-property-name m)
+             "starting with parameters" (pr-str (::params m)))))
 
 (defn report-trial
   [property-fun so-far num-tests]
@@ -154,3 +123,4 @@
   (ct/report {:type ::shrinking
               ::property property-fun
               ::params (vec failing-params)}))
+

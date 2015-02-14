@@ -7,33 +7,7 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.test.check.properties
-  (:require [clojure.test.check.generators :as gen]))
-
-(defn- apply-gen
-  [function]
-  (fn [args]
-    (let [result (try (apply function args)
-                   (catch java.lang.ThreadDeath t (throw t))
-                   (catch Throwable t t))]
-      {:result result
-       :function function
-       :args args})))
-
-(defn for-all*
-  "Creates a property (properties are also generators). A property
-  is a generator that generates the result of applying the function
-  under test with the realized arguments. Once realized, the arguments
-  will be applied to `function` with `apply`.
-
-  Example:
-
-  (for-all* [gen/int gen/int] (fn [a b] (>= (+ a b) a)))
-  "
-  [args function]
-  (gen/fmap
-    (apply-gen function)
-    (apply gen/tuple args)))
+(ns cljs.test.check.properties)
 
 (defn- binding-vars
   [bindings]
@@ -55,6 +29,7 @@
     (>= (+ a b) a))
   "
   [bindings & body]
-  `(for-all* ~(vec (binding-gens bindings))
+  `(cljs.test.check.properties/for-all*
+     ~(vec (binding-gens bindings))
              (fn [~@(binding-vars bindings)]
                ~@body)))

@@ -7,15 +7,14 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.test.check.properties
-  (:require [clojure.test.check.generators :as gen]))
+(ns cljs.test.check.properties
+  (:require [cljs.test.check.generators :as gen]))
 
 (defn- apply-gen
   [function]
   (fn [args]
     (let [result (try (apply function args)
-                   (catch java.lang.ThreadDeath t (throw t))
-                   (catch Throwable t t))]
+                   (catch :default t t))]
       {:result result
        :function function
        :args args})))
@@ -34,27 +33,3 @@
   (gen/fmap
     (apply-gen function)
     (apply gen/tuple args)))
-
-(defn- binding-vars
-  [bindings]
-  (map first (partition 2 bindings)))
-
-(defn- binding-gens
-  [bindings]
-  (map second (partition 2 bindings)))
-
-(defmacro for-all
-  "Macro sugar for `for-all*`. `for-all` lets you name the parameter
-  and use them in expression, without wrapping them in a lambda. Like
-  `for-all*`, it returns a property.
-
-  Examples
-
-  (for-all [a gen/int
-            b gen/int]
-    (>= (+ a b) a))
-  "
-  [bindings & body]
-  `(for-all* ~(vec (binding-gens bindings))
-             (fn [~@(binding-vars bindings)]
-               ~@body)))
