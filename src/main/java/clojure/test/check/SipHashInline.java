@@ -170,7 +170,7 @@ public class SipHashInline {
     }
 
   /*
-   *  This is supposed to be a specialized version for 64 bytes of input, but
+   *  This is supposed to be a specialized version for 64 bits of input, but
    *  it's not quite the same because the normal algorithm also adds the length
    *  as part of the input, so I dunno...
    */
