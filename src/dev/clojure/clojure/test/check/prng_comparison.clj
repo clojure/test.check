@@ -1,4 +1,4 @@
-(ns user
+(ns clojure.test.check.prng-comparison
   (:require [clojure.test.check.random :as r]
             [criterium.core :as criterium])
   (:import [java.util Random]
