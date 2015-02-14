@@ -10,7 +10,7 @@
 (ns clojure.test.check.random
   "Purely functional and splittable pseudo-random number generators based on
   http://publications.lib.chalmers.se/records/fulltext/183348/local_183348.pdf."
-  (:import [clojure.test.check SipHashInline]
+  (:import [clojure.test.check SipHashish]
            [java.nio ByteBuffer]
            [java.util Arrays]
            [javax.crypto Cipher]
@@ -66,7 +66,7 @@
 
 (defn ^:private siphash
   [^long k ^long in]
-  (SipHashInline/hash24Long k k in))
+  (SipHashish/hashish k k in))
 
 (defn ^:private set-bit
   "Returns a new byte array with the bit at the given index set to 1."
