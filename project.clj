@@ -10,7 +10,7 @@
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.6.0"]
                                   [org.clojure/clojurescript "0.0-2496"]]
-                   :source-paths ["src/main/dev"]}}
+                   :source-paths ["src/dev/clojure"]}}
   :global-vars {*warn-on-reflection* true}
   :plugins [[codox "0.8.10"]
             [cider/cider-nrepl "0.8.1"]
