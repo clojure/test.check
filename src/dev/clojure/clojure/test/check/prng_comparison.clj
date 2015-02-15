@@ -80,19 +80,22 @@
         (concat (lump rng2 8) (self5 rng1)))))
    :fibonacci
    (let [infinity 1152921504606846976]
+     ;; does this require like 60 seq calls for every number?  would
+     ;; likely make it super slow
      (fn [rng] (fibonacci-longs rng infinity)))})
 
 ;; prints random data to STDOUT
 (defn -main
-  [seed-str impl-str & [strategy-str]]
+  [seed-str run-name]
   (let [daos (java.io.DataOutputStream. System/out)
         seed (Long/parseLong ^String seed-str)]
-    (if (= impl-str "JUR")
+    (if (= run-name "JUR")
       (let [rng (java.util.Random. seed)]
         (loop [] (.writeLong daos (.nextLong rng)) (recur)))
       ;; is the perf here dominated by lazy seq operations?  is it
       ;; worth the bother to eliminate that?
-      (let [impl (splittable-impls (keyword impl-str))
-            strategy (linearization-strategies (keyword strategy-str))]
+      (let [[impl-name strategy-name] (clojure.string/split run-name #"-" 2)
+            impl (splittable-impls (keyword impl-name))
+            strategy (linearization-strategies (keyword strategy-name))]
         (doseq [long (strategy (impl seed))]
           (.writeLong daos long))))))
