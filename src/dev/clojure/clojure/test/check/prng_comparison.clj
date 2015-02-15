@@ -2,7 +2,14 @@
   (:require [clojure.test.check.random :as r]
             [criterium.core :as criterium])
   (:import [java.util Random]
-           [org.apache.commons.math3.stat.inference ChiSquareTest]))
+           [org.apache.commons.math3.stat.inference ChiSquareTest]
+           [sun.misc Signal SignalHandler]))
+
+;; Make the process quit when STDOUT stops being read
+(Signal/handle (Signal. "PIPE")
+               (reify SignalHandler
+                 (handle [_ _]
+                   (System/exit 0))))
 
 (def impls
   {:naive-JUR
