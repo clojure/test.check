@@ -81,3 +81,25 @@
    :fibonacci
    (let [infinity 1152921504606846976]
      (fn [rng] (fibonacci-longs rng infinity)))})
+
+(defn the-seed
+  []
+  (let [seed (System/currentTimeMillis)]
+    (binding [*out* *err*]
+      (println "SEED:" seed))
+    seed))
+
+;; prints random data to STDOUT
+(defn -main
+  [impl-str & [strategy-str]]
+  (let [daos (java.io.DataOutputStream. System/out)]
+    (if (= impl-str "JUR")
+      (let [rng (java.util.Random. (the-seed))]
+        (loop [] (.writeLong daos (.nextLong rng)) (recur)))
+      ;; is the perf here dominated by lazy seq operations?  is it
+      ;; worth the bother to eliminate that?
+      (let [impl (splittable-impls (keyword impl-str))
+            strategy (linearization-strategies (keyword strategy-str))
+            seed (the-seed)]
+        (doseq [long (strategy (impl seed))]
+          (.writeLong daos long))))))

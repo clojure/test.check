@@ -11,6 +11,8 @@
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.6.0"]
                                   [org.clojure/clojurescript "0.0-2496"]]
                    :source-paths ["src/dev/clojure"]}}
+  :aliases {"print-random"
+            ["trampoline" "run" "-m" "clojure.test.check.prng-comparison"]}
   :global-vars {*warn-on-reflection* true}
   :plugins [[codox "0.8.10"]
             [cider/cider-nrepl "0.8.1"]
