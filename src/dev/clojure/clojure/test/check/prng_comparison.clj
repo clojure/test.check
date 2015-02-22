@@ -41,6 +41,35 @@
                       (fibonacci-longs rng-right right-count not-left-side-heavy?)))
             (recur b (+ a b))))))))
 
+(defn reduce-fibonacci-longs
+  "Generates n longs from the given rng in a fashion that is somewhere
+  in between balanced and linear."
+  ([rng n f x] (reduce-fibonacci-longs rng n f x true))
+  ([rng n f x left-side-heavy?]
+     (if (= 1 n)
+       (f x (r/rand-long rng))
+       (loop [a 1, b 2]
+         (if (>= b n)
+           (let [heavy-count a
+                 light-count (- n a)
+                 left-count (if left-side-heavy? heavy-count light-count)
+                 right-count (if left-side-heavy? light-count heavy-count)
+                 [rng-left rng-right] (r/split rng)
+                 not-left-side-heavy? (not left-side-heavy?)
+                 x' (reduce-fibonacci-longs rng-left
+                                            left-count
+                                            f
+                                            x
+                                            not-left-side-heavy?)]
+             (if (reduced? x')
+               x'
+               (reduce-fibonacci-longs rng-right
+                                       right-count
+                                       f
+                                       x'
+                                       not-left-side-heavy?)))
+           (recur b (+ a b)))))))
+
 (def linearization-strategies
   ;; have to use different self names here because weird compiler bug
   {:right-linear
@@ -80,9 +109,10 @@
         (concat (lump rng2 8) (self5 rng1)))))
    :fibonacci
    (let [infinity 1152921504606846976]
-     ;; does this require like 60 seq calls for every number?  would
-     ;; likely make it super slow
-     (fn [rng] (fibonacci-longs rng infinity)))})
+     (vary-meta
+      (fn [rng f x]
+        (reduce-fibonacci-longs rng infinity f x))
+      assoc ::reduction? true))})
 
 ;; prints random data to STDOUT
 (defn -main
@@ -92,10 +122,14 @@
     (if (= run-name "JUR")
       (let [rng (java.util.Random. seed)]
         (loop [] (.writeLong daos (.nextLong rng)) (recur)))
-      ;; is the perf here dominated by lazy seq operations?  is it
-      ;; worth the bother to eliminate that?
+
       (let [[impl-name strategy-name] (clojure.string/split run-name #"-" 2)
             impl (splittable-impls (keyword impl-name))
             strategy (linearization-strategies (keyword strategy-name))]
-        (doseq [long (strategy (impl seed))]
-          (.writeLong daos long))))))
+        (if (::reduction? (meta strategy))
+          (strategy (impl seed)
+                    (fn [_ ^long x]
+                      (.writeLong daos x))
+                    nil)
+          (doseq [long (strategy (impl seed))]
+            (.writeLong daos long)))))))
