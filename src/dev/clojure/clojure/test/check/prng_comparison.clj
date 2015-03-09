@@ -15,7 +15,8 @@
    :JUSR
    (fn [^long seed] (r/make-java-util-splittable-random seed))
    :siphash
-   (fn [^long seed] (r/make-siphash-random seed))})
+   (fn [^long seed] (r/make-siphash-random seed))
+   :SHA1 r/make-sha1-random})
 
 (defn lump
   [rng n f x]

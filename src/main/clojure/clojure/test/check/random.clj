@@ -11,7 +11,9 @@
   "Purely functional and splittable pseudo-random number generators based on
   http://publications.lib.chalmers.se/records/fulltext/183348/local_183348.pdf."
   (:import [clojure.test.check SipHashish]
+           [java.io ByteArrayInputStream DataInputStream]
            [java.nio ByteBuffer]
+           [java.security MessageDigest]
            [java.util Arrays]
            [javax.crypto Cipher]
            [javax.crypto.spec SecretKeySpec]))
@@ -187,6 +189,25 @@
                                    (bit-xor (longify 0xaaaaaaaaaaaaaaaa)))))]
       [(JavaUtilSplittableRandom. gamma state')
        (JavaUtilSplittableRandom. gamma' (rand-long this))])))
+
+(deftype SHA1Random [^MessageDigest md]
+  IRandom
+  (split [random]
+    (let [md1 ^MessageDigest (.clone md)
+          md2 ^MessageDigest (.clone md)]
+      (.update md1 (byte 0))
+      (.update md2 (byte 1))
+      [(SHA1Random. md1) (SHA1Random. md2)]))
+  (rand-long [random]
+    (let [md' ^MessageDigest (.clone md)
+          the-bytes (.digest md')]
+      (.readLong (DataInputStream. (ByteArrayInputStream. the-bytes))))))
+
+(defn make-sha1-random
+  [seed]
+  (let [md (MessageDigest/getInstance "SHA1")]
+    (.update md (.getBytes (pr-str seed)))
+    (SHA1Random. md)))
 
 (defn make-siphash-random
   [^long seed]
