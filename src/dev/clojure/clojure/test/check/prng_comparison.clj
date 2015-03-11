@@ -26,26 +26,6 @@
         x'
         (lump rng2 n-- f x')))))
 
-(defn fibonacci-longs
-  "Generates n longs from the given rng in a fashion that is somewhere
-  in between balanced and linear."
-  ([rng n] (fibonacci-longs rng n true))
-  ([rng n left-side-heavy?]
-     (if (= 1 n)
-       [(r/rand-long rng)]
-       (lazy-seq
-        (loop [a 1, b 2]
-          (if (>= b n)
-            (let [heavy-count a
-                  light-count (- n a)
-                  left-count (if left-side-heavy? heavy-count light-count)
-                  right-count (if left-side-heavy? light-count heavy-count)
-                  [rng-left rng-right] (r/split rng)
-                  not-left-side-heavy? (not left-side-heavy?)]
-              (concat (fibonacci-longs rng-left left-count not-left-side-heavy?)
-                      (fibonacci-longs rng-right right-count not-left-side-heavy?)))
-            (recur b (+ a b))))))))
-
 (defn reduce-fibonacci-longs
   "Generates n longs from the given rng in a fashion that is somewhere
   in between balanced and linear."
