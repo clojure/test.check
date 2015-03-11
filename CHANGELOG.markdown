@@ -1,5 +1,27 @@
 # Changelog
 
+* 0.7.0
+    * Add ClojureScript support, written by @swannodette. More usage can be
+      found [in the
+      README](https://github.com/clojure/test.check#clojurescript).
+    * Raise an error if the incorrect arity of `defspec` is used.
+    * Don't export the following private functions:
+        * `make-rng`
+        * `not-falsey-or-exception?`
+        * `make-gen`
+        * `bind-helper`
+        * `recursive-helper`
+        * `binding-vars`
+        * `binding-gens`
+* 0.6.2
+    * Fix regression where floating point numbers weren't allowed to describe
+      the number of tests in the defspec macro. Ex: (defspec foo 1e5 ...) now
+      works again.
+    * Allow `gen/shuffle` to work on anything that can be turned into a
+      sequence.
+    * Allow for testing to be cancelled inside the REPL with ctrl-c.
+    * Fix StackOverflow error that would be caused when generating vector with
+      more than about 10k elements.
 * 0.6.1
     * Fix bug introduced in 0.6.0: The `defspec` macro could only accept map or
       numeric _literals_ as options, instead of a symbol.

@@ -7,13 +7,15 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns clojure.test.check.generators
+(ns cljs.test.check.generators
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace])
-  (:require [clojure.core :as core]
-            [clojure.test.check.random :as random]
-            [clojure.test.check.rose-tree :as rose]))
+  (:require [cljs.core :as core]
+            [cljs.test.check.rose-tree :as rose]
+            [goog.string :as gstring]
+            [clojure.string])
+  (:import [goog.testing PseudoRandom]))
 
 
 ;; Gen
@@ -55,24 +57,9 @@
   [{h :gen} k]
   (make-gen
     (fn [rnd size]
-      (let [[r1 r2] (random/split rnd)
-            inner (h r1 size)
+      (let [inner (h rnd size)
             {result :gen} (k inner)]
-        (result r2 size)))))
-
-(defn- random-states [num-randoms rr]
-  (loop [c 1, res [rr]]
-    (if (>= c num-randoms)
-      (take num-randoms res)
-      (recur (* 2 c) (mapcat random/split res)))))
-
-(defn lazy-random-states
-  "Exclude the nth value in a collection."
-  [rr]
-  (lazy-seq
-        (let [[r1 r2] (random/split rr)]
-          (cons r1
-                (lazy-random-states r2)))))
+        (result rnd size)))))
 
 (defn- gen-seq->seq-gen
   "Takes a sequence of generators and returns a generator of sequences (er, vectors)."
@@ -80,7 +67,7 @@
   (make-gen
    (fn [rnd size]
      ;; could make this lazy once we have immutable RNGs
-     (mapv #(call-gen % %2 size) gens (random-states (count gens) rnd)))))
+     (mapv #(call-gen % rnd size) gens))))
 
 ;; Exported generator functions
 ;; ---------------------------------------------------------------------------
@@ -88,7 +75,7 @@
 (defn fmap
   [f gen]
   (assert (generator? gen) "Second arg to fmap must be a generator")
-  (gen-fmap (partial rose/fmap f) gen))
+  (gen-fmap #(rose/fmap f %) gen))
 
 
 (defn return
@@ -128,6 +115,11 @@
 ;; Helpers
 ;; ---------------------------------------------------------------------------
 
+(defn random
+  {:no-doc true}
+  ([] (PseudoRandom.))
+  ([seed] (PseudoRandom. seed)))
+
 (defn make-size-range-seq
   {:no-doc true}
   [max-size]
@@ -137,11 +129,9 @@
   "Return a sequence of realized values from `generator`."
   ([generator] (sample-seq generator 100))
   ([generator max-size]
-   (let [r (random/make-random)
+   (let [r (random)
          size-seq (make-size-range-seq max-size)]
-     (core/map (comp rose/root #(call-gen generator %1 %2))
-               (lazy-random-states r)
-               size-seq))))
+     (core/map #(rose/root (call-gen generator r %)) size-seq))))
 
 (defn sample
   "Return a sequence of `num-samples` (default 10)
@@ -158,11 +148,11 @@
 
 (defn- halfs
   [n]
-  (take-while (partial not= 0) (iterate #(quot % 2) n)))
+  (take-while #(not= 0 %) (iterate #(quot % 2) n)))
 
 (defn- shrink-int
   [integer]
-  (core/map (partial - integer) (halfs integer)))
+  (core/map #(- integer %) (halfs integer)))
 
 (defn- int-rose-tree
   [value]
@@ -171,8 +161,7 @@
 (defn- rand-range
   [rnd lower upper]
   {:pre [(<= lower upper)]}
-  (let [factor (/ (Math/abs ^long (random/rand-long rnd))
-                  (double Long/MAX_VALUE))]
+  (let [factor (.random rnd)]
     (long (Math/floor (+ lower (- (* factor (+ 1.0 upper))
                                   (* factor lower)))))))
 
@@ -223,7 +212,7 @@
   (assert (every? generator? generators)
           "Arg to one-of must be a collection of generators")
   (bind (choose 0 (dec (count generators)))
-        (partial nth generators)))
+        #(nth generators %)))
 
 (defn- pick
   [[h & tail] n]
@@ -267,11 +256,10 @@
   (if (zero? tries-left)
     (throw (ex-info (str "Couldn't satisfy such-that predicate after "
                          max-tries " tries.") {}))
-    (let [[r1 r2] (random/split rand-seed)
-          value (call-gen gen r1 size)]
+    (let [value (call-gen gen rand-seed size)]
       (if (pred (rose/root value))
         (rose/filter pred value)
-        (recur max-tries pred gen (dec tries-left) r2 (inc size))))))
+        (recur max-tries pred gen (dec tries-left) rand-seed (inc size))))))
 
 (defn such-that
   "Create a generator that generates values from `gen` that satisfy predicate
@@ -365,7 +353,7 @@
 
 (def neg-int
   "Generate negative integers bounded by the generator's `size` parameter."
-  (fmap (partial * -1) nat))
+  (fmap #(* -1 %) nat))
 
 (def s-pos-int
   "Generate strictly positive integers bounded by the generator's `size`
@@ -436,7 +424,7 @@
   if it's not already."
   [coll]
   (let [index-gen (choose 0 (dec (count coll)))]
-    (fmap (partial reduce swap (vec coll))
+    (fmap #(reduce swap (vec coll) %)
           ;; a vector of swap instructions, with count between
           ;; zero and 2 * count. This means that the average number
           ;; of instructions is count, which should provide sufficient
@@ -444,20 +432,22 @@
           ;; nice, relatively quick shrinks.
           (vector (tuple index-gen index-gen) 0 (* 2 (count coll))))))
 
-(def byte
-  "Generates `java.lang.Byte`s, using the full byte-range."
-  (fmap core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE)))
+;; NOTE: Comment out for now - David
+;;
+;; (def byte
+;;   "Generates `java.lang.Byte`s, using the full byte-range."
+;;   (fmap core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE)))
 
-(def bytes
-  "Generates byte-arrays."
-  (fmap core/byte-array (vector byte)))
+;; (def bytes
+;;   "Generates byte-arrays."
+;;   (fmap core/byte-array (vector byte)))
 
 (defn map
   "Create a generator that generates maps, with keys chosen from
   `key-gen` and values chosen from `val-gen`."
   [key-gen val-gen]
   (let [input (vector (tuple key-gen val-gen))]
-    (fmap (partial into {}) input)))
+    (fmap #(into {} %) input)))
 
 (defn hash-map
   "Like clojure.core/hash-map, except the values are generators.
@@ -474,7 +464,7 @@
         vs (take-nth 2 (rest kvs))]
     (assert (every? generator? vs)
             "Value args to hash-map must be generators")
-    (fmap (partial zipmap ks)
+    (fmap #(zipmap ks %)
           (apply tuple vs))))
 
 (def char
@@ -543,11 +533,11 @@
 
   Symbols that start with +3 or -2 are not readable because they look
   like numbers."
-  [c ^Character d]
+  [c d]
   (core/boolean (and d
-                     (or (= \+ c)
-                         (= \- c))
-                     (Character/isDigit d))))
+                     (or (identical? \+ c)
+                         (identical? \- c))
+                     (gstring/isNumeric d))))
 
 (def ^{:private true} namespace-segment
   "Generate the segment of a namespace."

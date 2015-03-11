@@ -13,7 +13,7 @@ _test.check_ used to be called
 ### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.6.1"]
+[org.clojure/test.check "0.7.0"]
 ```
 
 ### Maven
@@ -22,7 +22,7 @@ _test.check_ used to be called
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.6.1</version>
+  <version>0.7.0</version>
 </dependency>
 ```
 
@@ -52,28 +52,14 @@ _test.check_ version numbers start where _simple-check_ left off: 0.5.7.
 
 ## Migrating from simple-check
 
-In order to migrate from _simple-check_ to _test.check_, you'll need to do two
-things:
+See [migrating from simple-check](doc/migrating-from-simple-check.md).
 
-* Update project.clj
+## Useful libraries
 
-    In your `project.clj` replace `[reiddraper/simple-check "0.5.6"]` with
-    `[org.clojure/test.check "0.5.9"]` (note: your version numbers may be
-    different).
-
-* Update namespace declarations
-
-    Update your namespaces: `simple-check.core` becomes `clojure.test.check` (note
-    the dropping of 'core'). For everything else you can simply replace `simple-check`
-    with `clojure.test.check`. Let's make it easy:
-
-    ```shell
-    find test -name '*.clj' -print0 | xargs -0 sed -i.bak \
-    -e 's/simple-check.core/clojure.test.check/' \
-    -e 's/simple-check/clojure.test.check/'
-    ```
-
-    Review the updates.
+* [test.chuck](https://github.com/gfredericks/test.chuck)
+* [collection-check](https://github.com/ztellman/collection-check)
+* [herbert](https://github.com/miner/herbert)
+>>>>>>> origin/master
 
 ## Examples
 
@@ -157,6 +143,43 @@ write properties that run under the `clojure.test` runner, for example:
               (first (sort v)))))
 ```
 
+### ClojureScript
+
+ClojureScript support was added in version `0.7.0`.
+
+The first _test.check_ example needs only minor modifications for
+ClojureScript:
+
+```clojure
+(ns cljs.user
+  (:require [cljs.test.check :as tc]
+            [cljs.test.check.generators :as gen]
+            [cljs.test.check.properties :as prop]))
+
+(def sort-idempotent-prop
+  (prop/for-all [v (gen/vector gen/int)]
+    (= (sort v) (sort (sort v)))))
+
+(tc/quick-check 100 sort-idempotent-prop)
+;; => {:result true, :num-tests 100, :seed 1382488326530}
+```
+
+The remaining examples need no further changes with the exception
+of `cljs.test` integration.
+
+### `cljs.test` Integration
+
+The macro `cljs.test.check.cljs-test/defspec` allows you to succinctly
+write properties that run under `cljs.test`, for example:
+
+```clojure
+(defspec first-element-is-min-after-sorting ;; the name of the test
+         100 ;; the number of iterations for test.check to test
+         (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
+           (= (apply min v)
+              (first (sort v)))))
+```
+
 ## Release Notes
 
 Release notes for each version are available in
@@ -180,6 +203,18 @@ Release notes for each version are available in
 
 We can not accept pull requests. Please see [CONTRIBUTING.md](CONTRIBUTING.md)
 for details.
+
+## YourKit
+
+![YourKit](http://www.yourkit.com/images/yklogo.png)
+
+YourKit is kindly supporting test.check and other open source projects with its
+full-featured Java Profiler.  YourKit, LLC is the creator of innovative and
+intelligent tools for profiling Java and .NET applications. Take a look at
+YourKit's leading software products:
+
+* <a href="http://www.yourkit.com/java/profiler/index.jsp">YourKit Java Profiler</a> and
+* <a href="http://www.yourkit.com/.net/profiler/index.jsp">YourKit .NET Profiler</a>
 
 ## License
 
