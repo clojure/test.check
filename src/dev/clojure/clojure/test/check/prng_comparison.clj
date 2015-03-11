@@ -78,48 +78,55 @@
 (def linearization-strategies
   ;; have to use different self names here because weird compiler bug
   {:right-linear
-   (fn self1 [rng]
-     (lazy-seq
-      (let [[rng1 rng2] (r/split rng)]
-        (cons (r/rand-long rng1) (self1 rng2)))))
+   (fn [rng f x]
+     (let [[rng1 rng2] (r/split rng)
+           x' (f x (r/rand-long rng1))]
+       (if (reduced? x')
+         (deref x')
+         (recur rng2 f x'))))
    :left-linear
-   (fn self2 [rng]
-     (lazy-seq
-      (let [[rng1 rng2] (r/split rng)]
-        (cons (r/rand-long rng2) (self2 rng1)))))
+   (fn  [rng f x]
+     (let [[rng1 rng2] (r/split rng)
+           x' (f x (r/rand-long rng2))]
+       (if (reduced? x')
+         (deref x')
+         (recur rng1 f x'))))
    :alternating
-   (fn self3 [rng]
-     (lazy-seq
-      (let [[rng1 rng2] (r/split rng)
-            [rng3 rng4] (r/split rng1)]
-        (cons (r/rand-long rng2)
-              (cons (r/rand-long rng3)
-                    (self3 rng4))))))
+   (fn [rng f x]
+     (let [[rng1 rng2] (r/split rng)
+           [rng3 rng4] (r/split rng1)
+           x' (f x (r/rand-long rng2))]
+       (if (reduced? x')
+         (deref x')
+         (let [x'' (f x' (r/rand-long rng3))]
+           (if (reduced? x'')
+             (deref x'')
+             (recur rng4 f x''))))))
    ;; these two return "effectively" infinite seqs
    :balanced-63
-   (vary-meta
-    (fn [rng f x] (lump rng 63 f x))
-    assoc ::reduction? true)
+   (fn [rng f x] (deref (lump rng 63 f x)))
    ;; this one should require twice as many calls to siphash as
    ;; balanced-63, so it's probably slower
    :balanced-64
-   (fn [rng] (lump rng 64))
+   (fn [rng f x] (deref (lump rng 64 f x)))
    :right-lumpy
-   (fn self4 [rng]
-     (lazy-seq
-      (let [[rng1 rng2] (r/split rng)]
-        (concat (lump rng1 8) (self4 rng2)))))
+   (fn [rng f x]
+     (let [[rng1 rng2] (r/split rng)
+           x' (lump rng1 8 f x)]
+       (if (reduced? x')
+         (deref x')
+         (recur rng2 f x'))))
    :left-lumpy
-   (fn self5 [rng]
-     (lazy-seq
-      (let [[rng1 rng2] (r/split rng)]
-        (concat (lump rng2 8) (self5 rng1)))))
+   (fn [rng f x]
+     (let [[rng1 rng2] (r/split rng)
+           x' (lump rng2 8 f x)]
+       (if (reduced? x')
+         (deref x')
+         (recur rng1 f x'))))
    :fibonacci
    (let [infinity 1152921504606846976]
-     (vary-meta
-      (fn [rng f x]
-        (reduce-fibonacci-longs rng infinity f x))
-      assoc ::reduction? true))})
+     (fn [rng f x]
+       (reduce-fibonacci-longs rng infinity f x)))})
 
 ;; prints random data to STDOUT
 (defn print-random
@@ -133,10 +140,7 @@
       (let [[impl-name strategy-name] (clojure.string/split run-name #"-" 2)
             impl (splittable-impls (keyword impl-name))
             strategy (linearization-strategies (keyword strategy-name))]
-        (if (::reduction? (meta strategy))
-          (strategy (impl seed)
-                    (fn [_ ^long x]
-                      (.writeLong daos x))
-                    nil)
-          (doseq [long (strategy (impl seed))]
-            (.writeLong daos long)))))))
+        (strategy (impl seed)
+                  (fn [_ ^long x]
+                    (.writeLong daos x))
+                  nil)))))
