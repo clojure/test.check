@@ -134,24 +134,15 @@
   (SipHashRandom. seed 0 0))
 
 (defn make-aes-random
-  [^long seed1 ^long seed2]
-  (let [state (.array (doto (ByteBuffer/allocate 16)
-                        (.putLong seed1)
-                        (.putLong seed2)))]
-    (->AESRandom (SecretKeySpec. state "AES") zero-bytes-16 0)))
+  ([^long seed] (make-aes-random seed seed))
+  ([^long seed1 ^long seed2]
+     (let [state (.array (doto (ByteBuffer/allocate 16)
+                           (.putLong seed1)
+                           (.putLong seed2)))]
+       (->AESRandom (SecretKeySpec. state "AES") zero-bytes-16 0))))
 
-(case (System/getenv "PRNG_IMPL")
-  "AES"
-  (defn make-random
-    "Given zero or one or two long seeds, returns an object that can be
-    used with the IRandom protocol."
-    ([] (make-random (.nextLong (java.util.Random.))))
-    ([^long seed] (make-aes-random seed seed))
-    ([^long seed1 ^long seed2] (make-aes-random seed1 seed2)))
-  (nil "siphash")
-  (defn make-random
-    "Given zero or one or two long seeds, returns an object that can be
-    used with the IRandom protocol."
-    ([] (make-random (.nextLong (java.util.Random.))))
-    ([^long seed] (make-siphash-random seed))
-    ([^long seed1 ^long seed2] (make-siphash-random (bit-xor seed1 seed2)))))
+(defn make-random
+  "Given a Long seed, returns an object that satisfies the IRandom
+  protocol."
+  [seed]
+  (make-siphash-random seed))

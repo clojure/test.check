@@ -8,6 +8,7 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns cljs.test.check.cljs-test
+  (:require-macros cljs.test.check.cljs-test)
   (:require [cljs.test :as ct :include-macros true]))
 
 (defn- assert-check
