@@ -16,10 +16,15 @@
    (fn [^long seed] (r/make-siphash-random seed))})
 
 (defn lump
-  "Returns a lazy seq of 2^n longs from the given rng."
-  [rng n]
-  (map r/rand-long
-       (nth (iterate #(mapcat r/split %) [rng]) n)))
+  [rng n f x]
+  (if (zero? n)
+    (f x (r/rand-long rng))
+    (let [[rng1 rng2] (r/split rng)
+          n-- (dec n)
+          x' (lump rng1 n-- f x)]
+      (if (reduced? x')
+        x'
+        (lump rng2 n-- f x')))))
 
 (defn fibonacci-longs
   "Generates n longs from the given rng in a fashion that is somewhere
@@ -92,7 +97,9 @@
                     (self3 rng4))))))
    ;; these two return "effectively" infinite seqs
    :balanced-63
-   (fn [rng] (lump rng 63))
+   (vary-meta
+    (fn [rng f x] (lump rng 63 f x))
+    assoc ::reduction? true)
    ;; this one should require twice as many calls to siphash as
    ;; balanced-63, so it's probably slower
    :balanced-64
