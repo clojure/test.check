@@ -92,6 +92,9 @@
                           Overhead used : 12.996586 ns
      #+END_EXAMPLE
 * Benchmarking =lein test=
+
+  Why is master so slow here?
+  
 ** Siphash
    20690.35ms +- 740ms
    45 tests, 57 assertions
