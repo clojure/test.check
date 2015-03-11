@@ -101,3 +101,11 @@
 ** AES
    29473.85ms +- 1295ms
    45 tests, 57 assertions
+* Benchmarking =xor-random=
+  These are run on a VM with slow AES execution.
+
+  | Command                                                  | Time      |
+  |----------------------------------------------------------+-----------|
+  | =time lein xor-random 42 1000000000 JUR=                 | 39.618s   |
+  | =time lein xor-random 42 1000000000 siphash-balanced-63= | 2m23.229s |
+  | =time lein xor-random 42 1000000000 AES-balanced-63=     | 7m59.143s |
