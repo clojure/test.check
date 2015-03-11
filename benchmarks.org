@@ -91,3 +91,13 @@
           Execution time upper quantile : 312.652149 µs (97.5%)
                           Overhead used : 12.996586 ns
      #+END_EXAMPLE
+* Benchmarking =lein test=
+** Siphash
+   20690.35ms +- 740ms
+   45 tests, 57 assertions
+** master
+   31872.40ms +- 1319ms
+   46 tests, 58 assertions
+** AES
+   29473.85ms +- 1295ms
+   45 tests, 57 assertions
