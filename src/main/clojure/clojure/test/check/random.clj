@@ -116,5 +116,5 @@
 (defn make-random
   "Given a Long seed, returns an object that satisfies the IRandom
   protocol."
-  [seed]
-  (make-aes-random seed))
+  ([] (make-random (System/currentTimeMillis)))
+  ([seed] (make-aes-random seed)))
