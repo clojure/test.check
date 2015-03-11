@@ -144,5 +144,5 @@
 (defn make-random
   "Given a Long seed, returns an object that satisfies the IRandom
   protocol."
-  [seed]
-  (make-siphash-random seed))
+  ([] (make-random (System/currentTimeMillis)))
+  ([seed] (make-siphash-random seed)))
