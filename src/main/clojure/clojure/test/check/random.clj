@@ -105,13 +105,16 @@
                   (.put bytes 0 8)
                   (.flip))))))
 
-(defn make-random
-  "Given one or two long seeds, returns an object that can
-  be used with the IRandom protocol."
-  ([] (make-random (.nextLong (java.util.Random.))))
-  ([^long seed] (make-random seed seed))
+(defn make-aes-random
+  ([^long seed] (make-aes-random seed seed))
   ([^long seed1 ^long seed2]
      (let [state (.array (doto (ByteBuffer/allocate 16)
                            (.putLong seed1)
                            (.putLong seed2)))]
        (->AESRandom (SecretKeySpec. state "AES") zero-bytes-16 0))))
+
+(defn make-random
+  "Given a Long seed, returns an object that satisfies the IRandom
+  protocol."
+  [seed]
+  (make-aes-random seed))
