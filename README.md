@@ -59,7 +59,6 @@ See [migrating from simple-check](doc/migrating-from-simple-check.md).
 * [test.chuck](https://github.com/gfredericks/test.chuck)
 * [collection-check](https://github.com/ztellman/collection-check)
 * [herbert](https://github.com/miner/herbert)
->>>>>>> origin/master
 
 ## Examples
 
