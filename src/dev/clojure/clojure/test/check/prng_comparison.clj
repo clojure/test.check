@@ -115,7 +115,7 @@
       assoc ::reduction? true))})
 
 ;; prints random data to STDOUT
-(defn -main
+(defn print-random
   [seed-str run-name]
   (let [daos (java.io.DataOutputStream. System/out)
         seed (Long/parseLong ^String seed-str)]
