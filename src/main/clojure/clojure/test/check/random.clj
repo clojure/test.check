@@ -129,6 +129,65 @@
   (rand-long [random]
     (siphash state path)))
 
+(defmacro bxoubsr
+  "Performs (-> x (unsigned-bit-shift-right n) (bit-xor x))."
+  [x n]
+  `(let [x# ~x]
+     (-> x# (unsigned-bit-shift-right ~n) (bit-xor x#))))
+
+(defmacro unchecked-multiply'
+  [x1 x2]
+  `(unchecked-multiply ~(cond-> x1 (not (number? x1))
+                                (vary-meta assoc :tag 'long))
+                       ~(cond-> x2 (not (number? x2))
+                                (vary-meta assoc :tag 'long))))
+
+(defmacro ^:private longify
+  "Converts an unsigned number to a signed long. Ugh."
+  [num]
+  (if (> num Long/MAX_VALUE)
+    (-> num
+        (- 18446744073709551616N)
+        (long)
+        (bit-or -9223372036854775808))
+    num))
+
+;; Immutable version of Java 8's java.util.SplittableRandom
+(deftype JavaUtilSplittableRandom [^long gamma ^long state]
+  IRandom
+  (rand-long [_]
+    (-> state
+        ;; nextSeed
+        (unchecked-add gamma)
+        ;; mix64
+        (bxoubsr 30)
+        (unchecked-multiply' (longify 0xbf58476d1ce4e5b9))
+        (bxoubsr 27)
+        (unchecked-multiply' (longify 0x94d049bb133111eb))
+        (bxoubsr 31)))
+  (split [this]
+    (let [state' (-> state
+                     ;; nextSeed 2x
+                     (unchecked-add gamma)
+                     (unchecked-add gamma))
+          gamma' (-> state'
+                     ;; mixGamma
+                     (bxoubsr 33)
+                     (unchecked-multiply' (longify 0xff51afd7ed558ccd))
+                     (bxoubsr 33)
+                     (unchecked-multiply' (longify 0xc4ceb9fe1a85ec53))
+                     (bxoubsr 33)
+                     (bit-or 1)
+                     (as-> z
+                           (cond-> z
+                                   (> 24 (-> z
+                                             (bxoubsr 1)
+                                             (bit-xor z)
+                                             (Long/bitCount)))
+                                   (bit-xor (longify 0xaaaaaaaaaaaaaaaa)))))]
+      [(JavaUtilSplittableRandom. gamma state')
+       (JavaUtilSplittableRandom. gamma' (rand-long this))])))
+
 (defn make-siphash-random
   [^long seed]
   (SipHashRandom. seed 0 0))
@@ -140,6 +199,13 @@
                            (.putLong seed1)
                            (.putLong seed2)))]
        (->AESRandom (SecretKeySpec. state "AES") zero-bytes-16 0))))
+
+(def golden-gamma
+  (longify 0x9e3779b97f4a7c15))
+
+(defn make-java-util-splittable-random
+  [^long seed]
+  (JavaUtilSplittableRandom. golden-gamma seed))
 
 (defn make-random
   "Given a Long seed, returns an object that satisfies the IRandom
