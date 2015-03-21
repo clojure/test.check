@@ -12,6 +12,8 @@
 (def splittable-impls
   {:AES
    (fn [^long seed] (r/make-aes-random seed seed))
+   :JUSR
+   (fn [^long seed] (r/make-java-util-splittable-random seed))
    :siphash
    (fn [^long seed] (r/make-siphash-random seed))})
 
