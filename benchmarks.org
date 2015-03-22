@@ -112,3 +112,16 @@
   | =time lein xor-random 42 1000000000 JUR=                 | 39.618s   |
   | =time lein xor-random 42 1000000000 siphash-balanced-63= | 2m23.229s |
   | =time lein xor-random 42 1000000000 AES-balanced-63=     | 7m59.143s |
+
+** More runs on a native laptop
+
+   Curious that AES is still slow here, I thought it was comparable to
+   siphash on a native machine.
+
+   | Command                                                  | Time      |
+   |----------------------------------------------------------+-----------|
+   | =time lein xor-random 42 1000000000 JUR=                 | 30.749s   |
+   | =time lein xor-random 42 1000000000 JUR-lockless=        | 10.044s   |
+   | =time lein xor-random 42 1000000000 JUSR-left-linear=    | 1m43.740s |
+   | =time lein xor-random 42 1000000000 siphash-left-linear= | 1m32.376s |
+   | =time lein xor-random 42 1000000000 AES-left-linear=     | 4m12.251s |
