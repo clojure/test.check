@@ -140,14 +140,21 @@
              x
              (recur (inc i) (bit-xor x (.nextLong rng))))))
 
-       (let [[impl-name strategy-name] (clojure.string/split run-name #"-" 2)
-             impl (splittable-impls (keyword impl-name))
-             strategy (linearization-strategies (keyword strategy-name))]
-         (strategy (impl seed)
-                   (fn [[x1 count] x2]
-                     (let [count++ (inc count)
-                           x3 (bit-xor x1 x2)]
-                       (if (= count++ longs-count)
-                         (reduced x3)
-                         [x3 count++])))
-                   [0 0]))))))
+       (if (= run-name "JUR-lockless")
+         (let [rng (clojure.test.check.JavaUtilRandom. seed)]
+           (loop [i 0, x 0]
+             (if (= i longs-count)
+               x
+               (recur (inc i) (bit-xor x (.nextLong rng))))))
+
+         (let [[impl-name strategy-name] (clojure.string/split run-name #"-" 2)
+               impl (splittable-impls (keyword impl-name))
+               strategy (linearization-strategies (keyword strategy-name))]
+           (strategy (impl seed)
+                     (fn [[x1 count] x2]
+                       (let [count++ (inc count)
+                             x3 (bit-xor x1 x2)]
+                         (if (= count++ longs-count)
+                           (reduced x3)
+                           [x3 count++])))
+                     [0 0])))))))
