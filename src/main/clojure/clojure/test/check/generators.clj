@@ -121,7 +121,7 @@
 (defn make-size-range-seq
   {:no-doc true}
   [max-size]
-  (cycle (range 0 max-size)))
+  (take Long/MAX_VALUE (cycle (range 0 max-size))))
 
 (defn sample-seq
   "Return a sequence of realized values from `generator`."
