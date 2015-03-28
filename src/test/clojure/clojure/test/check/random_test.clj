@@ -1,4 +1,8 @@
 (ns clojure.test.check.random-test
+  "Tests of the custom RNG. This is a little weird since the subject
+  of the tests (the random number generator) is also the primary
+  internal driver of the tests, but hopefully it will still be
+  meaningful."
   (:require [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
@@ -9,16 +13,19 @@
 
 (defn apply-split-steps
   [rng steps]
-  (if-let [[step & more] (seq steps)]
-    (let [[rng1 rng2] (random/split rng)]
-      (recur (case step :left rng1 :right rng2) more))
-    rng))
+  (reduce (fn [rng step]
+            (let [[rng1 rng2] (random/split rng)]
+              (case step :left rng1 :right rng2)))
+          rng
+          steps))
 
-(def gen-seed (gen/choose 0 Integer/MAX_VALUE))
+(def gen-seed
+  (let [gen-int (gen/choose 0 Integer/MAX_VALUE)]
+    (gen/fmap (fn [[s1 s2]]
+                (bit-or s1 (bit-shift-left s2 32)))
+              (gen/tuple gen-int gen-int))))
 
 (defspec determinism-spec
-  ;; kind of weird trying to generate a random seed; gen/nat would
-  ;; obviously be pretty bad.
   (prop/for-all [seed gen-seed
                  steps gen-split-steps]
     (let [r1 (random/make-random seed)
@@ -32,7 +39,8 @@
        (nth (iterate #(mapcat random/split %) [rng]) 8)))
 
 ;; this spec is only statistically certain to pass, not logically
-;; certain
+;; certain. The probability of a false failure (1/2^16384 or so) is
+;; low enough to ignore.
 (defspec different-states-spec
   (prop/for-all [seed gen-seed
                  pre-steps gen-split-steps
@@ -46,3 +54,24 @@
       ;; r1' and r2' should not somehow be in the same state
       (not= (get-256-longs r1')
             (get-256-longs r2')))))
+
+;; Tests of the particular JavaUtilSplittableRandom impl, by
+;; comparing with java.util.SplittableRandom on Java 8
+(when (try (Class/forName "java.util.SplittableRandom")
+           (catch ClassNotFoundException e))
+  (eval
+   '(defspec java-util-splittable-random-spec
+      (prop/for-all [seed gen-seed
+                     steps gen-split-steps]
+        (let [immutable-rng (apply-split-steps
+                             (random/make-java-util-splittable-random seed)
+                             steps)
+              mutable-rng
+              ^java.util.SplittableRandom
+              (reduce (fn [^java.util.SplittableRandom rng step]
+                        (let [rng2 (.split rng)]
+                          (case step :left rng :right rng2)))
+                      (java.util.SplittableRandom. seed)
+                      steps)]
+          (= (random/rand-long immutable-rng)
+             (.nextLong mutable-rng)))))))

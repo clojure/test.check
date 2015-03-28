@@ -1,5 +1,6 @@
 (ns clojure.test.check.prng-comparison
-  (:require [clojure.test.check.random :as r])
+  (:require [clojure.test.check.random :as r]
+            [clojure.test.check.random-alt :as r'])
   (:import [java.util Random]
            [sun.misc Signal SignalHandler]))
 
@@ -11,12 +12,12 @@
 
 (def splittable-impls
   {:AES
-   (fn [^long seed] (r/make-aes-random seed seed))
-   :JUSR
+   (fn [^long seed] (r'/make-aes-random seed seed))
+   :IJUSR
    (fn [^long seed] (r/make-java-util-splittable-random seed))
    :siphash
-   (fn [^long seed] (r/make-siphash-random seed))
-   :SHA1 r/make-sha1-random})
+   (fn [^long seed] (r'/make-siphash-random seed))
+   :SHA1 r'/make-sha1-random})
 
 (defn lump
   [rng n f x]

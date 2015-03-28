@@ -11,8 +11,7 @@
   (:require [clojure.test.check.generators :as gen]
             [clojure.test.check.clojure-test :as ct]
             [clojure.test.check.random :as random]
-            [clojure.test.check.rose-tree :as rose]
-            [clojure.test.check.parallel :as parallel]))
+            [clojure.test.check.rose-tree :as rose]))
 
 (declare shrink-loop failure)
 
@@ -33,12 +32,6 @@
   [value]
   (and value (not (instance? Throwable value))))
 
-(defn unchunk [s]
-  (when (seq s)
-    (lazy-seq
-      (cons (first s)
-            (unchunk (next s))))))
-
 (defn quick-check
   "Tests `property` `num-tests` times.
   Takes optional keys `:seed` and `:max-size`. The seed parameter
@@ -54,31 +47,25 @@
       (def p (for-all [a gen/pos-int] (> (* a a) a)))
       (quick-check 100 p)
   "
-  [num-tests property & {:keys [seed max-size par] :or {max-size 200 par 1}}]
+  [num-tests property & {:keys [seed max-size] :or {max-size 200}}]
   (let [[created-seed rng] (make-rng seed)
-        rng-seq (gen/lazy-random-states rng)
-        size-seq (gen/make-size-range-seq max-size)
-        _fs (map (fn [r size]
-                  (gen/call-gen property r size))
-                rng-seq size-seq)
-        fs (parallel/execute
-             par
-             (map (fn [r size] #(gen/call-gen property r size))
-                  rng-seq size-seq))]
+        size-seq (gen/make-size-range-seq max-size)]
     (loop [so-far 0
            size-seq size-seq
-           fs fs]
+           rstate rng]
       (if (== so-far num-tests)
         (complete property num-tests created-seed)
-        (let [result-map-rose (first fs)
+        (let [[size & rest-size-seq] size-seq
+              [r1 r2] (random/split rstate)
+              result-map-rose (gen/call-gen property r1 size)
               result-map (rose/root result-map-rose)
               result (:result result-map)
               args (:args result-map)]
           (if (not-falsey-or-exception? result)
             (do
               (ct/report-trial property so-far num-tests)
-              (recur (inc so-far) (rest size-seq) (rest fs)))
-            (failure property result-map-rose so-far (first size-seq) created-seed)))))))
+              (recur (inc so-far) rest-size-seq r2))
+            (failure property result-map-rose so-far size created-seed)))))))
 
 (defn- smallest-shrink
   [total-nodes-visited depth smallest]
