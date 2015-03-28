@@ -10,7 +10,8 @@
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.6.0"]
                                   [org.clojure/clojurescript "0.0-2496"]]
-                   :source-paths ["src/dev/clojure"]}}
+                   :source-paths ["src/dev/clojure"]}
+             :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}}
   :aliases {"print-random"
             ["trampoline" "run" "-m" "clojure.test.check.prng-comparison/print-random"]
             "xor-random"
