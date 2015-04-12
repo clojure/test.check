@@ -1,6 +1,7 @@
 (ns clojure.test.check.prng-comparison
   (:require [clojure.test.check.random :as r]
-            [clojure.test.check.random-alt :as r'])
+            [clojure.test.check.random-alt :as r']
+            [criterium.core :as crit])
   (:import [java.util Random]
            [sun.misc Signal SignalHandler]))
 
@@ -129,35 +130,67 @@
                     (.writeLong daos x))
                   nil)))))
 
-(defn xor-random
+(defn xor-random-fn
+  "Returns a 0-arg function that runs the xoring."
+  [seed total-nums run-name]
+  (if (= run-name "JUR")
+    (fn []
+      (let [rng (java.util.Random. seed)]
+        (loop [i 0, x 0]
+          (if (= i total-nums)
+            x
+            (recur (inc i) (bit-xor x (.nextLong rng)))))))
+
+    (if (= run-name "JUR-lockless")
+      (fn []
+        (let [rng (clojure.test.check.JavaUtilRandom. seed)]
+          (loop [i 0, x 0]
+            (if (= i total-nums)
+              x
+              (recur (inc i) (bit-xor x (.nextLong rng)))))))
+
+      (let [[impl-name strategy-name] (clojure.string/split run-name #"-" 2)
+            impl (splittable-impls (keyword impl-name))
+            strategy (linearization-strategies (keyword strategy-name))]
+        (fn []
+          (strategy (impl seed)
+                    (fn [[x1 count] x2]
+                      (let [count++ (inc count)
+                            x3 (bit-xor x1 x2)]
+                        (if (= count++ total-nums)
+                          (reduced x3)
+                          [x3 count++])))
+                    [0 0]))))))
+
+(defn run-xor-random
   [seed-str longs-count-str run-name]
   (let [daos (java.io.DataOutputStream. System/out)
         seed (Long/parseLong ^String seed-str)
-        longs-count (Long/parseLong ^String longs-count-str)]
-    (println
-     (time
-      (if (= run-name "JUR")
-        (let [rng (java.util.Random. seed)]
-          (loop [i 0, x 0]
-            (if (= i longs-count)
-              x
-              (recur (inc i) (bit-xor x (.nextLong rng))))))
+        longs-count (Long/parseLong ^String longs-count-str)
+        f (xor-random-fn seed longs-count run-name)]
+    (println (time (f)))))
 
-        (if (= run-name "JUR-lockless")
-          (let [rng (clojure.test.check.JavaUtilRandom. seed)]
-            (loop [i 0, x 0]
-              (if (= i longs-count)
-                x
-                (recur (inc i) (bit-xor x (.nextLong rng))))))
+(defn criterium
+  [run-name]
+  (let [f (xor-random-fn 42 1000000 run-name)
+        {[mean] :mean
+         [variance] :variance}
+        (crit/benchmark* f nil)
 
-          (let [[impl-name strategy-name] (clojure.string/split run-name #"-" 2)
-                impl (splittable-impls (keyword impl-name))
-                strategy (linearization-strategies (keyword strategy-name))]
-            (strategy (impl seed)
-                      (fn [[x1 count] x2]
-                        (let [count++ (inc count)
-                              x3 (bit-xor x1 x2)]
-                          (if (= count++ longs-count)
-                            (reduced x3)
-                            [x3 count++])))
-                      [0 0]))))))))
+        [factor unit] (crit/scale-time mean)
+        mean-str (crit/format-value mean factor unit)
+
+        stddev (Math/sqrt variance)
+        [factor unit] (crit/scale-time stddev)
+        stddev-str (crit/format-value stddev factor unit)]
+    (println run-name mean-str "+/-" stddev-str)))
+
+(defn criterium-all
+  []
+  (let [all-run-names
+        (list* "JUR" "JUR-lockless"
+               (for [impl-name (keys splittable-impls)
+                     :when (not= :AES impl-name)
+                     strategy-name (keys linearization-strategies)]
+                 (str (name impl-name) "-" (name strategy-name))))]
+    (doseq [run-name all-run-names] (criterium run-name))))

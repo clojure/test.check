@@ -1,0 +1,16 @@
+lein run -m clojure.test.check.prng-comparison/criterium JUR
+lein run -m clojure.test.check.prng-comparison/criterium JUR-lockless
+lein run -m clojure.test.check.prng-comparison/criterium SHA1-left-linear
+lein run -m clojure.test.check.prng-comparison/criterium SHA1-right-linear
+lein run -m clojure.test.check.prng-comparison/criterium SHA1-alternating
+lein run -m clojure.test.check.prng-comparison/criterium SHA1-left-lumpy
+lein run -m clojure.test.check.prng-comparison/criterium SHA1-right-lumpy
+lein run -m clojure.test.check.prng-comparison/criterium SHA1-balanced-63
+lein run -m clojure.test.check.prng-comparison/criterium SHA1-fibonacci
+lein run -m clojure.test.check.prng-comparison/criterium IJUSR-left-linear
+lein run -m clojure.test.check.prng-comparison/criterium IJUSR-right-linear
+lein run -m clojure.test.check.prng-comparison/criterium IJUSR-alternating
+lein run -m clojure.test.check.prng-comparison/criterium IJUSR-left-lumpy
+lein run -m clojure.test.check.prng-comparison/criterium IJUSR-right-lumpy
+lein run -m clojure.test.check.prng-comparison/criterium IJUSR-balanced-63
+lein run -m clojure.test.check.prng-comparison/criterium IJUSR-fibonacci
