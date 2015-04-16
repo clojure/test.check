@@ -8,7 +8,7 @@
   (nth [this i]
     (cond (= i 0) root
           (= i 1) children
-          :else nil))
+          :else (throw (IndexOutOfBoundsException.))))
 
   (nth [this i not-found]
     (cond (= i 0) root
