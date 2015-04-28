@@ -20,6 +20,12 @@
             #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn])))
 
+(def gen-seed
+  (let [gen-int (gen/choose 0 0x100000000)]
+    (gen/fmap (fn [[s1 s2]]
+                (bit-or s1 (bit-shift-left s2 32)))
+              (gen/tuple gen-int gen-int))))
+
 (deftest generators-are-generators
   (testing "generator? returns true when called with a generator"
            (is (gen/generator? gen/int))
@@ -290,6 +296,114 @@
     (testing "list"   (t (gen/list gen/int)   list?))
     (testing "map"    (t (gen/map gen/int gen/int) map?))
     ))
+
+;; Distinct collections
+;; --------------------------------------------------------------------------
+
+(def gen-distinct-generator
+  (gen/elements [gen/list-distinct gen/vector-distinct
+                 gen/set gen/sorted-set]))
+
+(def gen-size-bounds-and-pred
+  "Generates [pred size-opts], where size-opts is a map to pass to
+  distinct generators, and pred is a predicate on the size of a
+  collection, to check that it matches the options."
+  (gen/one-of
+   [(gen/return [(constantly true) {}])
+    (gen/fmap (fn [num-elements]
+                [#{num-elements} {:num-elements num-elements}])
+              gen/nat)
+    (gen/fmap (fn [min-elements]
+                [#(<= min-elements %) {:min-elements min-elements}])
+              gen/nat)
+    (gen/fmap (fn [max-elements]
+                [#(<= % max-elements) {:max-elements max-elements}])
+              gen/nat)
+    (gen/fmap (fn [bounds]
+                (let [[min-elements max-elements] (sort bounds)]
+                  [#(<= min-elements % max-elements)
+                   {:min-elements min-elements
+                    :max-elements max-elements}]))
+              (gen/tuple gen/nat gen/nat))]))
+
+(defspec map-honors-size-opts
+  (prop/for-all [[the-map size-pred _]
+                 (gen/bind gen-size-bounds-and-pred
+                           (fn [[pred size-opts]]
+                             (gen/fmap #(vector % pred size-opts)
+                                       (gen/map gen/string gen/nat size-opts))))]
+    (size-pred (count the-map))))
+
+(defspec distinct-collections-honor-size-opts
+  (prop/for-all [[the-coll size-pred _]
+                 (gen/bind (gen/tuple gen-size-bounds-and-pred
+                                      gen-distinct-generator)
+                           (fn [[[pred size-opts] coll-gen]]
+                             (gen/fmap #(vector % pred size-opts)
+                                       (coll-gen gen/string size-opts))))]
+    (size-pred (count the-coll))))
+
+(defspec distinct-collections-are-distinct
+  (prop/for-all [the-coll
+                 (gen/bind (gen/tuple gen-size-bounds-and-pred
+                                      gen-distinct-generator)
+                           (fn [[[_ size-opts] coll-gen]]
+                             (coll-gen gen/string size-opts)))]
+    (or (empty? the-coll)
+        (apply distinct? the-coll))))
+
+(deftest distinct-generators-throw-when-necessary
+  ;; I tried using `are` here but it breaks in cljs
+  (doseq [g [gen/vector-distinct
+             gen/list-distinct
+             gen/set
+             gen/sorted-set]]
+    (is (thrown? #?(:clj Exception :cljs js/Error)
+                      (first (gen/sample
+                              (g gen/boolean {:min-elements 5}))))))
+  (is (thrown? #?(:clj Exception :cljs js/Error)
+               (first (gen/sample
+                       (gen/map gen/boolean gen/nat {:min-elements 5}))))))
+
+(defspec shrinking-respects-distinctness-and-sizing 20
+  (prop/for-all [g gen-distinct-generator
+                 seed gen-seed
+                 size (gen/choose 1 20)
+                 [pred opts] gen-size-bounds-and-pred]
+    (let [rose-tree (gen/call-gen (g (gen/choose 0 1000) opts)
+                                  (random/make-random seed) size)
+          ;; inevitably some of these will be way too long to actually
+          ;; test, so this is the easiest thing to do :/
+          vals (take 1000 (rose/seq rose-tree))]
+      (every? (fn [coll]
+                (and (or (empty? coll)
+                         (apply distinct? coll))
+                     (pred (count coll))))
+              vals))))
+
+(defspec distinct-generators-can-shrink-in-size 20
+  (prop/for-all [g gen-distinct-generator
+                 seed gen-seed
+                 size (gen/choose 1 20)]
+    (let [rose-tree (gen/call-gen (g (gen/choose 0 1000))
+                                  (random/make-random seed) size)
+          a-shrink (->> rose-tree
+                        (iterate #(first (rose/children %)))
+                        (take-while identity)
+                        (map rose/root))]
+      (and (apply > (map #(reduce + %) a-shrink))
+           (empty? (last a-shrink))))))
+
+(defspec distinct-collections-are-not-biased-in-their-ordering 5
+  (prop/for-all [g (gen/elements [gen/vector-distinct gen/list-distinct])
+                 seed gen-seed]
+    (let [rng (random/make-random seed)]
+      (every?
+       (->> (gen/lazy-random-states rng)
+            (take 1000)
+            (map #(rose/root (gen/call-gen (g gen/nat {:num-elements 3, :max-tries 100}) % 0)))
+            (set))
+       [[0 1 2] [0 2 1] [1 0 2] [1 2 0] [2 0 1] [2 1 0]]))))
 
 ;; Generating proper matrices
 ;; ---------------------------------------------------------------------------
