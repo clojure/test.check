@@ -9,13 +9,20 @@
 
 (ns clojure.test.check.test
   (:use clojure.test)
-  (:require [clojure.test.check       :as tc]
+  (:require [clojure.set :as sets]
+            [clojure.test.check :as tc]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
             [clojure.test.check.rose-tree :as rose]
             [clojure.test.check.random :as random]
             [clojure.test.check.clojure-test :as ct :refer (defspec)]
             [clojure.edn :as edn]))
+
+(def gen-seed
+  (let [gen-int (gen/choose 0 Integer/MAX_VALUE)]
+    (gen/fmap (fn [[s1 s2]]
+                (bit-or s1 (bit-shift-left s2 32)))
+              (gen/tuple gen-int gen-int))))
 
 (deftest generators-are-generators
   (testing "generator? returns true when called with a generator"
@@ -512,6 +519,90 @@
          (count (first (gen/sample
                         (gen/vector gen/nat 100000)
                         1))))))
+
+;; distinct collection generators
+;; ---------------------------------------------------------------------------
+
+(def gen-distinct-generator
+  (gen/elements [gen/list-distinct gen/vector-distinct
+                 gen/set gen/sorted-set]))
+
+(def gen-sizing-options
+  (gen/fmap (fn [[a b f]] (f a b))
+            (gen/tuple gen/nat
+                       gen/nat
+                       (gen/elements [;; no sizing
+                                      (fn [a b]
+                                        {:opts {}
+                                         :pred (constantly true)})
+                                      ;; specific size
+                                      (fn [a b]
+                                        {:opts {:num-elements a}
+                                         :pred #(= a %)})
+                                      ;; min-size
+                                      (fn [a b]
+                                        {:opts {:min-elements a}
+                                         :pred #(<= a %)})
+                                      ;; max-size
+                                      (fn [a b]
+                                        {:opts {:max-elements a}
+                                         :pred #(<= % a)})
+                                      ;; min-and-max-size
+                                      (fn [a b]
+                                        (let [[a b] (sort [a b])]
+                                          {:opts {:min-elements a, :max-elements b}
+                                           :pred #(<= a % b)}))]))))
+
+(defspec distinctness-test 400
+  (prop/for-all [[coll opts pred]
+                 (gen/bind (gen/tuple gen-distinct-generator
+                                      gen-sizing-options)
+                           (fn [[g {:keys [opts pred]}]]
+                             ;; can't just use gen/int here because it
+                             ;; doesn't generate distinct elements fast
+                             ;; enough
+                             (gen/tuple (g (gen/vector gen/int) opts)
+                                        (gen/return opts)
+                                        (gen/return pred))))]
+    (and (or (empty? coll)
+             (apply distinct? coll))
+         (pred (count coll)))))
+
+(deftest distinct-generators-throw-when-necessary
+  (are [g] (thrown? Exception
+                    (first (gen/sample
+                            (g gen/boolean {:min-elements 5}))))
+       gen/vector-distinct
+       gen/list-distinct
+       gen/set
+       gen/sorted-set))
+
+(defspec shrinking-respects-distinctness-and-sizing 20
+  (prop/for-all [g gen-distinct-generator
+                 seed gen-seed
+                 size (gen/choose 1 20)
+                 {:keys [opts pred]} gen-sizing-options]
+    (let [rose-tree (gen/call-gen (g (gen/choose 0 1000) opts)
+                                  (random/make-random seed) size)
+          ;; inevitably some of these will be way too long to actually
+          ;; test, so this is the easiest thing to do :/
+          vals (take 1000 (rose/seq rose-tree))]
+      (every? (fn [coll]
+                (and (or (empty? coll)
+                         (apply distinct? coll))
+                     (pred (count coll))))
+              vals))))
+
+(defspec distinct-collections-are-not-biased-in-their-ordering 5
+  (prop/for-all [g (gen/elements [gen/vector-distinct gen/list-distinct])
+                 seed gen-seed]
+    (let [rng (random/make-random seed)]
+      (sets/subset?
+       #{[0 1 2] [0 2 1] [1 0 2] [1 2 0] [2 0 1] [2 1 0]}
+       (->> (gen/lazy-random-states rng)
+            (take 1000)
+            (map #(rose/root (gen/call-gen (g gen/nat {:num-elements 3, :max-tries 100}) % 0)))
+            (set))))))
 
 ;; defspec macro
 ;; ---------------------------------------------------------------------------

@@ -10,7 +10,8 @@
 (ns clojure.test.check.generators
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
-                            shuffle not-empty symbol namespace])
+                            shuffle not-empty symbol namespace
+                            set sorted-set])
   (:require [clojure.core :as core]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]))
@@ -443,6 +444,173 @@
           ;; (though perhaps not 'perfect') shuffling. This still gives us
           ;; nice, relatively quick shrinks.
           (vector (tuple index-gen index-gen) 0 (* 2 (count coll))))))
+
+;;
+;; Generating collections of distinct elements has to be done
+;; in a low-level way (i.e., can't be done with pure combinators),
+;; and is subject to the same kind of failure as such-that.
+;;
+
+(defn ^:private coll-distinct*
+  "Returns a rose tree."
+  [empty-coll shuffle-fn gen rng size num-elements max-tries]
+  {:pre [gen (:gen gen)]}
+  (loop [rose-trees (transient [])
+         ^clojure.lang.ITransientSet s (transient #{})
+         rng rng
+         size size
+         tries 0]
+    (cond (= max-tries tries)
+          (throw (Exception. (format "Couldn't generate enough distinct elements after %d tries." max-tries)))
+
+          (= (count rose-trees) num-elements)
+          (->> (persistent! rose-trees)
+               ;; we shuffle the rose trees so that we aren't biased
+               ;; toward generating "smaller" elements earlier in the
+               ;; collection (only applies to ordered collections)
+               ;;
+               ;; shuffling the rose trees is more efficient than
+               ;; (bind ... shuffle) because we only perform the
+               ;; shuffling once and we have no need to shrink the
+               ;; shufling.
+               (shuffle-fn rng)
+               (rose/zip #(into empty-coll %&)))
+
+          :else
+          (let [[rng1 rng2] (random/split rng)
+                rose (call-gen gen rng1 size)
+                root (rose/root rose)]
+            (if (.contains s root)
+              (recur rose-trees s rng2 (inc size) (inc tries))
+              (recur (conj! rose-trees rose)
+                     (conj! s root)
+                     rng2
+                     size
+                     0))))))
+
+(defn ^:private no-duplicates?
+  "Like clojure.core/distinct? but takes a collection instead of varargs,
+  and returns true for empty collections."
+  [coll]
+  (or (empty? coll)
+      (apply distinct? coll)))
+
+(defn ^:private the-shuffle-fn
+  "Returns a shuffled version of coll according to the rng.
+
+  Note that this is not a generator, it is just a utility function."
+  [rng coll]
+  (let [empty-coll (empty coll)
+        v (vec coll)
+        card (count coll)
+        dec-card (dec card)]
+    (into empty-coll
+          (first
+           (reduce (fn [[v rng] idx]
+                     (let [[rng1 rng2] (random/split rng)
+                           swap-idx (rand-range rng1 idx dec-card)]
+                       [(swap v [idx swap-idx]) rng2]))
+                   [v rng]
+                   (range card))))))
+
+(defn ^:private coll-distinct
+  ([empty-coll gen] (coll-distinct empty-coll gen {}))
+  ([empty-coll gen {:keys [num-elements min-elements max-elements max-tries] :or {max-tries 10}}]
+   (let [coll-allows-dupes? (= 2 (count (conj empty-coll 42 42)))
+         coll-is-ordered? (not= (conj empty-coll 0 1) (conj empty-coll 1 0))
+         shuffle-fn (if coll-is-ordered?
+                      the-shuffle-fn
+                      (fn [_rng coll] coll))]
+     (if num-elements
+       (do
+         (assert (and (nil? min-elements) (nil? max-elements)))
+         (make-gen
+          (fn [rng gen-size]
+            (rose/filter
+             (if coll-allows-dupes?
+               ;; is there a smarter way to do the shrinking than checking
+               ;; the distinctness of the entire collection at each
+               ;; step?
+               no-duplicates?
+               #(= num-elements (count %)))
+             (coll-distinct* empty-coll shuffle-fn gen rng gen-size num-elements max-tries)))))
+       (let [min-elements (or min-elements 0)
+             size-pred (if max-elements
+                         #(<= min-elements (count %) max-elements)
+                         #(<= min-elements (count %)))]
+         (gen-bind
+          (if max-elements
+            (choose min-elements max-elements)
+            (sized #(choose min-elements (+ min-elements %))))
+          (fn [num-elements-rose]
+            (make-gen
+             (fn [rng gen-size]
+               (rose/filter
+                (if coll-allows-dupes?
+                  ;; same comment as above
+                  no-duplicates?
+                  size-pred)
+                (coll-distinct* empty-coll
+                                shuffle-fn
+                                gen
+                                rng
+                                gen-size
+                                (rose/root num-elements-rose) max-tries)))))))))))
+
+(def ^:private coll-distinct-docstsring
+  "
+  If the generator cannot or is unlikely to produce enough distinct
+  elements, this generator will fail in the same way as such-that.
+
+  Available options:
+
+    :num-elements  the fixed size of generated vectors
+    :min-elements  the min size of generated vectors
+    :max-elements  the max size of generated vectors
+    :max-tries     the number of times the generator will be tried before
+                   failing when it does not produce distinct elements
+                   (default 10)")
+
+(defn vector-distinct
+  ([gen] (vector-distinct gen {}))
+  ([gen opts]
+   (assert (generator? gen) "First arg to vector-distinct must be a generator!")
+   (coll-distinct [] gen opts)))
+
+(defn list-distinct
+  ([gen] (list-distinct gen {}))
+  ([gen opts]
+   (assert (generator? gen) "First arg to list-distinct must be a generator!")
+   (coll-distinct () gen opts)))
+
+(defn set
+  ([gen] (set gen {}))
+  ([gen opts]
+   (assert (generator? gen) "First arg to set must be a generator!")
+   (coll-distinct #{} gen opts)))
+
+(defn sorted-set
+  ([gen] (sorted-set gen {}))
+  ([gen opts]
+   (assert (generator? gen) "First arg to sorted-set must be a generator!")
+   (coll-distinct (core/sorted-set) gen opts)))
+
+(alter-meta! #'vector-distinct assoc :doc
+             (str "Generates a vector of elements from the given generator, with the
+  guarantee that the elements will be distinct.\n"
+                  coll-distinct-docstsring))
+(alter-meta! #'list-distinct assoc :doc
+             (str "Generates a list of elements from the given generator, with the
+  guarantee that the elements will be distinct.\n"
+                  coll-distinct-docstsring))
+(alter-meta! #'set assoc :doc
+             (str "Generates a set of elements from the given generator.\n"
+                  coll-distinct-docstsring))
+(alter-meta! #'sorted-set assoc :doc
+             (str "Generates a sorted-set of elements from the given generator.\n"
+                  coll-distinct-docstsring))
+
+
 
 (def byte
   "Generates `java.lang.Byte`s, using the full byte-range."
