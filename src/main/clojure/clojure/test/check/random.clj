@@ -19,11 +19,18 @@
   sufficiently independent random data.
 
   Note: to maintain independence you should not call split and rand-long
-  with the same argument.")
+  or rand-double with the same argument.")
   (rand-long [rng]
     "Returns a random long based on the given immutable RNG.
 
   Note: to maintain independence you should not call split and rand-long
+  with the same argument")
+    
+  (rand-double [rng]
+    "Returns a random double between zero (inclusive) and 1.0 (exclusive) 
+  based on the given immutable RNG.
+
+  Note: to maintain independence you should not call split and rand-double
   with the same argument"))
 
 
@@ -114,10 +121,15 @@
                                (Long/bitCount)))
                      (bit-xor (longify 0xaaaaaaaaaaaaaaaa))))))
 
+(def ^{:private true :const true} double-unit (/ 1.0 (double (bit-set 0 53))))
+;; Java: 0x1.0p-53 or (1.0 / (1L << 53))
+
 (deftype JavaUtilSplittableRandom [^long gamma ^long state]
   IRandom
   (rand-long [_]
     (-> state (+ gamma) (mix-64)))
+  (rand-double [this]
+    (* double-unit (unsigned-bit-shift-right (rand-long this) 11)))
   (split [this]
     (let [state' (+ gamma state)
           state'' (+ gamma state')
