@@ -159,6 +159,16 @@
            x
            (recur (inc i) (bit-xor x (.nextLong rng)))))))
 
+   (= run-name "IJUR")
+   (fn []
+     (loop [^clojure.test.check.random_alt.ImmutableLinearRandom
+            rng (r'/make-IJUR seed)
+            i 0
+            x 0]
+       (if (= i total-nums)
+         x
+         (let [[^long x' rng2] (.nextLong rng)]
+           (recur rng2 (inc i) (bit-xor x x'))))))
 
    :else
    (let [[impl-name strategy-name] (clojure.string/split run-name #"-" 2)
@@ -200,7 +210,7 @@
 (defn criterium-all
   []
   (let [all-run-names
-        (list* "JUR" "JUSR" "JUR-lockless"
+        (list* "JUR" "JUSR" "JUR-lockless" "IJUR"
                (for [impl-name (keys splittable-impls)
                      :when (not= :AES impl-name)
                      strategy-name (keys linearization-strategies)]

@@ -140,3 +140,32 @@
                            (.putLong seed1)
                            (.putLong seed2)))]
        (->AESRandom (SecretKeySpec. state "AES") zero-bytes-16 0))))
+
+;;
+;; Immutable version of java.util.Random
+;;
+
+(definterface ImmutableLinearRandom
+  (nextLong []))
+
+(deftype IJUR [^long state]
+  ImmutableLinearRandom
+  (nextLong [rng]
+    (let [new-state (-> state
+                        (unchecked-multiply 0x5deece66d)
+                        (unchecked-add 0xb))
+          x (-> new-state
+                (bit-shift-right 16)
+                (unchecked-int))
+          new-state' (-> new-state
+                         (unchecked-multiply 0x5deece66d)
+                         (unchecked-add 0xb))
+          x' (-> new-state'
+                 (bit-shift-right 16)
+                 (unchecked-int))]
+      [(bit-or (bit-shift-left x 32) x')
+       (IJUR. new-state')])))
+
+(defn make-IJUR
+  [^long seed]
+  (IJUR. (bit-xor seed 0x5deece66d)))
