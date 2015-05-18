@@ -200,7 +200,7 @@
 (defn criterium-all
   []
   (let [all-run-names
-        (list* "JUR" "JUR-lockless"
+        (list* "JUR" "JUSR" "JUR-lockless"
                (for [impl-name (keys splittable-impls)
                      :when (not= :AES impl-name)
                      strategy-name (keys linearization-strategies)]
