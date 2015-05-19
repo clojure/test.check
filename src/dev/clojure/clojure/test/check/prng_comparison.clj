@@ -18,7 +18,8 @@
    (fn [^long seed] (r/make-java-util-splittable-random seed))
    :siphash
    (fn [^long seed] (r'/make-siphash-random seed))
-   :SHA1 r'/make-sha1-random})
+   :SHA1 r'/make-sha1-random
+   :IJUR r'/make-IJUR})
 
 (defn lump
   [rng n f x]

@@ -164,7 +164,25 @@
                  (bit-shift-right 16)
                  (unchecked-int))]
       [(bit-or (bit-shift-left x 32) x')
-       (IJUR. new-state')])))
+       (IJUR. new-state')]))
+  ;; fake splittable impl to test allocation perf
+  r/IRandom
+  (split [rng]
+    [(IJUR. state) (IJUR. state)])
+  (rand-long [rng]
+    (let [new-state (-> state
+                        (unchecked-multiply 0x5deece66d)
+                        (unchecked-add 0xb))
+          x (-> new-state
+                (bit-shift-right 16)
+                (unchecked-int))
+          new-state' (-> new-state
+                         (unchecked-multiply 0x5deece66d)
+                         (unchecked-add 0xb))
+          x' (-> new-state'
+                 (bit-shift-right 16)
+                 (unchecked-int))]
+      (bit-or (bit-shift-left x 32) x'))))
 
 (defn make-IJUR
   [^long seed]

@@ -9,14 +9,15 @@
   :test-paths ["src/test/clojure"]
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.6.0"]
-                                  [org.clojure/clojurescript "0.0-2496"]]
+                                  [org.clojure/clojurescript "0.0-2496"]
+                                  [criterium "0.4.3"]]
                    :source-paths ["src/dev/clojure"]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}}
   :aliases {"print-random"
             ["trampoline" "run" "-m" "clojure.test.check.prng-comparison/print-random"]
             "xor-random"
             ["run" "-m" "clojure.test.check.prng-comparison/xor-random"]}
-  :global-vars {*warn-on-reflection* true}
+  ;; :global-vars {*warn-on-reflection* true}
   :plugins [[codox "0.8.10"]
             [cider/cider-nrepl "0.8.1"]
             [lein-cljsbuild "1.0.4-SNAPSHOT"]]
