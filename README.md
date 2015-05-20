@@ -48,7 +48,7 @@ _test.check_ version numbers start where _simple-check_ left off: 0.5.7.
     * [Check your work - 8th Light](http://blog.8thlight.com/connor-mendenhall/2013/10/31/check-your-work.html)
     * [Writing simple-check - Reid Draper](http://reiddraper.com/writing-simple-check/)
     * [Generative testing in Clojure - Youtube](https://www.youtube.com/watch?v=u0TkAw8QqrQ)
-    * [Using simple-check with Expectations - Curtis Gagliardi](http://curtis.io/posts/using-simple-check-with-expectations.html)
+    * [Using simple-check with Expectations - Curtis Gagliardi](http://curtis.io/using-simple-check-with-expectations)
 
 ## Migrating from simple-check
 
