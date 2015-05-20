@@ -80,7 +80,7 @@
   (make-gen
    (fn [rnd size]
      ;; could make this lazy once we have immutable RNGs
-     (mapv #(call-gen % %2 size) gens (random-states (count gens) rnd)))))
+     (mapv #(call-gen % %2 size) gens (random/split-n rnd (count gens))))))
 
 ;; Exported generator functions
 ;; ---------------------------------------------------------------------------
