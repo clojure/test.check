@@ -198,6 +198,13 @@
      (fn [rnd _size]
        (gen rnd n)))))
 
+(defn scale
+  "Create a new generator that modifies the size parameter by the given function. Intended to
+   support generators with sizes that need to grow at different rates compared to the normal
+   linear scaling."
+  ([f generator]
+    (sized (fn [n] (resize (f n) generator)))))
+
 (defn choose
   "Create a generator that returns numbers in the range
   `min-range` to `max-range`, inclusive."
