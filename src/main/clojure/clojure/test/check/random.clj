@@ -128,7 +128,7 @@
 (defn split-n
   "Returns a collection of n RNGs."
   [^JavaUtilSplittableRandom rng n]
-  (case n
+  (case (long n)
     0 []
     1 [rng]
     (let [gamma (.gamma rng)
