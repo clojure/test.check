@@ -89,39 +89,41 @@
       (-> x# (unsigned-bit-shift-right ~n) (bit-xor x#)))
    assoc :tag 'long))
 
+(defmacro ^:private mix-64
+  [n]
+  `(-> ~n
+       (bxoubsr 30)
+       (* (longify 0xbf58476d1ce4e5b9))
+       (bxoubsr 27)
+       (* (longify 0x94d049bb133111eb))
+       (bxoubsr 31)))
+
+(defmacro ^:private mix-gamma
+  [n]
+  `(-> ~n
+       (bxoubsr 33)
+       (* (longify 0xff51afd7ed558ccd))
+       (bxoubsr 33)
+       (* (longify 0xc4ceb9fe1a85ec53))
+       (bxoubsr 33)
+       (bit-or 1)
+       (as-> z#
+             (cond-> z#
+                     (> 24 (-> z#
+                               (bxoubsr 1)
+                               (Long/bitCount)))
+                     (bit-xor (longify 0xaaaaaaaaaaaaaaaa))))))
+
 (deftype JavaUtilSplittableRandom [^long gamma ^long state]
   IRandom
   (rand-long [_]
-    (-> state
-        ;; nextSeed
-        (+ gamma)
-        ;; mix64
-        (bxoubsr 30)
-        (* (longify 0xbf58476d1ce4e5b9))
-        (bxoubsr 27)
-        (* (longify 0x94d049bb133111eb))
-        (bxoubsr 31)))
+    (-> state (+ gamma) (mix-64)))
   (split [this]
-    (let [state' (-> state
-                     ;; nextSeed 2x
-                     (+ gamma)
-                     (+ gamma))
-          gamma' (-> state'
-                     ;; mixGamma
-                     (bxoubsr 33)
-                     (* (longify 0xff51afd7ed558ccd))
-                     (bxoubsr 33)
-                     (* (longify 0xc4ceb9fe1a85ec53))
-                     (bxoubsr 33)
-                     (bit-or 1)
-                     (as-> z
-                           (cond-> z
-                                   (> 24 (-> z
-                                             (bxoubsr 1)
-                                             (Long/bitCount)))
-                                   (bit-xor (longify 0xaaaaaaaaaaaaaaaa)))))]
-      [(JavaUtilSplittableRandom. gamma state')
-       (JavaUtilSplittableRandom. gamma' (rand-long this))])))
+    (let [state' (+ gamma state)
+          state'' (+ gamma state')
+          gamma' (mix-gamma state'')]
+      [(JavaUtilSplittableRandom. gamma state'')
+       (JavaUtilSplittableRandom. gamma' (mix-64 state'))])))
 
 (def ^:private golden-gamma
   (longify 0x9e3779b97f4a7c15))
