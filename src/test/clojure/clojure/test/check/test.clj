@@ -513,6 +513,15 @@
                         (gen/vector gen/nat 100000)
                         1))))))
 
+;; scale controls growth rate of generators
+;; ---------------------------------------------------------------------------
+
+(deftest scale-test
+  (let [g (gen/scale (partial min 10) gen/pos-int) ;; should limit size to 10
+        samples (gen/sample g 1000)]
+    (is (every? (partial >= 11) samples))
+    (is (some (partial = 10) samples))))
+
 ;; defspec macro
 ;; ---------------------------------------------------------------------------
 
