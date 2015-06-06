@@ -14,17 +14,23 @@
 
 
 (defprotocol IRandom
+  (rand-long [rng]
+    "Returns a random long based on the given immutable RNG.
+
+  Note: to maintain independence you should not call more than one
+  function in the IRandom protocol with the same argument")
   (split [rng]
     "Returns two new RNGs [rng1 rng2], which should generate
   sufficiently independent random data.
 
-  Note: to maintain independence you should not call split and rand-long
-  with the same argument.")
-  (rand-long [rng]
-    "Returns a random long based on the given immutable RNG.
+  Note: to maintain independence you should not call more than one
+  function in the IRandom protocol with the same argument")
+  (split-n [rng n]
+    "Returns a collection of `n` RNGs, which should generate
+  sufficiently independent random data.
 
-  Note: to maintain independence you should not call split and rand-long
-  with the same argument"))
+  Note: to maintain independence you should not call more than one
+  function in the IRandom protocol with the same argument"))
 
 
 ;; Immutable version of Java 8's java.util.SplittableRandom
@@ -123,25 +129,27 @@
           state'' (+ gamma state')
           gamma' (mix-gamma state'')]
       [(JavaUtilSplittableRandom. gamma state'')
-       (JavaUtilSplittableRandom. gamma' (mix-64 state'))])))
+       (JavaUtilSplittableRandom. gamma' (mix-64 state'))]))
+  (split-n [this n]
+    ;; immitates a particular series of 2-way splits, but avoids the
+    ;; intermediate allocation. See the `split-n-spec` for a test of
+    ;; the equivalence to 2-way splits.
+    (case (long n)
+      0 []
+      1 [this]
+      (let [n-dec (dec n)]
+        (loop [state state
+               ret (transient [])]
+          (if (= n-dec (count ret))
+            (-> ret
+                (conj! (JavaUtilSplittableRandom. gamma state))
+                (persistent!))
+            (let [state' (+ gamma state)
+                  state'' (+ gamma state')
+                  gamma' (mix-gamma state'')
+                  new-rng (JavaUtilSplittableRandom. gamma' (mix-64 state'))]
+              (recur state'' (conj! ret new-rng)))))))))
 
-(defn split-n
-  "Returns a collection of n RNGs."
-  [^JavaUtilSplittableRandom rng n]
-  (case (long n)
-    0 []
-    1 [rng]
-    (let [gamma (.gamma rng)
-          n-dec (dec n)]
-      (loop [state (.state rng)
-             ret (transient [])]
-        (if (= n-dec (count ret))
-          (-> ret (conj! (JavaUtilSplittableRandom. gamma state)) (persistent!))
-          (let [state' (+ gamma state)
-                state'' (+ gamma state')
-                gamma' (mix-gamma state'')]
-            (recur state''
-                   (conj! ret (JavaUtilSplittableRandom. gamma' (mix-64 state'))))))))))
 (def ^:private golden-gamma
   (longify 0x9e3779b97f4a7c15))
 
