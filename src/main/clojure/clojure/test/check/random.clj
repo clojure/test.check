@@ -19,6 +19,12 @@
 
   Note: to maintain independence you should not call more than one
   function in the IRandom protocol with the same argument")
+  (rand-double [rng]
+    "Returns a random double between 0.0 (inclusive) and 1.0 (exclusive)
+  based on the given immutable RNG.
+
+  Note: to maintain independence you should not call more than one
+  function in the IRandom protocol with the same argument")
   (split [rng]
     "Returns two new RNGs [rng1 rng2], which should generate
   sufficiently independent random data.
@@ -120,10 +126,15 @@
                                (Long/bitCount)))
                      (bit-xor (longify 0xaaaaaaaaaaaaaaaa))))))
 
+(def ^:private ^:const double-unit (/ 1.0 (double (bit-set 0 53))))
+;; Java: 0x1.0p-53 or (1.0 / (1L << 53))
+
 (deftype JavaUtilSplittableRandom [^long gamma ^long state]
   IRandom
   (rand-long [_]
     (-> state (+ gamma) (mix-64)))
+  (rand-double [this]
+    (* double-unit (unsigned-bit-shift-right (rand-long this) 11)))
   (split [this]
     (let [state' (+ gamma state)
           state'' (+ gamma state')

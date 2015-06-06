@@ -74,7 +74,25 @@
                       (java.util.SplittableRandom. seed)
                       steps)]
           (= (random/rand-long immutable-rng)
-             (.nextLong mutable-rng)))))))
+             (.nextLong mutable-rng))))))
+
+  ;; same test but for rand-double
+  (eval
+   '(defspec java-util-splittable-random-spec-double
+      (prop/for-all [seed gen-seed
+                     steps gen-split-steps]
+        (let [immutable-rng (apply-split-steps
+                             (random/make-java-util-splittable-random seed)
+                             steps)
+              mutable-rng
+              ^java.util.SplittableRandom
+              (reduce (fn [^java.util.SplittableRandom rng step]
+                        (let [rng2 (.split rng)]
+                          (case step :left rng :right rng2)))
+                      (java.util.SplittableRandom. seed)
+                      steps)]
+          (= (random/rand-double immutable-rng)
+             (.nextDouble mutable-rng)))))))
 
 (defspec split-n-spec 40
   (prop/for-all [seed gen-seed
