@@ -166,7 +166,7 @@
 
 (defn- int-rose-tree
   [value]
-  [value (core/map int-rose-tree (shrink-int value))])
+  (rose/make-rose value (core/map int-rose-tree (shrink-int value))))
 
 (defn- rand-range
   [rnd lower upper]

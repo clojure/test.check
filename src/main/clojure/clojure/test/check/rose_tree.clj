@@ -3,6 +3,21 @@
   (:refer-clojure :exclude [filter remove seq])
   (:require [clojure.core :as core]))
 
+(deftype RoseTree [root children]
+  clojure.lang.Indexed
+  (nth [this i]
+    (cond (= i 0) root
+          (= i 1) children
+          :else (throw (IndexOutOfBoundsException.))))
+
+  (nth [this i not-found]
+    (cond (= i 0) root
+          (= i 1) children
+          :else not-found)))
+
+(defn make-rose [root children]
+  (RoseTree. root children))
+
 (defn- exclude-nth
   "Exclude the nth value in a collection."
   [n coll]
@@ -18,32 +33,34 @@
   children of the inner and outer trees."
   {:no-doc true}
   [[[inner-root inner-children] children]]
-  [inner-root (concat (map join children)
-                      inner-children)])
+  (make-rose
+    inner-root
+    (concat (map join children)
+            inner-children)))
 
 (defn root
   "Returns the root of a Rose tree."
   {:no-doc true}
-  [[root _children]]
-  root)
+  [tree]
+  (nth tree 0))
 
 (defn children
   "Returns the children of the root of the Rose tree."
   {:no-doc true}
-  [[_root children]]
-  children)
+  [tree]
+  (nth tree 1))
 
 (defn pure
   "Puts a value `x` into a Rose tree, with no children."
   {:no-doc true}
   [x]
-  [x []])
+  (make-rose x []))
 
 (defn fmap
   "Applies functions `f` to all values in the tree."
   {:no-doc true}
   [f [root children]]
-  [(f root) (map (partial fmap f) children)])
+  (make-rose (f root) (map (partial fmap f) children)))
 
 (defn bind
   "Takes a Rose tree (m) and a function (k) from
@@ -59,8 +76,10 @@
   Takes a list of roses, not a rose"
   {:no-doc true}
   [pred [the-root children]]
-  [the-root (map (partial filter pred)
-                 (core/filter (comp pred root) children))])
+  (make-rose
+    the-root
+    (map (partial filter pred)
+         (core/filter (comp pred root) children))))
 
 (defn permutations
   "Create a seq of vectors, where each rose in turn, has been replaced
@@ -76,9 +95,10 @@
   "Apply `f` to the sequence of Rose trees `roses`."
   {:no-doc true}
   [f roses]
-  [(apply f (map root roses))
-   (map (partial zip f)
-        (permutations roses))])
+  (make-rose
+    (apply f (map root roses))
+    (map (partial zip f)
+         (permutations roses))))
 
 (defn remove
   {:no-doc true}
@@ -91,9 +111,9 @@
   {:no-doc true}
   [f roses]
   (if (core/seq roses)
-    [(apply f (map root roses))
-     (map (partial shrink f) (remove roses))]
-    [(f) []]))
+    (make-rose (apply f (map root roses))
+       (map (partial shrink f) (remove roses)))
+    (make-rose (f) [])))
 
 (defn collapse
   "Return a new rose-tree whose depth-one children
@@ -101,9 +121,11 @@
   tree."
   {:no-doc true}
   [[root the-children]]
-  [root (concat (map collapse the-children)
-                (map collapse
-                     (mapcat children the-children)))])
+  (make-rose
+    root
+    (concat (map collapse the-children)
+            (map collapse
+                 (mapcat children the-children)))))
 
 (defn- make-stack
   [children stack]
