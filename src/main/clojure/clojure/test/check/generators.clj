@@ -10,7 +10,8 @@
 (ns clojure.test.check.generators
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
-                            shuffle not-empty symbol namespace])
+                            shuffle not-empty symbol namespace
+                            double])
   (:require [clojure.core :as core]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]))
@@ -695,3 +696,63 @@
   "Like any, but avoids characters that the shell will interpret as actions,
   like 7 and 14 (bell and alternate character set command)"
   (recursive-gen container-type simple-type-printable))
+
+;;
+;; Reboot recursive generators
+;;
+
+(def ^:const max-long-as-double (apply * (repeat 63 2.0)))
+
+(def double
+  "Uniformly distributed between 0 and 1, ignores size, does not shrink."
+  (make-gen
+   (fn [rng _size]
+     (-> rng
+         (random/rand-long)
+         (bit-and Long/MAX_VALUE) ;; ensure positive
+         (/ max-long-as-double)
+         (rose/pure)))))
+
+(defn ordered-integer-partition
+  "Also does not shrink."
+  [total num-elements]
+  {:pre [(or (zero? total) (pos? num-elements))]}
+  (fmap (fn [xs]
+          (let [pre-total (apply + xs)
+                scale (/ total pre-total)
+                xs' (core/map #(long (* scale %)) xs)
+                post-total (apply + xs')]
+            (assert (<= (- total num-elements) post-total (+ total num-elements)))
+            (let [debt (- total post-total)
+                  sign (if (pos? debt) 1 -1)
+                  modify-count (* sign debt)]
+              (concat (core/map #(+ sign %) (take modify-count xs'))
+                      (drop modify-count xs')))))
+        (vector double num-elements)))
+
+(declare vector-of-strings*)
+
+(defn vector-of-strings**
+  [size]
+  (gen-bind (choose 0 size)
+            (fn [rose]
+              (let [vec-size (rose/root rose)]
+                (if (zero? vec-size)
+                  (return [])
+                  (gen-bind (ordered-integer-partition size vec-size)
+                            (fn [sizes-rose]
+                              (let [sizes (rose/root sizes-rose)]
+                                (gen-fmap (fn [roses]
+                                            (rose/shrink core/vector roses))
+                                          (gen-seq->seq-gen
+                                           (core/map vector-of-strings* sizes)))))))))))
+
+(defn vector-of-strings*
+  [size]
+  (let [scalar string-ascii]
+    (if (zero? size)
+      scalar
+      (frequency [[1 scalar]
+                  [5 (vector-of-strings** size)]]))))
+
+(def vector-of-strings (sized vector-of-strings*))
