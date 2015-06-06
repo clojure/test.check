@@ -169,15 +169,12 @@
   [value (core/map int-rose-tree (shrink-int value))])
 
 (defn- rand-range
-  [rnd lower upper]
-  {:pre [(<= lower upper)]}
-  (let [factor (random/rand-double rnd)
-        ;; Use -' to maintain accuracy with overflow protection.
-        width (-' upper lower -1)]
-    (if (< width Long/MAX_VALUE)
-      (+ lower (long (Math/floor (* factor width))))
-      ;; Clamp down to upper because double math.
-      (min upper (long (Math/floor (+ lower (* factor width))))))))
+  "Returns a random number uniformly distributed between 0 (inclusive)
+  and upper (exclusive). For distribution quality upper should be <=
+  2^32."
+  [rng upper]
+  (let [factor (random/rand-double rng)]
+    (long (* factor upper))))
 
 (defn sized
   "Create a generator that depends on the size parameter.
@@ -209,15 +206,35 @@
     (sized (fn [n] (resize (f n) generator)))))
 
 (defn choose
-  "Create a generator that returns numbers in the range
-  `min-range` to `max-range`, inclusive."
+  "Create a generator that returns numbers in the range `min-range` to
+  `max-range`, inclusive. Ignores size, shrinks toward the lower
+  bound."
   [lower upper]
-  (make-gen
-    (fn [rnd _size]
-      (let [value (rand-range rnd lower upper)]
-        (rose/filter
-          #(and (>= % lower) (<= % upper))
-          (int-rose-tree value))))))
+  (let [range-size (inc' (-' upper lower))
+        in-range? #(and (>= % lower) (<= % upper))]
+    (if (<= range-size 0x100000000) ;; 2^32
+      (make-gen
+       (fn [rng _size]
+         (let [value (+ lower (rand-range rng range-size))]
+           (rose/filter in-range? (int-rose-tree value)))))
+      (let [bit-length (.bitLength (biginteger range-size))
+            nums-needed (-> bit-length
+                            (quot 32)
+                            ;; one extra for good distribution
+                            (inc))]
+        (make-gen
+         (fn [rng _size]
+           ;; this could be twice as efficient if we generated longs directly :/
+           (let [rngs (random/split-n rng nums-needed)
+                 xs (core/map #(BigInteger/valueOf (rand-range % 0x100000000)) rngs)
+                 x (reduce (fn [^BigInteger acc ^BigInteger x]
+                             (-> acc
+                                 (.shiftLeft 32)
+                                 (.add x)))
+                           BigInteger/ZERO
+                           xs)
+                 value (-> x (mod range-size) (+ lower))]
+             (rose/filter in-range? (int-rose-tree value)))))))))
 
 (defn one-of
   "Create a generator that randomly chooses a value from the list of

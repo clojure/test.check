@@ -134,7 +134,7 @@
   (rand-long [_]
     (-> state (+ gamma) (mix-64)))
   (rand-double [this]
-    (* double-unit (unsigned-bit-shift-right (rand-long this) 11)))
+    (* double-unit (unsigned-bit-shift-right (long (rand-long this)) 11)))
   (split [this]
     (let [state' (+ gamma state)
           state'' (+ gamma state')
@@ -145,21 +145,22 @@
     ;; immitates a particular series of 2-way splits, but avoids the
     ;; intermediate allocation. See the `split-n-spec` for a test of
     ;; the equivalence to 2-way splits.
-    (case (long n)
-      0 []
-      1 [this]
-      (let [n-dec (dec n)]
-        (loop [state state
-               ret (transient [])]
-          (if (= n-dec (count ret))
-            (-> ret
-                (conj! (JavaUtilSplittableRandom. gamma state))
-                (persistent!))
-            (let [state' (+ gamma state)
-                  state'' (+ gamma state')
-                  gamma' (mix-gamma state'')
-                  new-rng (JavaUtilSplittableRandom. gamma' (mix-64 state'))]
-              (recur state'' (conj! ret new-rng)))))))))
+    (let [n (long n)]
+      (case n
+        0 []
+        1 [this]
+        (let [n-dec (dec n)]
+          (loop [state state
+                 ret (transient [])]
+            (if (= n-dec (count ret))
+              (-> ret
+                  (conj! (JavaUtilSplittableRandom. gamma state))
+                  (persistent!))
+              (let [state' (+ gamma state)
+                    state'' (+ gamma state')
+                    gamma' (mix-gamma state'')
+                    new-rng (JavaUtilSplittableRandom. gamma' (mix-64 state'))]
+                (recur state'' (conj! ret new-rng))))))))))
 
 (def ^:private golden-gamma
   (longify 0x9e3779b97f4a7c15))

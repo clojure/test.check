@@ -464,11 +464,12 @@
 ;; further, that generators that use rand-range use its full range of values
 ;; ---------------------------------------------------------------------------
 
-(deftest rand-range-uses-inclusive-bounds
-  (let [bounds [5 7]
-        rand-range (fn [r] (apply #'gen/rand-range r bounds))]
+(deftest rand-range-uses-correct-bounds
+  (let [exclusive-max 3
+        rand-range (fn [r] (#'gen/rand-range r exclusive-max))
+        all-values (set (range exclusive-max))]
     (loop [trials 0
-           bounds (set bounds)
+           not-seen-yet all-values
            r (random/make-random)]
       (cond
        (== trials 10000)
@@ -476,9 +477,11 @@
                     "it is possible for this to fail without there being a problem, "
                     "but we should be able to rely upon probability to not bother us "
                     "too frequently."))
-       (empty? bounds) (is true)
-       :else (let [[r1 r2] (random/split r)]
-               (recur (inc trials) (disj bounds (rand-range r1)) r2))))))
+       (empty? not-seen-yet) (is true)
+       :else (let [[r1 r2] (random/split r)
+                   x (rand-range r1)]
+               (is (all-values x))
+               (recur (inc trials) (disj not-seen-yet x) r2))))))
 
 (deftest elements-generates-all-provided-values
   (let [options [:a 42 'c/d "foo"]]
