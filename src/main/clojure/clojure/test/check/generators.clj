@@ -67,7 +67,8 @@
       (recur (* 2 c) (mapcat random/split res)))))
 
 (defn lazy-random-states
-  "Exclude the nth value in a collection."
+  "Given a random number generator, returns an infinite lazy sequence
+  of random number generators."
   [rr]
   (lazy-seq
         (let [[r1 r2] (random/split rr)]
