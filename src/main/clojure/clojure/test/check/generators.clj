@@ -730,10 +730,10 @@
                       (drop modify-count xs')))))
         (vector double num-elements)))
 
-(declare vector-of-strings*)
+(declare recursive-gen*)
 
-(defn vector-of-strings**
-  [size]
+(defn recursive-gen*
+  [opts size]
   (gen-bind (choose 0 size)
             (fn [rose]
               (let [vec-size (rose/root rose)]
@@ -745,14 +745,16 @@
                                 (gen-fmap (fn [roses]
                                             (rose/shrink core/vector roses))
                                           (gen-seq->seq-gen
-                                           (core/map vector-of-strings* sizes)))))))))))
+                                           (core/map (partial recursive-gen opts) sizes)))))))))))
 
-(defn vector-of-strings*
-  [size]
-  (let [scalar string-ascii]
+(defn recursive-gen
+  [{:keys [scalar scalar-prob] :or {scalar-prob 1/6} :as opts} size]
+  {:pre [(< 0 scalar-prob 1)]}
+  (let [non-scalar-prob (- 1 scalar-prob)]
     (if (zero? size)
       scalar
-      (frequency [[1 scalar]
-                  [5 (vector-of-strings** size)]]))))
+      (frequency [[(numerator scalar-prob) scalar]
+                  [(numerator non-scalar-prob) (recursive-gen* opts size)]]))))
 
-(def vector-of-strings (sized vector-of-strings*))
+(def vector-of-strings
+  (sized (partial recursive-gen {:scalar (one-of [int string-ascii])})))
