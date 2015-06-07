@@ -168,8 +168,25 @@
   [^long seed]
   (JavaUtilSplittableRandom. golden-gamma seed))
 
+;; some global state to make sure that seedless calls to make-random
+;; return independent results
+(def ^:private next-rng
+  "Returns a random-number generator. Successive calls should return
+  independent results."
+  (let [a (atom (make-java-util-splittable-random (System/currentTimeMillis)))
+
+        thread-local
+        (proxy [ThreadLocal] []
+          (initialValue []
+            (first (split (swap! a #(second (split %)))))))]
+    (fn []
+      (let [rng (.get thread-local)
+            [rng1 rng2] (split rng)]
+        (.set thread-local rng2)
+        rng1))))
+
 (defn make-random
   "Given an optional Long seed, returns an object that satisfies the
   IRandom protocol."
-  ([] (make-random (System/currentTimeMillis)))
+  ([] (next-rng))
   ([seed] (make-java-util-splittable-random seed)))
