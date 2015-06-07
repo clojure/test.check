@@ -153,6 +153,16 @@
    (take num-samples (sample-seq generator))))
 
 
+(defn generate
+  "Returns a single sample value from the generator, using a default
+  size of 30."
+  ([generator]
+     (generate generator 30))
+  ([generator size]
+     (let [rng (random/make-random)]
+       (rose/root (call-gen generator rng size)))))
+
+
 ;; Internal Helpers
 ;; ---------------------------------------------------------------------------
 
