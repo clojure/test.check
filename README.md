@@ -153,7 +153,7 @@ ClojureScript:
 (ns cljs.user
   (:require [cljs.test.check :as tc]
             [cljs.test.check.generators :as gen]
-            [cljs.test.check.properties :as prop]))
+            [cljs.test.check.properties :as prop :include-macros true]))
 
 (def sort-idempotent-prop
   (prop/for-all [v (gen/vector gen/int)]
