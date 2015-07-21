@@ -2,6 +2,7 @@
   (:require [cljs.test :as test :refer-macros [run-tests]]
             [cljs.test.check.generators :as gen]
             [cljs.test.check.test]
+            [cljs.test.check.random-test]
             [cljs.test.check.rose-tree-test]
             [cljs.test.check.cljs-test-test]))
 
@@ -9,6 +10,7 @@
 
 (run-tests
   'cljs.test.check.test
+  'cljs.test.check.random-test
   'cljs.test.check.rose-tree-test
   'cljs.test.check.cljs-test-test)
 
