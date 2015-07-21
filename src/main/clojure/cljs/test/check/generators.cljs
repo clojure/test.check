@@ -25,7 +25,7 @@
 (defrecord Generator [gen])
 
 (defn generator?
-  "Test is `x` is a generator. Generators should be treated as opaque values."
+  "Test if `x` is a generator. Generators should be treated as opaque values."
   [x]
   (instance? Generator x))
 
