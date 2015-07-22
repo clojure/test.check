@@ -39,4 +39,8 @@ puts("%dms ± %dms" % [avg.to_i,stddev.to_i])
 # 052df04 (random + bitcount-enhancement)
 # 14901ms ± 3022ms, 23541ms ± 4897ms
 
-# 2c2bc18 (master)
+# 0d5fb89 (original random)
+# 13387ms ± 598ms,  23600ms ± 1222ms
+
+# 2c2bc18 (master
+# 11650ms ± 1232ms, 13662ms ± 1137ms
