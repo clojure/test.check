@@ -31,3 +31,12 @@ p times
 avg = times.reduce(:+) / times.length
 stddev = Math.sqrt(times.map{|x|x - avg}.map{|x|x*x}.reduce(:+)/times.length)
 puts("%dms ± %dms" % [avg.to_i,stddev.to_i])
+
+##
+## galago times
+##
+
+# 052df04 (random + bitcount-enhancement)
+# 14901ms ± 3022ms, 23541ms ± 4897ms
+
+# 2c2bc18 (master)
