@@ -60,18 +60,27 @@
   [x y]
   (.xor x y))
 
+(def ^:private bit-count-lookup
+  (let [arr (make-array 256)]
+    (aset arr 0 0)
+    (dotimes [i 256]
+      (aset arr i (core/+ (aget arr (bit-shift-right i 1))
+                          (bit-and i 1))))
+    arr))
+
 (defn ^:private bit-count
   "Returns a JS number (not a Long)"
   [x]
   (let [low (.-low_ x)
-        high (.-high_ x)
-        bit-count-32
-        (fn self [x]
-          (if (zero? x)
-            0
-            (core/+ (bit-and x 1) (self (core/unsigned-bit-shift-right x 1)))))]
-    (core/+ (bit-count-32 low)
-                 (bit-count-32 high))))
+        high (.-high_ x)]
+    (core/+ (aget bit-count-lookup (-> low  (bit-and 255)))
+            (aget bit-count-lookup (-> low  (bit-shift-right 8) (bit-and 255)))
+            (aget bit-count-lookup (-> low  (bit-shift-right 16) (bit-and 255)))
+            (aget bit-count-lookup (-> low  (bit-shift-right 24) (bit-and 255)))
+            (aget bit-count-lookup (-> high (bit-and 255)))
+            (aget bit-count-lookup (-> high (bit-shift-right 8) (bit-and 255)))
+            (aget bit-count-lookup (-> high (bit-shift-right 16) (bit-and 255)))
+            (aget bit-count-lookup (-> high (bit-shift-right 24) (bit-and 255))))))
 
 (defn ^:private bxoubsr
   "Performs (-> x (unsigned-bit-shift-right n) (bit-xor x))."
