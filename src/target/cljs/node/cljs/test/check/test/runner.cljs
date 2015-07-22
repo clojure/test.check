@@ -10,10 +10,10 @@
 (nodejs/enable-util-print!)
 
 (defn -main []
-  (run-tests
+  (time
+   (run-tests
     'cljs.test.check.test
-    'cljs.test.check.random-test
     'cljs.test.check.rose-tree-test
-    'cljs.test.check.cljs-test-test))
+    'cljs.test.check.cljs-test-test)))
 
 (set! *main-cli-fn* -main)
