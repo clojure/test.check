@@ -12,6 +12,7 @@
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace])
   (:require [clojure.core :as core]
+            [clojure.core.reducers :as r]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]))
 
@@ -162,21 +163,43 @@
      (let [rng (random/make-random)]
        (rose/root (call-gen generator rng size)))))
 
+(defn sample-shrink
+  "Returns a list whose first item is the generated value and the
+  rest is a sample path through the shrinking process."
+  ([generator]
+   (sample-shrink generator 30))
+  ([generator size]
+   (let [[root children] (call-gen generator (random/make-random) size)]
+     (let [o (Object.)]
+       (loop [ret [root]
+              children children]
+         (let [children (into [] children)]
+           (if (empty? children)
+             ret
+             (let [[root children] (rand-nth children)]
+               (recur (conj ret root) children)))))))))
+
 
 ;; Internal Helpers
 ;; ---------------------------------------------------------------------------
 
-(defn- halfs
+(defn- shrunken-int
   [n]
-  (take-while (partial not= 0) (iterate #(quot % 2) n)))
-
-(defn- shrink-int
-  [integer]
-  (core/map (partial - integer) (halfs integer)))
+  (reify clojure.lang.IReduceInit
+    (reduce [_ f init]
+      (loop [state init
+             x n]
+        (if (zero? x)
+          state
+          (let [ret (f state (- n x))]
+            (if (reduced? ret)
+              @ret
+              (recur ret (quot x 2)))))))))
 
 (defn- int-rose-tree
   [value]
-  (rose/make-rose value (core/map int-rose-tree (shrink-int value))))
+  (rose/make-rose value (r/map int-rose-tree (shrunken-int value))))
+
 
 (defn- rand-range
   [rnd lower upper]

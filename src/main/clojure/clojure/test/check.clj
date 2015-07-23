@@ -87,7 +87,7 @@
   The value returned is the left-most failing example at the depth where a
   passing example was found."
   [rose-tree]
-  (let [shrinks-this-depth (rose/children rose-tree)]
+  (let [shrinks-this-depth (into [] (rose/children rose-tree))]
     (loop [nodes shrinks-this-depth
            current-smallest (rose/root rose-tree)
            total-nodes-visited 0
@@ -103,7 +103,7 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (rose/children head)]
+            (let [children (into [] (rose/children head))]
               (if (empty? children)
                 (recur tail (rose/root head) (inc total-nodes-visited) depth)
                 (recur children (rose/root head) (inc total-nodes-visited) (inc depth))))))))))

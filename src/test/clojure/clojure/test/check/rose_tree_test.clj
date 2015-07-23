@@ -9,7 +9,8 @@
 
 (ns clojure.test.check.rose-tree-test
   (:use clojure.test)
-  (:require [clojure.test.check       :as tc]
+  (:require [clojure.core.reducers :as r]
+            [clojure.test.check :as tc]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
             [clojure.test.check.rose-tree :as rose]
@@ -17,13 +18,13 @@
 
 (defn depth-one-children
   [[root children]]
-  (into [] (map rose/root children)))
+  (into [] (r/map rose/root children)))
 
 (defn depth-one-and-two-children
   [[root children]]
   (into []
-        (concat (map rose/root children)
-                (map rose/root (mapcat rose/children children)))))
+        (rose/r-concat (r/map rose/root children)
+                       (r/map rose/root (r/mapcat rose/children children)))))
 
 (defspec test-collapse-rose
   100
