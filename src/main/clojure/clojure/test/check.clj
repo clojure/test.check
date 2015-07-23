@@ -87,26 +87,22 @@
   The value returned is the left-most failing example at the depth where a
   passing example was found."
   [rose-tree]
-  (let [shrinks-this-depth (into [] (rose/children rose-tree))]
+  (let [shrinks-this-depth (rose/children rose-tree)]
     (loop [nodes shrinks-this-depth
            current-smallest (rose/root rose-tree)
            total-nodes-visited 0
            depth 0]
-      (if (empty? nodes)
-        (smallest-shrink total-nodes-visited depth current-smallest)
-        (let [[head & tail] nodes
-              result (:result (rose/root head))]
-          (if (not-falsey-or-exception? result)
-            ;; this node passed the test, so now try testing its right-siblings
-            (recur tail current-smallest (inc total-nodes-visited) depth)
-            ;; this node failed the test, so check if it has children,
-            ;; if so, traverse down them. If not, save this as the best example
-            ;; seen now and then look at the right-siblings
-            ;; children
-            (let [children (into [] (rose/children head))]
-              (if (empty? children)
-                (recur tail (rose/root head) (inc total-nodes-visited) depth)
-                (recur children (rose/root head) (inc total-nodes-visited) (inc depth))))))))))
+
+      (let [res (reduce (fn [[current-smallest total-nodes-visited depth :as state] child]
+                          (if (not-falsey-or-exception? (:result (rose/root child)))
+                            [current-smallest (inc total-nodes-visited) depth]
+                            (reduced [(rose/root child) (inc total-nodes-visited) depth (rose/children child)])))
+                        [current-smallest total-nodes-visited depth]
+                        nodes)
+            [current-smallest total-nodes-visited depth more-nodes] res]
+        (if more-nodes
+          (recur more-nodes current-smallest total-nodes-visited (inc depth))
+          (smallest-shrink total-nodes-visited depth current-smallest))))))
 
 (defn- failure
   [property failing-rose-tree trial-number size seed]
