@@ -120,11 +120,6 @@
 (def ^:private golden-gamma
   (hex-long "9e3779b97f4a7c15"))
 
-(let [last-seed (atom 0)]
-  (defn ^:private next-seed
-    []
-    (swap! last-seed #(max (inc %) (.valueOf (js/Date.))))))
-
 (defn make-java-util-splittable-random
   [seed]
   (JavaUtilSplittableRandom. golden-gamma
@@ -132,9 +127,19 @@
                                  (throw (ex-info "Bad random seed!"
                                                  {:seed seed})))))
 
+(def ^:private next-rng
+  (let [a (atom {:state
+                 (make-java-util-splittable-random (.valueOf (js/Date.)))})]
+    (fn []
+      (:returned
+       (swap! a (fn [{:keys [state]}]
+                  (let [[r1 r2] (split state)]
+                    {:state r1 :returned r2})))))))
+
+
 (defn make-random
   "Given an optional integer (or goog.math.Long) seed, returns an
   implementation of the IRandom protocol."
-  ([] (make-random (next-seed)))
+  ([] (next-rng))
   ([seed]
    (make-java-util-splittable-random seed)))
