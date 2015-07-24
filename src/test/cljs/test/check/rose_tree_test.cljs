@@ -16,15 +16,16 @@
             [cljs.test.check.cljs-test :as ct :refer-macros [defspec]]))
 
 (defn depth-one-children
-  [[root children]]
-  (into [] (map rose/root children)))
+  [rose]
+  (into [] (map rose/root (rose/children rose))))
 
 (defn depth-one-and-two-children
-  [[root children]]
-  (into []
-    (concat
-      (map rose/root children)
-      (map rose/root (mapcat rose/children children)))))
+  [rose]
+  (let [the-children (rose/children rose)]
+    (into []
+          (concat
+           (map rose/root the-children)
+           (map rose/root (mapcat rose/children the-children))))))
 
 (defspec test-collapse-rose
   100

@@ -163,7 +163,7 @@
 
 (defn- int-rose-tree
   [value]
-  [value (core/map int-rose-tree (shrink-int value))])
+  (rose/make-rose value (core/map int-rose-tree (shrink-int value))))
 
 (defn- rand-range
   [rnd lower upper]
@@ -311,9 +311,8 @@
   [gen]
   (assert (generator? gen) "Arg to no-shrink must be a generator")
   (gen-bind gen
-            (fn [[root _children]]
-              (gen-pure
-                [root []]))))
+            (fn [rose]
+              (gen-pure (rose/make-rose (rose/root rose) [])))))
 
 (defn shrink-2
   "Create a new generator like `gen`, but will consider nodes for shrinking
