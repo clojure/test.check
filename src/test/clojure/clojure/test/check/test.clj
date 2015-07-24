@@ -523,6 +523,13 @@
     (is (every? (partial >= 11) samples))
     (is (some (partial = 10) samples))))
 
+;; generator dev helpers
+;; ---------------------------------------------------------------------------
+
+(deftest generate-test
+  (is (string? (gen/generate gen/string)))
+  (is (string? (gen/generate gen/string 42))))
+
 ;; defspec macro
 ;; ---------------------------------------------------------------------------
 
