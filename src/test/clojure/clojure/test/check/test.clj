@@ -253,25 +253,26 @@
 ;; Generating basic generators
 ;; --------------------------------------------------------------------------
 (deftest generators-test
-  (let [t (fn [generator klass]
-            (:result (tc/quick-check 100 (prop/for-all [x generator]
-                                                       (instance? klass x)))))]
+  (let [t (fn [generator pred]
+            (is (:result (tc/quick-check 100
+                           (prop/for-all [x generator]
+                             (pred x))))))]
 
-    (testing "keyword"              (t gen/keyword clojure.lang.Keyword))
-    (testing "ratio"                (t gen/ratio   clojure.lang.Ratio))
-    (testing "byte"                 (t gen/byte    Byte))
-    (testing "bytes"                (t gen/bytes   (Class/forName "[B")))
+    (testing "keyword"              (t gen/keyword keyword?))
+    (testing "ratio"                (t gen/ratio   (some-fn ratio? integer?)))
+    (testing "byte"                 (t gen/byte    #(instance? Byte %)))
+    (testing "bytes"                (t gen/bytes   #(instance? (Class/forName "[B") %)))
 
-    (testing "char"                 (t gen/char                 Character))
-    (testing "char-ascii"           (t gen/char-ascii           Character))
-    (testing "char-alphanumeric"    (t gen/char-alphanumeric    Character))
-    (testing "string"               (t gen/string               String))
-    (testing "string-ascii"         (t gen/string-ascii         String))
-    (testing "string-alphanumeric"  (t gen/string-alphanumeric  String))
+    (testing "char"                 (t gen/char                 char?))
+    (testing "char-ascii"           (t gen/char-ascii           char?))
+    (testing "char-alphanumeric"    (t gen/char-alphanumeric    char?))
+    (testing "string"               (t gen/string               string?))
+    (testing "string-ascii"         (t gen/string-ascii         string?))
+    (testing "string-alphanumeric"  (t gen/string-alphanumeric  string?))
 
-    (testing "vector" (t (gen/vector gen/int) clojure.lang.IPersistentVector))
-    (testing "list"   (t (gen/list gen/int)   clojure.lang.IPersistentList))
-    (testing "map"    (t (gen/map gen/int gen/int) clojure.lang.IPersistentMap))
+    (testing "vector" (t (gen/vector gen/int) vector?))
+    (testing "list"   (t (gen/list gen/int)   list?))
+    (testing "map"    (t (gen/map gen/int gen/int) map?))
     ))
 
 ;; Generating proper matrices

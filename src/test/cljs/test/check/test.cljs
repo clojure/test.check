@@ -250,9 +250,9 @@
 
 (deftest generators-test
   (let [t (fn [generator pred]
-            (:result (tc/quick-check 100
-                       (prop/for-all [x generator]
-                         (pred klass)))))]
+            (is (:result (tc/quick-check 100
+                           (prop/for-all [x generator]
+                             (pred x))))))]
 
     (testing "keyword"              (t gen/keyword keyword?))
     ;; (testing "ratio"                (t gen/ratio   clojure.lang.Ratio))
