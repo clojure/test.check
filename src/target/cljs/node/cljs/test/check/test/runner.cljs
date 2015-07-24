@@ -2,6 +2,7 @@
   (:require [cljs.nodejs :as nodejs]
             [cljs.test :as test :refer-macros [run-tests]]
             [cljs.test.check.test]
+            [cljs.test.check.random-test]
             [cljs.test.check.rose-tree-test]
             [cljs.test.check.cljs-test-test]
             [cljs.test.check.generators :as gen]))
@@ -11,6 +12,7 @@
 (defn -main []
   (run-tests
     'cljs.test.check.test
+    'cljs.test.check.random-test
     'cljs.test.check.rose-tree-test
     'cljs.test.check.cljs-test-test))
 
