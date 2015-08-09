@@ -1,7 +1,7 @@
-(ns cljs.test.check.random-test
+(ns clojure.test.check.random-test
   "Testing that the cljs impl matches the clojure impl."
   (:require [cljs.test :refer-macros [deftest is]]
-            [cljs.test.check.random :as random]))
+            [clojure.test.check.random :as random]))
 
 (deftest longs-test
 

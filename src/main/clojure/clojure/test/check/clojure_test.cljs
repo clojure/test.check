@@ -7,8 +7,8 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns cljs.test.check.cljs-test
-  (:require-macros cljs.test.check.cljs-test)
+(ns clojure.test.check.clojure-test
+  (:require-macros clojure.test.check.clojure-test)
   (:require [cljs.test :as ct :include-macros true]))
 
 (defn- assert-check

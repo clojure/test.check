@@ -10,7 +10,7 @@
 (ns clojure.test.check.clojure-test
   (:require [clojure.test :as ct]))
 
-(defn- assert-check
+(defn assert-check
   [{:keys [result] :as m}]
   (prn m)
   (if (instance? Throwable result)
@@ -47,8 +47,8 @@
      (require 'clojure.test.check)
      `(defn ~(vary-meta name assoc
                         ::defspec true
-                        :test `#(#'assert-check (assoc (~name)
-                                                      :test-var (str '~name))))
+                        :test `#(clojure.test.check.clojure-test/assert-check
+                                   (assoc (~name) :test-var (str '~name))))
         ([] (let [options# (process-options ~options)]
               (apply ~name (:num-tests options#) (apply concat options#))))
         ([~'times & {:keys [~'seed ~'max-size] :as ~'quick-check-opts}]

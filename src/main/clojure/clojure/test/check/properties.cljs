@@ -7,9 +7,9 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns cljs.test.check.properties
-  (:require-macros cljs.test.check.properties)
-  (:require [cljs.test.check.generators :as gen]))
+(ns clojure.test.check.properties
+  (:require-macros clojure.test.check.properties)
+  (:require [clojure.test.check.generators :as gen]))
 
 (defn- apply-gen
   [function]

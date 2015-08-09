@@ -7,11 +7,11 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns cljs.test.check.cljs-test-test
+(ns clojure.test.check.clojure-test-test
   (:require [cljs.test :as test :refer [test-var] :refer-macros [is]]
-            [cljs.test.check.generators :as gen]
-            [cljs.test.check.properties :as prop :include-macros true]
-            [cljs.test.check.cljs-test :as ct :refer-macros [defspec]]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop :include-macros true]
+            [clojure.test.check.clojure-test :as ct :refer-macros [defspec]]
             [cljs.reader :refer [read-string]]))
 
 (defspec default-trial-counts

@@ -9,10 +9,10 @@
 
 (ns ^{:author "Gary Fredericks"
       :doc "Internal namespace, wrapping some goog.math.Long functionality."}
-  cljs.test.check.random.longs
+  clojure.test.check.random.longs
   (:refer-clojure :exclude [+ * bit-xor bit-or bit-count
                             unsigned-bit-shift-right])
-  (:require [cljs.test.check.random.longs.bit-count-impl :as bit-count]
+  (:require [clojure.test.check.random.longs.bit-count-impl :as bit-count]
             [goog.math.Long :as long]))
 
 

@@ -7,13 +7,13 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns cljs.test.check.generators
+(ns clojure.test.check.generators
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace])
   (:require [cljs.core :as core]
-            [cljs.test.check.random :as random]
-            [cljs.test.check.rose-tree :as rose]
+            [clojure.test.check.random :as random]
+            [clojure.test.check.rose-tree :as rose]
             [goog.string :as gstring]
             [clojure.string])
   (:import [goog.testing PseudoRandom]))

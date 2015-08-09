@@ -1,11 +1,11 @@
-(ns cljs.test.check.test
+(ns clojure.test.check.test
   (:require [cljs.test :as test :refer-macros [deftest testing is]]
-            [cljs.test.check :as tc]
-            [cljs.test.check.generators :as gen]
-            [cljs.test.check.properties :as prop :include-macros true]
-            [cljs.test.check.random :as random]
-            [cljs.test.check.rose-tree :as rose]
-            [cljs.test.check.cljs-test :as ct :refer-macros [defspec]]
+            [clojure.test.check :as tc]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop :include-macros true]
+            [clojure.test.check.random :as random]
+            [clojure.test.check.rose-tree :as rose]
+            [clojure.test.check.clojure-test :as ct :refer-macros [defspec]]
             [cljs.reader :as edn]))
 
 (deftest generators-are-generators

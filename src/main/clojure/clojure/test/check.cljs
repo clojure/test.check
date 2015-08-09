@@ -7,11 +7,11 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns cljs.test.check
-  (:require [cljs.test.check.generators :as gen]
-            [cljs.test.check.cljs-test :as ct]
-            [cljs.test.check.random :as random]
-            [cljs.test.check.rose-tree :as rose]))
+(ns clojure.test.check
+  (:require [clojure.test.check.generators :as gen]
+            [clojure.test.check.clojure-test :as ct]
+            [clojure.test.check.random :as random]
+            [clojure.test.check.rose-tree :as rose]))
 
 (declare shrink-loop failure)
 

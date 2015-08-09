@@ -9,11 +9,11 @@
 
 (ns ^{:author "Gary Fredericks"
       :doc "Purely functional and splittable pseudo-random number generators."}
-  cljs.test.check.random
+  clojure.test.check.random
   (:refer-clojure :exclude [+ * bit-xor bit-or bit-count
                             unsigned-bit-shift-right])
-  (:require [cljs.test.check.random.doubles :as doubles]
-            [cljs.test.check.random.longs :as longs
+  (:require [clojure.test.check.random.doubles :as doubles]
+            [clojure.test.check.random.longs :as longs
              :refer [+ * bit-xor bit-or bit-count unsigned-bit-shift-right]]))
 
 (defprotocol IRandom

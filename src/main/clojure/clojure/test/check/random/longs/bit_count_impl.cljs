@@ -8,7 +8,7 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns ^{:author "Gary Fredericks"}
-  cljs.test.check.random.longs.bit-count-impl
+  clojure.test.check.random.longs.bit-count-impl
   (:refer-clojure :exclude [bit-count]))
 
 ;; Had to put this in a separate namespace because the + doesn't get

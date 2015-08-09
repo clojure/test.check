@@ -16,8 +16,8 @@
             [lein-cljsbuild "1.0.4-SNAPSHOT"]]
   :codox {:defaults {:doc/format :markdown}
           :exclude [clojure.test.check.rose-tree
-                    cljs.test.check.cljs-test
-                    cljs.test.check.properties]}
+                    clojure.test.check.clojure-test
+                    clojure.test.check.properties]}
   :cljsbuild
   {:builds
    [{:id "node-dev"
