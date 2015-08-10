@@ -21,7 +21,7 @@
   :cljsbuild
   {:builds
    [{:id "node-dev"
-     :source-paths ["src/main/clojure" "src/test/clojure"
+     :source-paths ["src/main/clojure" "src/test/cljs"
                     "src/target/cljs/node"]
      :notify-command ["node" "resources/run.js"]
      :compiler {:optimizations :none
@@ -31,7 +31,7 @@
                 :output-dir "target/cljs/node_dev/out"
                 :source-map true}}
     {:id "browser-dev"
-     :source-paths ["src/main/clojure" "src/test/clojure"
+     :source-paths ["src/main/clojure" "src/test/cljs"
                     "src/target/cljs/browser"]
      :compiler {:optimizations :none
                 :static-fns true
@@ -39,7 +39,7 @@
                 :output-dir "target/cljs/browser_dev/out"
                 :source-map true}}
     {:id "node-adv"
-     :source-paths ["src/main/clojure" "src/test/clojure"
+     :source-paths ["src/main/clojure" "src/test/cljs"
                     "src/target/cljs/node"]
      :notify-command ["node" "target/cljs/node_adv/tests.js"]
      :compiler {:optimizations :advanced
@@ -48,7 +48,7 @@
                 :output-to "target/cljs/node_adv/tests.js"
                 :output-dir "target/cljs/node_adv/out"}}
     {:id "browser-adv"
-     :source-paths ["src/main/clojure" "src/test/clojure"
+     :source-paths ["src/main/clojure" "src/test/cljs"
                     "src/target/cljs/browser"]
      :compiler {:optimizations :advanced
                 :pretty-print false
