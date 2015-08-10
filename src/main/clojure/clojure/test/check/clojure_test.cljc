@@ -8,12 +8,16 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.clojure-test
-  (:require [clojure.test :as ct]))
+  (:require #?(:clj  [clojure.test :as ct]
+               :cljs [cljs.test :as ct :include-macros true])))
+
+(defn exception-like? [v]
+  (instance? #?(:clj Throwable :cljs js/Error) v))
 
 (defn assert-check
   [{:keys [result] :as m}]
   (prn m)
-  (if (instance? Throwable result)
+  (if (exception-like? result)
     (throw result)
     (ct/is result)))
 
@@ -30,6 +34,7 @@
         :else (throw (ex-info (str "Invalid defspec options: " (pr-str options))
                               {:bad-options options}))))
 
+#?(:clj
 (defmacro defspec
   "Defines a new clojure.test test var that uses `quick-check` to verify
   [property] with the given [args] (should be a sequence of generators),
@@ -56,7 +61,7 @@
           clojure.test.check/quick-check
           ~'times
           (vary-meta ~property assoc :name (str '~property))
-          (apply concat ~'quick-check-opts))))))
+          (apply concat ~'quick-check-opts)))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
@@ -88,14 +93,24 @@
 
 (def ^:private last-trial-report (atom 0))
 
-(let [begin-test-var-method (get-method ct/report :begin-test-var)]
-  (defmethod ct/report :begin-test-var [m]
-    (reset! last-trial-report (System/currentTimeMillis))
+(defn get-current-time-millis []
+  #?(:clj  (System/currentTimeMillis)
+     :cljs (.valueOf (js/Date.))))
+
+(let [begin-test-var-method (get-method ct/report #?(:clj  :begin-test-var
+                                                     :cljs [::ct/default :begin-test-var]))]
+  (defmethod ct/report #?(:clj  :begin-test-var
+                          :cljs [::ct/default :begin-test]) [m]
+    (reset! last-trial-report (get-current-time-millis))
     (when begin-test-var-method (begin-test-var-method m))))
 
 (defn- get-property-name
   [{property-fun ::property :as report-map}]
   (or (-> property-fun meta :name) (ct/testing-vars-str report-map)))
+
+(defn with-test-out* [f]
+  #?(:clj  (ct/with-test-out (f))
+     :cljs (f)))
 
 (defn trial-report-periodic
   "Intended to be bound as the value of `*report-trials*`; will emit a verbose
@@ -103,11 +118,13 @@
 
   Passing trial 3286 / 5000 for (your-test-var-name-here) (:)"
   [m]
-  (let [t (System/currentTimeMillis)]
+  (let [t (get-current-time-millis)]
     (when (> (- t *trial-report-period*) @last-trial-report)
-      (ct/with-test-out
-        (println "Passing trial" (-> m ::trial first) "/" (-> m ::trial second)
-                 "for" (get-property-name m)))
+      (with-test-out*
+        (fn []
+          (println "Passing trial"
+                   (-> m ::trial first) "/" (-> m ::trial second)
+                   "for" (get-property-name m))))
       (reset! last-trial-report t))))
 
 (defn trial-report-dots
@@ -120,18 +137,19 @@
       (flush))
     (when (== so-far total) (println))))
 
-(defmethod ct/report ::trial [m]
+(defmethod ct/report #?(:clj ::trial :cljs [::ct/default ::trial]) [m]
   (when-let [trial-report-fn (and *report-trials*
                                   (if (true? *report-trials*)
                                     trial-report-dots
                                     *report-trials*))]
     (trial-report-fn m)))
 
-(defmethod ct/report ::shrinking [m]
+(defmethod ct/report #?(:clj ::shrinking :cljs [::ct/default ::shrinking]) [m]
   (when *report-shrinking*
-    (ct/with-test-out
-      (println "Shrinking" (get-property-name m)
-               "starting with parameters" (pr-str (::params m))))))
+    (with-test-out*
+      (fn []
+        (println "Shrinking" (get-property-name m)
+                 "starting with parameters" (pr-str (::params m)))))))
 
 (defn report-trial
   [property-fun so-far num-tests]
@@ -143,7 +161,7 @@
   [property-fun result trial-number failing-params]
   ;; TODO this is wrong, makes it impossible to clojure.test quickchecks that
   ;; should fail...
-  #_(ct/report (if (instance? Throwable result)
+  #_(ct/report (if (exception-like? result)
                  {:type :error
                   :message (.getMessage result)
                   :actual result}
