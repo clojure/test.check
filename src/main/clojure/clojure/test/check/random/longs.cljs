@@ -53,6 +53,8 @@
         (instance? goog.math.Long x)
         x))
 
-(def ONE long/ONE)
+;; this used to be long/ONE but that turned out to be nil in more
+;; recent versions of closure-library for some reason
+(def ONE (long/fromNumber 1))
 
 (def bit-count bit-count/bit-count)
