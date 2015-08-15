@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0
+* **Breaking ClojureScript Change**:
+  The namespace names have changed:
+  - `cljs.*` → `clojure.*`
+  - `cljs.test.check.cljs-test` → `clojure.test.check.clojure-test`
+* Randomness is now provided by a port of the
+  `java.util.SplittableRandom` algorithm, instead of
+  `java.util.Random` and `goog.testing.PsuedoRandom`.
+* New functions in `clojure.test.check.generators`:
+    * `scale`
+    * `generate`
+
 ## 0.7.0
 * Add ClojureScript support, written by @swannodette. More usage can be
   found [in the

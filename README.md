@@ -10,6 +10,10 @@ _test.check_ used to be called
 
 ## Releases and Dependency Information
 
+Please note a
+[breaking change for ClojureScript](https://github.com/clojure/test.check/blob/master/CHANGELOG.markdown#080)
+in the `0.8.0` release.
+
 ### Leiningen
 
 ```clojure
@@ -151,9 +155,9 @@ ClojureScript:
 
 ```clojure
 (ns cljs.user
-  (:require [cljs.test.check :as tc]
-            [cljs.test.check.generators :as gen]
-            [cljs.test.check.properties :as prop :include-macros true]))
+  (:require [clojure.test.check :as tc]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop :include-macros true]))
 
 (def sort-idempotent-prop
   (prop/for-all [v (gen/vector gen/int)]
@@ -163,21 +167,10 @@ ClojureScript:
 ;; => {:result true, :num-tests 100, :seed 1382488326530}
 ```
 
-The remaining examples need no further changes with the exception
-of `cljs.test` integration.
-
-### `cljs.test` Integration
-
-The macro `cljs.test.check.cljs-test/defspec` allows you to succinctly
-write properties that run under `cljs.test`, for example:
-
-```clojure
-(defspec first-element-is-min-after-sorting ;; the name of the test
-         100 ;; the number of iterations for test.check to test
-         (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
-           (= (apply min v)
-              (first (sort v)))))
-```
+The remaining examples need no further changes. Integrating with
+`cljs.test` is via the `clojure.test.check.clojure-test/defspec`
+macro, in the same fashion as integration with `clojure.test` on the
+jvm.
 
 ## Release Notes
 
