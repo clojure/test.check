@@ -13,7 +13,7 @@ _test.check_ used to be called
 ### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.7.0"]
+[org.clojure/test.check "0.8.0"]
 ```
 
 ### Maven
