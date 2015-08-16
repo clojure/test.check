@@ -185,9 +185,9 @@
         ;; Use -' to maintain accuracy with overflow protection.
         width (-' upper lower -1)]
     (if (< width Long/MAX_VALUE)
-      (+ lower (long (Math/floor (* factor width))))
+      (long (+ lower (Math/floor (* factor width))))
       ;; Clamp down to upper because double math.
-      (min upper (long (Math/floor (+ lower (* factor width))))))))
+      (long (min upper (Math/floor (+ lower (* factor width))))))))
 
 (defn sized
   "Create a generator that depends on the size parameter.

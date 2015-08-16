@@ -376,6 +376,34 @@
                                           false))]
              (-> result :shrunk :smallest))))))
 
+;; gen/int returns an integer when size is a double; regression for TCHECK-73
+;; ---------------------------------------------------------------------------
+
+(def gen-double
+  (gen/fmap (fn [[x y]] (double (+ x (/ y 10))))
+            (gen/tuple gen/pos-int (gen/choose 0 9))))
+
+(defspec gen-int-with-double-size 1000
+  (prop/for-all [size gen-double]
+    (integer? (gen/generate gen/int size))))
+
+;; recursive-gen doesn't change ints to doubles; regression for TCHECK-73
+;; ---------------------------------------------------------------------------
+
+(defspec recursive-generator-test 100
+  (let [btree* (fn [g] (gen/hash-map
+                        :value gen/int
+                        :left g
+                        :right g))
+        btree (gen/recursive-gen btree* (gen/return nil))
+        valid? (fn valid? [tree]
+                 (and (integer? (:value tree))
+                      (or (nil? (:left tree))
+                          (valid? (:left tree)))
+                      (or (nil? (:right tree))
+                          (valid? (:right tree)))))]
+    (prop/for-all [t btree] (valid? t))))
+
 ;; edn rountrips
 ;; ---------------------------------------------------------------------------
 
