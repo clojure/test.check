@@ -103,10 +103,9 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (rose/children head)]
-              (if (empty? children)
-                (recur tail (rose/root head) (inc total-nodes-visited) depth)
-                (recur children (rose/root head) (inc total-nodes-visited) (inc depth))))))))))
+            (if-let [children (seq (rose/children head))]
+              (recur children (rose/root head) (inc total-nodes-visited) (inc depth))
+              (recur tail (rose/root head) (inc total-nodes-visited) depth))))))))
 
 (defn- failure
   [property failing-rose-tree trial-number size seed]
