@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1
+* Bugfix for [TCHECK-73](http://dev.clojure.org/jira/browse/TCHECK-73),
+  in which `gen/int` would sometimes generate doubles.
+
 ## 0.8.0
 * **Breaking ClojureScript Change**:
   The namespace names have changed:

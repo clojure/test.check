@@ -12,7 +12,7 @@ _test.check_ used to be called
 
 Please note a
 [breaking change for ClojureScript](https://github.com/clojure/test.check/blob/master/CHANGELOG.markdown#080)
-in the `0.8.0` release.
+in the `0.8.*` releases.
 
 ### Leiningen
 
