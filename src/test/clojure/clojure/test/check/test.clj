@@ -585,3 +585,24 @@
 (defspec run-float-time 1e3
   (prop/for-all [a gen/int]
                 (integer? a)))
+
+;; TCHECK-77 Regression
+;; ---------------------------------------------------------------------------
+
+(deftest choose-distribution-sanity-check
+  (testing
+      "Should not get the same random value more than 90% of the time"
+    ;; This is a probabilistic test; the odds of a false-positive
+    ;; failure for the ranges with two elements should be roughly 1 in
+    ;; 10^162 (and even rarer for larger ranges), so it will never
+    ;; ever happen.
+    (are [low high] (let [xs (gen/sample (gen/choose low high) 1000)
+                          count-of-most-frequent (apply max (vals (frequencies xs)))]
+                      (< count-of-most-frequent 900))
+      (dec Long/MAX_VALUE) Long/MAX_VALUE
+      Long/MIN_VALUE (inc Long/MIN_VALUE)
+      Long/MIN_VALUE 0
+      0 1
+      -1 0
+      0 Long/MAX_VALUE
+      Long/MIN_VALUE Long/MAX_VALUE)))

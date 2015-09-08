@@ -182,12 +182,14 @@
   [rnd lower upper]
   {:pre [(<= lower upper)]}
   (let [factor (random/rand-double rnd)
+        lower (long lower)
+        upper (long upper)
         ;; Use -' to maintain accuracy with overflow protection.
         width (-' upper lower -1)]
     (if (< width Long/MAX_VALUE)
-      (long (+ lower (Math/floor (* factor width))))
+      (+ lower (long (Math/floor (* factor width))))
       ;; Clamp down to upper because double math.
-      (long (min upper (Math/floor (+ lower (* factor width))))))))
+      (min upper (long (Math/floor (+ lower (* factor width))))))))
 
 (defn sized
   "Create a generator that depends on the size parameter.
