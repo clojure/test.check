@@ -13,7 +13,7 @@
   :global-vars {*warn-on-reflection* true}
   :plugins [[codox "0.8.10"]
             [cider/cider-nrepl "0.8.1"]
-            [lein-cljsbuild "1.0.4-SNAPSHOT"]]
+            [lein-cljsbuild "1.1.0"]]
   :codox {:defaults {:doc/format :markdown}
           :exclude [clojure.test.check.rose-tree
                     clojure.test.check.clojure-test
