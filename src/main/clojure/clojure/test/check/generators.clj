@@ -178,16 +178,34 @@
   [value]
   (rose/make-rose value (core/map int-rose-tree (shrink-int value))))
 
+;; calc-long is factored out to support testing the surprisingly tricky double math.  Note:
+;; An extreme long value does not have a precision-preserving representation as a double.
+;; Be careful about changing this code unless you understand what's happening in these
+;; examples:
+;;
+;; (= (long (- Integer/MAX_VALUE (double (- Integer/MAX_VALUE 10)))) 10)
+;; (= (long (- Long/MAX_VALUE (double (- Long/MAX_VALUE 10)))) 0)
+
+(defn- calc-long
+  [factor lower upper]
+  ;; these pre- and post-conditions are disabled for deployment
+  #_ {:pre [(float? factor) (>= factor 0.0) (< factor 1.0)
+            (integer? lower) (integer? upper) (<= lower upper)]
+      :post [(integer? %)]}
+  ;; Use -' on width to maintain accuracy with overflow protection.
+  (let [width (-' upper lower -1)]
+    ;; Preserve long precision if the width is in the long range.  Otherwise, we must accept
+    ;; less precision because doubles don't have enough bits to preserve long equivalence at
+    ;; extreme values.
+    (if (< width Long/MAX_VALUE)
+      (+ lower (long (Math/floor (* factor width))))
+      ;; Clamp down to upper because double math.
+      (min upper (long (Math/floor (+ lower (* factor width))))))))
+
 (defn- rand-range
   [rnd lower upper]
   {:pre [(<= lower upper)]}
-  (let [factor (random/rand-double rnd)
-        ;; Use -' to maintain accuracy with overflow protection.
-        width (-' upper lower -1)]
-    (if (< width Long/MAX_VALUE)
-      (long (+ lower (Math/floor (* factor width))))
-      ;; Clamp down to upper because double math.
-      (long (min upper (Math/floor (+ lower (* factor width))))))))
+  (calc-long (random/rand-double rnd) lower upper))
 
 (defn sized
   "Create a generator that depends on the size parameter.
@@ -219,15 +237,17 @@
     (sized (fn [n] (resize (f n) generator)))))
 
 (defn choose
-  "Create a generator that returns numbers in the range
-  `min-range` to `max-range`, inclusive."
+  "Create a generator that returns long integers in the range `lower` to `upper`, inclusive."
   [lower upper]
-  (make-gen
-    (fn [rnd _size]
-      (let [value (rand-range rnd lower upper)]
-        (rose/filter
+  ;; cast to long to support doubles as arguments per TCHECK-73
+  (let [lower (long lower)
+        upper (long upper)]
+    (make-gen
+     (fn [rnd _size]
+       (let [value (rand-range rnd lower upper)]
+         (rose/filter
           #(and (>= % lower) (<= % upper))
-          (int-rose-tree value))))))
+          (int-rose-tree value)))))))
 
 (defn one-of
   "Create a generator that randomly chooses a value from the list of
