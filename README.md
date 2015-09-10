@@ -210,6 +210,6 @@ YourKit's leading software products:
 
 ## License
 
-Copyright © 2014 Rich Hickey, Reid Draper and contributors
+Copyright © 2015 Rich Hickey, Reid Draper and contributors
 
 Distributed under the Eclipse Public License, the same as Clojure.
