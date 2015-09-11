@@ -15,8 +15,7 @@
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]
             [goog.string :as gstring]
-            [clojure.string])
-  (:import [goog.testing PseudoRandom]))
+            [clojure.string]))
 
 
 ;; Gen
