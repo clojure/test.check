@@ -60,12 +60,6 @@
             {result :gen} (k inner)]
         (result r2 size)))))
 
-(defn- random-states [num-randoms rr]
-  (loop [c 1, res [rr]]
-    (if (>= c num-randoms)
-      (take num-randoms res)
-      (recur (* 2 c) (mapcat random/split res)))))
-
 (defn lazy-random-states
   "Given a random number generator, returns an infinite lazy sequence
   of random number generators."
