@@ -9,10 +9,9 @@
 
 (ns clojure.test.check.clojure-test
   (:require #?(:clj  [clojure.test :as ct]
-               :cljs [cljs.test :as ct :include-macros true])))
-
-(defn exception-like? [v]
-  (instance? #?(:clj Throwable :cljs js/Error) v))
+               :cljs [cljs.test :as ct :include-macros true])
+            [clojure.test.check.impl :refer [get-current-time-millis
+                                             exception-like?]]))
 
 (defn assert-check
   [{:keys [result] :as m}]
@@ -92,10 +91,6 @@
   10000)
 
 (def ^:private last-trial-report (atom 0))
-
-(defn get-current-time-millis []
-  #?(:clj  (System/currentTimeMillis)
-     :cljs (.valueOf (js/Date.))))
 
 (let [begin-test-var-method (get-method ct/report #?(:clj  :begin-test-var
                                                      :cljs [::ct/default :begin-test-var]))]

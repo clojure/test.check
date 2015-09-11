@@ -11,7 +11,9 @@
   (:require [clojure.test.check.generators :as gen]
             [clojure.test.check.clojure-test :as ct]
             [clojure.test.check.random :as random]
-            [clojure.test.check.rose-tree :as rose]))
+            [clojure.test.check.rose-tree :as rose]
+            [clojure.test.check.impl :refer [get-current-time-millis
+                                             exception-like?]]))
 
 (declare shrink-loop failure)
 
@@ -19,7 +21,7 @@
   [seed]
   (if seed
     [seed (random/make-random seed)]
-    (let [non-nil-seed (.valueOf (js/Date.))]
+    (let [non-nil-seed (get-current-time-millis)]
       [non-nil-seed (random/make-random non-nil-seed)])))
 
 (defn- complete
@@ -30,7 +32,7 @@
 (defn- not-falsey-or-exception?
   "True if the value is not falsy or an exception"
   [value]
-  (and value (not (instance? js/Error value))))
+  (and value (not (exception-like? value))))
 
 (defn quick-check
   "Tests `property` `num-tests` times.
@@ -103,10 +105,9 @@
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (let [children (rose/children head)]
-              (if (empty? children)
-                (recur tail (rose/root head) (inc total-nodes-visited) depth)
-                (recur children (rose/root head) (inc total-nodes-visited) (inc depth))))))))))
+            (if-let [children (seq (rose/children head))]
+              (recur children (rose/root head) (inc total-nodes-visited) (inc depth))
+              (recur tail (rose/root head) (inc total-nodes-visited) depth))))))))
 
 (defn- failure
   [property failing-rose-tree trial-number size seed]
