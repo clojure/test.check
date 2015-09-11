@@ -11,9 +11,11 @@
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace])
-  (:require [clojure.core :as core]
+  (:require [#?(:clj clojure.core :cljs cljs.core) :as core]
             [clojure.test.check.random :as random]
-            [clojure.test.check.rose-tree :as rose]))
+            [clojure.test.check.rose-tree :as rose]
+            #?@(:cljs [[goog.string :as gstring]
+                       [clojure.string]])))
 
 
 ;; Gen
@@ -187,14 +189,19 @@
             (integer? lower) (integer? upper) (<= lower upper)]
       :post [(integer? %)]}
   ;; Use -' on width to maintain accuracy with overflow protection.
-  (let [width (-' upper lower -1)]
-    ;; Preserve long precision if the width is in the long range.  Otherwise, we must accept
-    ;; less precision because doubles don't have enough bits to preserve long equivalence at
-    ;; extreme values.
-    (if (< width Long/MAX_VALUE)
-      (+ lower (long (Math/floor (* factor width))))
-      ;; Clamp down to upper because double math.
-      (min upper (long (Math/floor (+ lower (* factor width))))))))
+  #?(:clj
+     (let [width (-' upper lower -1)]
+       ;; Preserve long precision if the width is in the long range.  Otherwise, we must accept
+       ;; less precision because doubles don't have enough bits to preserve long equivalence at
+       ;; extreme values.
+       (if (< width Long/MAX_VALUE)
+         (+ lower (long (Math/floor (* factor width))))
+         ;; Clamp down to upper because double math.
+         (min upper (long (Math/floor (+ lower (* factor width)))))))
+
+     :cljs
+     (long (Math/floor (+ lower (- (* factor (+ 1.0 upper))
+                                    (* factor lower)))))))
 
 (defn- rand-range
   [rnd lower upper]
@@ -231,11 +238,20 @@
     (sized (fn [n] (resize (f n) generator)))))
 
 (defn choose
-  "Create a generator that returns long integers in the range `lower` to `upper`, inclusive."
+  #?(:clj
+     "Create a generator that returns long integers in the range `lower` to `upper`, inclusive."
+
+     :cljs
+     "Create a generator that returns numbers in the range
+     `lower` to `upper`, inclusive.")
   [lower upper]
   ;; cast to long to support doubles as arguments per TCHECK-73
-  (let [lower (long lower)
-        upper (long upper)]
+  (let #?(:clj
+          [lower (long lower)
+           upper (long upper)]
+
+          :cljs ;; does nothing, no long in cljs
+          [])
     (make-gen
      (fn [rnd _size]
        (let [value (rand-range rnd lower upper)]
@@ -349,9 +365,8 @@
   [gen]
   (assert (generator? gen) "Arg to no-shrink must be a generator")
   (gen-bind gen
-            (fn [[root _children]]
-              (gen-pure
-                [root []]))))
+            (fn [rose]
+              (gen-pure (rose/make-rose (rose/root rose) [])))))
 
 (defn shrink-2
   "Create a new generator like `gen`, but will consider nodes for shrinking
@@ -478,13 +493,17 @@
           ;; nice, relatively quick shrinks.
           (vector (tuple index-gen index-gen) 0 (* 2 (count coll))))))
 
-(def byte
-  "Generates `java.lang.Byte`s, using the full byte-range."
-  (fmap core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE)))
+;; NOTE cljs: Comment out for now - David
 
-(def bytes
-  "Generates byte-arrays."
-  (fmap core/byte-array (vector byte)))
+#?(:clj
+    (def byte
+      "Generates `java.lang.Byte`s, using the full byte-range."
+      (fmap core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE))))
+
+#?(:clj
+    (def bytes
+      "Generates byte-arrays."
+      (fmap core/byte-array (vector byte))))
 
 (defn map
   "Create a generator that generates maps, with keys chosen from
@@ -572,16 +591,21 @@
   Generate alphanumeric strings."
   string-alphanumeric)
 
+(defn- digit?
+  [d]
+  #?(:clj  (Character/isDigit ^Character d)
+     :cljs (gstring/isNumeric d)))
+
 (defn- +-or---digit?
   "Returns true if c is \\+ or \\- and d is non-nil and a digit.
 
   Symbols that start with +3 or -2 are not readable because they look
   like numbers."
-  [c ^Character d]
+  [c d]
   (core/boolean (and d
-                     (or (= \+ c)
-                         (= \- c))
-                     (Character/isDigit d))))
+                     (or (#?(:clj = :cljs identical?) \+ c)
+                         (#?(:clj = :cljs identical?) \- c))
+                     (digit? d))))
 
 (def ^{:private true} namespace-segment
   "Generate the segment of a namespace."
