@@ -1,16 +1,18 @@
 (ns clojure.test.check.rose-tree
   "A lazy tree data structure used for shrinking."
   (:refer-clojure :exclude [filter remove seq])
-  (:require [clojure.core :as core]))
+  (:require [#?(:clj clojure.core :cljs cljs.core) :as core]))
 
 (deftype RoseTree [root children]
-  clojure.lang.Indexed
-  (nth [this i]
+  #?(:clj  clojure.lang.Indexed
+     :cljs IIndexed)
+  (#?(:clj nth :cljs -nth) [this i]
     (cond (= i 0) root
           (= i 1) children
-          :else (throw (IndexOutOfBoundsException.))))
+          :else (throw #?(:clj  (IndexOutOfBoundsException.)
+                          :cljs (js/Error. "Index out of bounds in rose tree")))))
 
-  (nth [this i not-found]
+  (#?(:clj nth :cljs -nth) [this i not-found]
     (cond (= i 0) root
           (= i 1) children
           :else not-found)))

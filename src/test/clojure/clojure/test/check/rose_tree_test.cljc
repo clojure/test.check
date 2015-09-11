@@ -8,28 +8,25 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.rose-tree-test
-  (:require [cljs.test :as test :include-macros true]
-            [clojure.test.check :as tc]
-            [clojure.test.check.generators :as gen]
-            [clojure.test.check.properties :as prop :include-macros true]
+  (:require [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [clojure.test.check.rose-tree :as rose]
-            [clojure.test.check.clojure-test :as ct :refer-macros [defspec]]))
+            [clojure.test.check.clojure-test :as ct
+             #?(:clj :refer :cljs :refer-macros) (defspec)]))
 
 (defn depth-one-children
-  [rose]
-  (into [] (map rose/root (rose/children rose))))
+  [[root children]]
+  (into [] (map rose/root children)))
 
 (defn depth-one-and-two-children
-  [rose]
-  (let [the-children (rose/children rose)]
-    (into []
-          (concat
-           (map rose/root the-children)
-           (map rose/root (mapcat rose/children the-children))))))
+  [[root children]]
+  (into []
+        (concat (map rose/root children)
+                (map rose/root (mapcat rose/children children)))))
 
 (defspec test-collapse-rose
   100
   (prop/for-all [i gen/int]
-    (let [tree (gen/int-rose-tree i)]
-      (= (depth-one-and-two-children tree)
-         (depth-one-children (rose/collapse tree))))))
+                (let [tree (#'gen/int-rose-tree i)]
+                  (= (depth-one-and-two-children tree)
+                     (depth-one-children (rose/collapse tree))))))
