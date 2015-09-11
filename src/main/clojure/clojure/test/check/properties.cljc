@@ -14,8 +14,8 @@
   [function]
   (fn [args]
     (let [result (try (apply function args)
-                   (catch java.lang.ThreadDeath t (throw t))
-                   (catch Throwable t t))]
+                   #?(:clj (catch java.lang.ThreadDeath t (throw t)))
+                   (catch #?(:clj Throwable :cljs :default) t t))]
       {:result result
        :function function
        :args args})))
