@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.2
+* Bugfix for [TCHECK-77](http://dev.clojure.org/jira/browse/TCHECK-77),
+  which was a regression in the precision of `gen/choose` introduced in
+  0.8.1.
+
 ## 0.8.1
 * Bugfix for [TCHECK-73](http://dev.clojure.org/jira/browse/TCHECK-73),
   in which `gen/int` would sometimes generate doubles.
