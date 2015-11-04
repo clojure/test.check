@@ -29,13 +29,13 @@
 (defn root
   "Returns the root of a Rose tree."
   {:no-doc true}
-  [rose]
+  [^RoseTree rose]
   (.-root rose))
 
 (defn children
   "Returns the children of the root of the Rose tree."
   {:no-doc true}
-  [rose]
+  [^RoseTree rose]
   (.-children rose))
 
 (defn make-rose
