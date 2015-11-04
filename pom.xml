@@ -29,7 +29,7 @@
   </developers>
 
   <properties>
-    <clojure.version>1.6.0</clojure.version>
+    <clojure.version>1.7.0</clojure.version>
     <clojure.warnOnReflection>true</clojure.warnOnReflection>
   </properties>
 
