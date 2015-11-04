@@ -385,7 +385,7 @@
   (prop/for-all [g gen-distinct-generator
                  seed gen-seed
                  size (gen/choose 1 20)]
-    (let [rose-tree (gen/call-gen (g (gen/choose 0 1000))
+    (let [rose-tree (gen/call-gen (g (gen/choose 1 1000))
                                   (random/make-random seed) size)
           a-shrink (->> rose-tree
                         (iterate #(first (rose/children %)))
