@@ -684,6 +684,46 @@
    (assert (generator? gen) "First arg to list-distinct must be a generator!")
    (coll-distinct-by () identity true true gen opts)))
 
+(defn vector-distinct-by
+  "Generates a vector of elements from the given generator, with the
+  guarantee that (map key-fn the-vector) will be distinct.
+
+  If the generator cannot or is unlikely to produce enough distinct
+  elements, this generator will fail in the same way as such-that.
+
+  Available options:
+
+    :num-elements  the fixed size of generated vectors
+    :min-elements  the min size of generated vectors
+    :max-elements  the max size of generated vectors
+    :max-tries     the number of times the generator will be tried before
+                   failing when it does not produce distinct elements
+                   (default 10)"
+  ([key-fn gen] (vector-distinct-by key-fn gen {}))
+  ([key-fn gen opts]
+   (assert (generator? gen) "First arg to vector-distinct-by must be a generator!")
+   (coll-distinct-by [] key-fn true true gen opts)))
+
+(defn list-distinct-by
+  "Generates a list of elements from the given generator, with the
+  guarantee that (map key-fn the-list) will be distinct.
+
+  If the generator cannot or is unlikely to produce enough distinct
+  elements, this generator will fail in the same way as such-that.
+
+  Available options:
+
+    :num-elements  the fixed size of generated vectors
+    :min-elements  the min size of generated vectors
+    :max-elements  the max size of generated vectors
+    :max-tries     the number of times the generator will be tried before
+                   failing when it does not produce distinct elements
+                   (default 10)"
+  ([key-fn gen] (list-distinct-by key-fn gen {}))
+  ([key-fn gen opts]
+   (assert (generator? gen) "First arg to list-distinct-by must be a generator!")
+   (coll-distinct-by () key-fn true true gen opts)))
+
 (defn set
   "Generates a set of elements from the given generator.
 

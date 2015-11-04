@@ -352,6 +352,19 @@
     (or (empty? the-coll)
         (apply distinct? the-coll))))
 
+(defspec distinct-by-collections-are-distinct-by 20
+  (let [key-fn #(quot % 7)]
+    (prop/for-all [the-coll
+                   (gen/bind (gen/tuple gen-size-bounds-and-pred
+                                        (gen/elements
+                                         [(partial gen/vector-distinct-by key-fn)
+                                          (partial gen/list-distinct-by key-fn)])
+                                        gen-distinct-generator)
+                             (fn [[[_ size-opts] coll-gen]]
+                               (coll-gen (gen/choose -10000 10000) size-opts)))]
+      (or (empty? the-coll)
+          (apply distinct? (map key-fn the-coll))))))
+
 (deftest distinct-generators-throw-when-necessary
   ;; I tried using `are` here but it breaks in cljs
   (doseq [g [gen/vector-distinct
