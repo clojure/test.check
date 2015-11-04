@@ -693,7 +693,7 @@
 
 (defspec shuffled-vector-is-a-permutation-of-original 100
   (prop/for-all [[coll permutation] original-vector-and-permutation]
-                (= (sort coll) (sort permutation))))
+    (= (sort coll) (sort permutation))))
 
 ;; vector can generate large vectors; regression for TCHECK-49
 ;; ---------------------------------------------------------------------------
