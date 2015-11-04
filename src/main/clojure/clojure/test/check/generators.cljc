@@ -11,7 +11,7 @@
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace
-                            set sorted-set])
+                            set sorted-set uuid])
   (:require [#?(:clj clojure.core :cljs cljs.core) :as core]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]
@@ -931,11 +931,46 @@
     (tuple int
            (such-that (complement zero?) int))))
 
+(def uuid
+  "Generates a random type-4 UUID. Does not shrink."
+  (no-shrink
+   #?(:clj
+      ;; this could be done with combinators, but doing it low-level
+      ;; seems to be 10x faster
+      (make-gen
+       (fn [rng _size]
+         (let [[r1 r2] (random/split rng)
+               x1 (-> (random/rand-long r1)
+                      (bit-and -45057)
+                      (bit-or 0x4000))
+               x2 (-> (random/rand-long r2)
+                      (bit-or -9223372036854775808)
+                      (bit-and -4611686018427387905))]
+           (rose/make-rose
+            (java.util.UUID. x1 x2)
+            []))))
+
+      :cljs
+      ;; this could definitely be optimized so that it doesn't require
+      ;; generating 31 numbers
+      (fmap (fn [nibbles]
+              (letfn [(hex [idx] (.toString (nibbles idx) 16))]
+                (let [rhex (-> (nibbles 15) (bit-and 3) (+ 8) (.toString 16))]
+                  (core/uuid (str (hex 0)  (hex 1)  (hex 2)  (hex 3)
+                                  (hex 4)  (hex 5)  (hex 6)  (hex 7)  "-"
+                                  (hex 8)  (hex 9)  (hex 10) (hex 11) "-"
+                                  "4"      (hex 12) (hex 13) (hex 14) "-"
+                                  rhex     (hex 16) (hex 17) (hex 18) "-"
+                                  (hex 19) (hex 20) (hex 21) (hex 22)
+                                  (hex 23) (hex 24) (hex 25) (hex 26)
+                                  (hex 27) (hex 28) (hex 29) (hex 30))))))
+            (vector (choose 0 15) 31)))))
+
 (def simple-type
-  (one-of [int char string ratio boolean keyword keyword-ns symbol symbol-ns]))
+  (one-of [int char string ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
 
 (def simple-type-printable
-  (one-of [int char-ascii string-ascii ratio boolean keyword keyword-ns symbol symbol-ns]))
+  (one-of [int char-ascii string-ascii ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
 
 (defn container-type
   [inner-type]
