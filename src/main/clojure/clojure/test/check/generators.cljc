@@ -11,7 +11,7 @@
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace
-                            set sorted-set uuid])
+                            set sorted-set uuid double])
   (:require [#?(:clj clojure.core :cljs cljs.core) :as core]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]
@@ -781,6 +781,236 @@
   ([key-gen val-gen opts]
    (coll-distinct-by {} first false false (tuple key-gen val-gen) opts)))
 
+;; fancy numbers
+;; ---------------------------------------------------------------------------
+
+;; This code is a lot more complex than any reasonable person would
+;; expect, for two reasons:
+;;
+;; 1) I wanted the generator to start with simple values and grow with
+;; the size parameter, as well as shrink back to simple values. I
+;; decided to define "simple" as numbers with simpler (closer to 0)
+;; exponents, with simpler fractional parts (fewer lower-level bits
+;; set), and with positive being simpler than negative. I also wanted
+;; to take a optional min/max parameters, which complicates the hell
+;; out of things
+;;
+;; 2) It works in CLJS as well, which has fewer utility functions for
+;; doubles, and I wanted it to work exactly the same way in CLJS just
+;; to validate the whole cross-platform situation. It should generate
+;; the exact same numbers on both platforms.
+;;
+;; Some of the lower level stuff could probably be less messy and
+;; faster, especially for CLJS.
+
+(def ^:private POS_INFINITY #?(:clj Double/POSITIVE_INFINITY, :cljs (.-POSITIVE_INFINITY js/Number)))
+(def ^:private NEG_INFINITY #?(:clj Double/NEGATIVE_INFINITY, :cljs (.-NEGATIVE_INFINITY js/Number)))
+(def ^:private MAX_POS_VALUE #?(:clj Double/MAX_VALUE, :cljs (.-MAX_VALUE js/Number)))
+(def ^:private MIN_NEG_VALUE (- MAX_POS_VALUE))
+(def ^:private NAN #?(:clj Double/NaN, :cljs (.-NaN js/Number)))
+
+(defn ^:private uniform-integer
+  "Generates an integer uniformly in the range 0..(2^bit-count-1)."
+  [bit-count]
+  {:assert [(<= 0 bit-count 52)]}
+  (if (<= bit-count 32)
+    ;; the case here is just for cljs
+    (choose 0 (case (long bit-count)
+                32 0xffffffff
+                31 0x7fffffff
+                (-> 1 (bit-shift-left bit-count) dec)))
+    (fmap (fn [[upper lower]]
+            #? (:clj
+                (-> upper (bit-shift-left 32) (+ lower))
+
+                :cljs
+                (-> upper (* 0x100000000) (+ lower))))
+          (tuple (uniform-integer (- bit-count 32))
+                 (uniform-integer 32)))))
+
+(defn ^:private scalb
+  [x exp]
+  #?(:clj (Math/scalb ^double x ^int exp)
+     :cljs (* x (.pow js/Math 2 exp))))
+
+(defn ^:private fifty-two-bit-reverse
+  "Bit-reverses an integer in the range [0, 2^52)."
+  [n]
+  #? (:clj
+      (-> n (Long/reverse) (unsigned-bit-shift-right 12))
+
+      :cljs
+      (loop [out 0
+             n n
+             out-shifter (Math/pow 2 52)]
+        (if (< n 1)
+          (* out out-shifter)
+          (recur (-> out (* 2) (+ (bit-and n 1)))
+                 (/ n 2)
+                 (/ out-shifter 2))))))
+
+(def ^:private backwards-shrinking-significand
+  "Generates a 52-bit non-negative integer that shrinks toward having
+  fewer lower-order bits (and shrinks to 0 if possible)."
+  (fmap fifty-two-bit-reverse
+        (sized (fn [size]
+                 (gen-bind (choose 0 (min size 52))
+                           (fn [rose]
+                             (uniform-integer (rose/root rose))))))))
+
+(defn ^:private get-exponent
+  [x]
+  #? (:clj
+      (Math/getExponent ^Double x)
+
+      :cljs
+      (if (zero? x)
+        -1023
+        (let [x (Math/abs x)
+
+              res
+              (Math/floor (* (Math/log x) (.-LOG2E js/Math)))
+
+              t (scalb x (- res))]
+          (cond (< t 1) (dec res)
+                (<= 2 t) (inc res)
+                :else res)))))
+
+(defn ^:private double-exp-and-sign
+  "Generates [exp sign], where exp is in [-1023, 1023] and sign is 1
+  or -1. Only generates values for exp and sign for which there are
+  doubles within the given bounds."
+  [lower-bound upper-bound]
+  (letfn [(gen-exp [lb ub]
+                   (sized (fn [size]
+                            (let [qs8 (bit-shift-left 1 (quot (min 200 size) 8))]
+                              (cond (<= lb 0 ub)
+                                    (choose (max lb (- qs8)) (min ub qs8))
+
+                                    (< ub 0)
+                                    (choose (max lb (- ub qs8)) ub)
+
+                                    :else
+                                    (choose lb (min ub (+ lb qs8))))))))]
+    (if (and (nil? lower-bound)
+             (nil? upper-bound))
+      (tuple (gen-exp -1023 1023)
+             (elements [1.0 -1.0]))
+      (let [lower-bound (or lower-bound MIN_NEG_VALUE)
+            upper-bound (or upper-bound MAX_POS_VALUE)
+            lbexp (max -1023 (get-exponent lower-bound))
+            ubexp (max -1023 (get-exponent upper-bound))]
+        (cond (<= 0.0 lower-bound)
+              (tuple (gen-exp lbexp ubexp)
+                     (return 1.0))
+
+              (<= upper-bound 0.0)
+              (tuple (gen-exp ubexp lbexp)
+                     (return -1.0))
+
+              :else
+              (fmap (fn [[exp sign :as pair]]
+                      (if (or (and (neg? sign) (< lbexp exp))
+                              (and (pos? sign) (< ubexp exp)))
+                        [exp (- sign)]
+                        pair))
+                    (tuple
+                     (gen-exp -1023 (max ubexp lbexp))
+                     (elements [1.0 -1.0]))))))))
+
+(defn ^:private block-bounds
+  "Returns [low high], the smallest and largest numbers in the given
+  range."
+  [exp sign]
+  (if (neg? sign)
+    (let [[low high] (block-bounds exp (- sign))]
+      [(- high) (- low)])
+    (if (= -1023 exp)
+      [0.0 (-> 1.0 (scalb 52) dec (scalb -1074))]
+      [(scalb 1.0 exp)
+       (-> 1.0 (scalb 52) dec (scalb (- exp 51)))])))
+
+(defn ^:private double-finite
+  [ lower-bound upper-bound]
+  {:pre [(or (nil? lower-bound)
+             (nil? upper-bound)
+             (<= lower-bound upper-bound))]}
+  (let [pred (if lower-bound
+               (if upper-bound
+                 #(<= lower-bound % upper-bound)
+                 #(<= lower-bound %))
+               (if upper-bound
+                 #(<= % upper-bound)))
+
+        gen
+        (fmap (fn [[[exp sign] significand]]
+                (let [ ;; 1.0 <= base < 2.0
+                      base (inc (/ significand (Math/pow 2 52)))
+                      x (-> base (scalb exp) (* sign))]
+                  (if (or (nil? pred) (pred x))
+                    x
+                    ;; Scale things a bit when we have a partial range
+                    ;; to deal with. It won't be great for generating
+                    ;; simple numbers, but oh well.
+                    (let [[low high] (block-bounds exp sign)
+
+                          block-lb (cond-> low  lower-bound (max lower-bound))
+                          block-ub (cond-> high upper-bound (min upper-bound))
+                          x (+ block-lb (* (- block-ub block-lb) (- base 1)))]
+                      (-> x (min block-ub) (max block-lb))))))
+              (tuple (double-exp-and-sign lower-bound upper-bound)
+                     backwards-shrinking-significand))]
+    ;; wrapping in the such-that is necessary for staying in bounds
+    ;; during shrinking
+    (cond->> gen pred (such-that pred))))
+
+(defn double*
+  "Generates a 64-bit floating point number. Options:
+
+    :infinite? - whether +/- infinity can be generated (default true)
+    :NaN?      - whether NaN can be generated (default true)
+    :min       - minimum value (inclusive, default none)
+    :max       - maximum value (inclusive, default none)
+
+  Note that the min/max options must be finite numbers. Supplying a
+  min precludes -Infinity, and supplying a max precludes +Infinity."
+  [{:keys [infinite? NaN? min max]
+    :or {infinite? true, NaN? true}}]
+  (let [frequency-arg (cond-> [[95 (double-finite min max)]]
+
+                        (if (nil? min)
+                          (or (nil? max) (<= 0.0 max))
+                          (if (nil? max)
+                            (<= min 0.0)
+                            (<= min 0.0 max)))
+                        (conj
+                         ;; Add zeros here as a special case, since
+                         ;; the `finite` code considers zeros rather
+                         ;; complex (as they have a -1023 exponent)
+                         ;;
+                         ;; I think most uses can't distinguish 0.0
+                         ;; from -0.0, but seems worth throwing both
+                         ;; in just in case.
+                         [1 (return 0.0)]
+                         [1 (return -0.0)])
+
+                        (and infinite? (nil? max))
+                        (conj [1 (return POS_INFINITY)])
+
+                        (and infinite? (nil? min))
+                        (conj [1 (return NEG_INFINITY)])
+
+                        NaN? (conj [1 (return NAN)]))]
+    (if (= 1 (count frequency-arg))
+      (-> frequency-arg first second)
+      (frequency frequency-arg))))
+
+(def double
+  "Generates 64-bit floating point numbers from the entire range,
+  including +/- infinity and NaN. Use double* for more control."
+  (double* {}))
+
+
 ;; Characters & Strings
 ;; ---------------------------------------------------------------------------
 
@@ -967,10 +1197,10 @@
             (vector (choose 0 15) 31)))))
 
 (def simple-type
-  (one-of [int char string ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
+  (one-of [int double char string ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
 
 (def simple-type-printable
-  (one-of [int char-ascii string-ascii ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
+  (one-of [int double char-ascii string-ascii ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
 
 (defn container-type
   [inner-type]
