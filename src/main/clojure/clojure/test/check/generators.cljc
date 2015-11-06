@@ -781,8 +781,90 @@
   ([key-gen val-gen opts]
    (coll-distinct-by {} first false false (tuple key-gen val-gen) opts)))
 
-;; fancy numbers
+;; large integers
 ;; ---------------------------------------------------------------------------
+
+;; This approach has a few distribution edge cases, but is pretty good
+;; for expected uses and is way better than nothing.
+
+(def ^:private gen-raw-long
+  "Generates a single uniformly random long, does not shrink."
+  (make-gen (fn [rnd _size]
+              (rose/pure (random/rand-long rnd)))))
+
+(def ^:private MAX_INTEGER
+  #?(:clj Long/MAX_VALUE :cljs (dec (apply * (repeat 53 2)))))
+(def ^:private MIN_INTEGER
+  #?(:clj Long/MIN_VALUE :cljs (- MAX_INTEGER)))
+
+(defn ^:private abs
+  [x]
+  #?(:clj (Math/abs (long x)) :cljs (Math/abs x)))
+
+(defn ^:private long->large-integer
+  [bit-count x min max]
+  (loop [res (-> x
+                 (#?(:clj bit-shift-right :cljs .shiftRight)
+                    (- 64 bit-count))
+                 #?(:cljs .toNumber)
+                 ;; so we don't get into an infinite loop bit-shifting
+                 ;; -1
+                 (cond-> (zero? min) (abs)))]
+    (if (<= min res max)
+      res
+      (let [res' (- res)]
+        (if (<= min res' max)
+          res'
+          (recur #?(:clj (bit-shift-right res 1)
+                    ;; emulating bit-shift-right
+                    :cljs (-> res
+                              (cond-> (odd? res)
+                                ((if (neg? res) inc dec)))
+                              (/ 2)))))))))
+
+(defn ^:private large-integer**
+  "Like large-integer*, but assumes range includes zero."
+  [min max]
+  (sized (fn [size]
+           (let [size (core/max size 1) ;; no need to worry about size=0
+                 max-bit-count (core/min size #?(:clj 64 :cljs 54))]
+             (gen-fmap (fn [rose]
+                         (let [[bit-count x] (rose/root rose)]
+                           (int-rose-tree (long->large-integer bit-count x min max))))
+                       (tuple (choose 1 max-bit-count)
+                              gen-raw-long))))))
+
+
+(defn large-integer*
+  "Like large-integer, but accepts options:
+
+    :min  the minimum integer (inclusive)
+    :max  the maximum integer (inclusive)
+
+  Both :min and :max are optional."
+  [{:keys [min max]}]
+  (let [min (or min MIN_INTEGER)
+        max (or max MAX_INTEGER)]
+    (assert (<= min max))
+    (such-that #(<= min % max)
+               (if (<= min 0 max)
+                 (large-integer** min max)
+                 (if (< max 0)
+                   (fmap #(+ max %) (large-integer** (- min max) 0))
+                   (fmap #(+ min %) (large-integer** 0 (- max min))))))))
+
+(def large-integer
+  "Generates a platform-native integer from the full available range
+  (in clj, 64-bit Longs, and in cljs, numbers between -(2^53 - 1) and
+  (2^53 - 1)).
+
+  Use large-integer* for more control."
+  (large-integer* {}))
+
+
+;; doubles
+;; ---------------------------------------------------------------------------
+
 
 ;; This code is a lot more complex than any reasonable person would
 ;; expect, for two reasons:
@@ -1197,10 +1279,12 @@
             (vector (choose 0 15) 31)))))
 
 (def simple-type
-  (one-of [int double char string ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
+  (one-of [int large-integer double char string ratio boolean keyword
+           keyword-ns symbol symbol-ns uuid]))
 
 (def simple-type-printable
-  (one-of [int double char-ascii string-ascii ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
+  (one-of [int large-integer double char-ascii string-ascii ratio boolean
+           keyword keyword-ns symbol symbol-ns uuid]))
 
 (defn container-type
   [inner-type]

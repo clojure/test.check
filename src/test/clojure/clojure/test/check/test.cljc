@@ -567,7 +567,7 @@
 
 (def simple-type
   "Like gen/simple-type but excludes Infinity and NaN."
-  (gen/one-of [gen/int (gen/double* {:infinite? false, :NaN? false}) gen/char gen/string
+  (gen/one-of [gen/int gen/large-integer (gen/double* {:infinite? false, :NaN? false}) gen/char gen/string
                gen/ratio gen/boolean gen/keyword gen/keyword-ns gen/symbol gen/symbol-ns gen/uuid]))
 
 (def any-edn (gen/recursive-gen gen/container-type simple-type))
@@ -716,7 +716,54 @@
   (is (apply distinct?
              (gen/sample gen/uuid 1000))))
 
-;; fancy numbers
+;; large integers
+;; ---------------------------------------------------------------------------
+
+(defn gen-bounds-and-pred
+  "Generates a map that may contain :min and :max, and a pred
+  that checks a number satisfies those constraints."
+  [num-gen]
+  (gen/one-of [(gen/return [{} (constantly true)])
+               (gen/fmap (fn [x] [{:min x} #(<= x %)]) num-gen)
+               (gen/fmap (fn [x] [{:max x} #(<= % x)]) num-gen)
+               (gen/fmap (fn [bounds]
+                           (let [[lb ub] (sort bounds)]
+                             [{:min lb :max ub} #(<= lb % ub)]))
+                         (gen/tuple num-gen num-gen))]))
+
+(def MAX_INTEGER #?(:clj Long/MAX_VALUE :cljs (dec (apply * (repeat 53 2)))))
+(def MIN_INTEGER #?(:clj Long/MIN_VALUE :cljs (- MAX_INTEGER)))
+
+(defn native-integer?
+  [x]
+  #?(:clj (instance? Long x)
+     :cljs (and (integer? x) (<= MIN_INTEGER x MAX_INTEGER))))
+
+(defspec large-integer-spec 500
+  (prop/for-all [x gen/large-integer]
+    (native-integer? x)))
+
+(defspec large-integer-bounds-spec 500
+  (prop/for-all [[opts pred x]
+                 (gen/bind (gen-bounds-and-pred gen/large-integer)
+                           (fn [[opts pred]]
+                             (gen/fmap #(vector opts pred %)
+                                       (gen/large-integer* opts))))]
+    (pred x)))
+
+(defspec large-integer-distribution-spec 5
+  (prop/for-all [xs (gen/no-shrink
+                     (gen/vector (gen/resize 150 gen/large-integer) 10000))]
+    (every? (fn [[lb ub]]
+              (some #(<= lb % ub) xs))
+            [[0 10]
+             [-10 -1]
+             [10000 100000]
+             [-100000 -10000]
+             [MIN_INTEGER (/ MIN_INTEGER 2)]
+             [(/ MAX_INTEGER 2) MAX_INTEGER]])))
+
+;; doubles
 ;; ---------------------------------------------------------------------------
 
 (defn infinite?
@@ -762,19 +809,16 @@
                     [0.8 0.9]
                     [0.9 1.0]])))))
 
-(defspec double-range-test 100
-  (prop/for-all [[[lb ub] x]
-                 (gen/bind (gen/vector (gen/double* {:infinite? false
-                                                     :NaN? false})
-                                       2)
-                           (fn [bounds]
-                             (let [bounds (sort bounds)]
-                               (gen/fmap #(vector bounds %)
-                                         (gen/double* {:infinite? false
-                                                       :NaN? false
-                                                       :min (first bounds)
-                                                       :max (second bounds)})))))]
-    (<= lb x ub)))
+(defspec double-bounds-spec 500
+  (prop/for-all [[opts pred x]
+                 (gen/bind (gen-bounds-and-pred (gen/double* {:infinite? false, :NaN? false}))
+                           (fn [[opts pred]]
+                             (gen/fmap #(vector opts pred %)
+                                       (gen/double* (assoc opts
+                                                           :infinite? false,
+                                                           :NaN? false)))))]
+    (pred x)))
+
 
 ;; vector can generate large vectors; regression for TCHECK-49
 ;; ---------------------------------------------------------------------------
