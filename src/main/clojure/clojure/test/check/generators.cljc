@@ -11,7 +11,7 @@
   (:refer-clojure :exclude [int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace
-                            set sorted-set uuid double])
+                            set sorted-set uuid double let])
   (:require [#?(:clj clojure.core :cljs cljs.core) :as core]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]
@@ -58,7 +58,7 @@
   [{h :gen} k]
   (make-gen
     (fn [rnd size]
-      (let [[r1 r2] (random/split rnd)
+      (core/let [[r1 r2] (random/split rnd)
             inner (h r1 size)
             {result :gen} (k inner)]
         (result r2 size)))))
@@ -68,7 +68,7 @@
   of random number generators."
   [rr]
   (lazy-seq
-   (let [[r1 r2] (random/split rr)]
+   (core/let [[r1 r2] (random/split rr)]
      (cons r1
            (lazy-random-states r2)))))
 
@@ -134,7 +134,7 @@
   "Return a sequence of realized values from `generator`."
   ([generator] (sample-seq generator 100))
   ([generator max-size]
-   (let [r (random/make-random)
+   (core/let [r (random/make-random)
          size-seq (make-size-range-seq max-size)]
      (core/map #(rose/root (call-gen generator %1 %2))
                (lazy-random-states r)
@@ -156,7 +156,7 @@
   ([generator]
      (generate generator 30))
   ([generator size]
-     (let [rng (random/make-random)]
+     (core/let [rng (random/make-random)]
        (rose/root (call-gen generator rng size)))))
 
 
@@ -191,7 +191,7 @@
       :post [(integer? %)]}
   ;; Use -' on width to maintain accuracy with overflow protection.
   #?(:clj
-     (let [width (-' upper lower -1)]
+     (core/let [width (-' upper lower -1)]
        ;; Preserve long precision if the width is in the long range.  Otherwise, we must accept
        ;; less precision because doubles don't have enough bits to preserve long equivalence at
        ;; extreme values.
@@ -216,7 +216,7 @@
   [sized-gen]
   (make-gen
     (fn [rnd size]
-      (let [sized-gen (sized-gen size)]
+      (core/let [sized-gen (sized-gen size)]
         (call-gen sized-gen rnd size)))))
 
 ;; Combinators and helpers
@@ -226,7 +226,7 @@
   "Create a new generator with `size` always bound to `n`."
   [n generator]
   (assert (generator? generator) "Second arg to resize must be a generator")
-  (let [{:keys [gen]} generator]
+  (core/let [{:keys [gen]} generator]
     (make-gen
      (fn [rnd _size]
        (gen rnd n)))))
@@ -247,7 +247,7 @@
      `lower` to `upper`, inclusive.")
   [lower upper]
   ;; cast to long to support doubles as arguments per TCHECK-73
-  (let #?(:clj
+  (core/let #?(:clj
           [lower (long lower)
            upper (long upper)]
 
@@ -255,7 +255,7 @@
           [])
     (make-gen
      (fn [rnd _size]
-       (let [value (rand-range rnd lower upper)]
+       (core/let [value (rand-range rnd lower upper)]
          (rose/filter
           #(and (>= % lower) (<= % upper))
           (int-rose-tree value)))))))
@@ -278,7 +278,7 @@
 
 (defn- pick
   [[h & tail] n]
-  (let [[chance gen] h]
+  (core/let [[chance gen] h]
     (if (<= n chance)
       gen
       (recur tail (- n chance)))))
@@ -296,7 +296,7 @@
   (assert (every? (fn [[x g]] (and (number? x) (generator? g)))
                   pairs)
           "Arg to frequency must be a list of [num generator] pairs")
-  (let [total (apply + (core/map first pairs))]
+  (core/let [total (apply + (core/map first pairs))]
     (gen-bind (choose 1 total)
               #(pick pairs (rose/root %)))))
 
@@ -309,7 +309,7 @@
   "
   [coll]
   (assert (seq coll) "elements cannot be called with an empty collection")
-  (let [v (vec coll)]
+  (core/let [v (vec coll)]
     (gen-bind (choose 0 (dec (count v)))
               #(gen-pure (rose/fmap v %)))))
 
@@ -318,7 +318,7 @@
   (if (zero? tries-left)
     (throw (ex-info (str "Couldn't satisfy such-that predicate after "
                          max-tries " tries.") {}))
-    (let [[r1 r2] (random/split rng)
+    (core/let [[r1 r2] (random/split rng)
           value (call-gen gen r1 size)]
       (if (pred (rose/root value))
         (rose/filter pred value)
@@ -485,7 +485,7 @@
   toward the original collection: `coll`. `coll` will be turned into a vector,
   if it's not already."
   [coll]
-  (let [index-gen (choose 0 (dec (count coll)))]
+  (core/let [index-gen (choose 0 (dec (count coll)))]
     (fmap #(reduce swap (vec coll) %)
           ;; a vector of swap instructions, with count between
           ;; zero and 2 * count. This means that the average number
@@ -517,7 +517,7 @@
   "
   [& kvs]
   (assert (even? (count kvs)))
-  (let [ks (take-nth 2 kvs)
+  (core/let [ks (take-nth 2 kvs)
         vs (take-nth 2 (rest kvs))]
     (assert (every? generator? vs)
             "Value args to hash-map must be generators")
@@ -568,7 +568,7 @@
                (rose/shrink #(into empty-coll %&)))
 
           :else
-          (let [[rng1 rng2] (random/split rng)
+          (core/let [[rng1 rng2] (random/split rng)
                 rose (call-gen gen rng1 size)
                 root (rose/root rose)
                 k (key-fn root)]
@@ -592,14 +592,14 @@
 
   Note that this is not a generator, it is just a utility function."
   [rng coll]
-  (let [empty-coll (empty coll)
+  (core/let [empty-coll (empty coll)
         v (vec coll)
         card (count coll)
         dec-card (dec card)]
     (into empty-coll
           (first
            (reduce (fn [[v rng] idx]
-                     (let [[rng1 rng2] (random/split rng)
+                     (core/let [[rng1 rng2] (random/split rng)
                            swap-idx (rand-range rng1 idx dec-card)]
                        [(swap v [idx swap-idx]) rng2]))
                    [v rng]
@@ -608,12 +608,12 @@
 (defn ^:private coll-distinct-by
   [empty-coll key-fn allows-dupes? ordered? gen
    {:keys [num-elements min-elements max-elements max-tries] :or {max-tries 10}}]
-  (let [shuffle-fn (if ordered?
+  (core/let [shuffle-fn (if ordered?
                      the-shuffle-fn
                      (fn [_rng coll] coll))
         hard-min-elements (or num-elements min-elements 1)]
     (if num-elements
-      (let [size-pred #(= num-elements (count %))]
+      (core/let [size-pred #(= num-elements (count %))]
         (assert (and (nil? min-elements) (nil? max-elements)))
         (make-gen
          (fn [rng gen-size]
@@ -626,16 +626,16 @@
               size-pred)
             (coll-distinct-by* empty-coll key-fn shuffle-fn gen rng gen-size
                                num-elements hard-min-elements max-tries)))))
-      (let [min-elements (or min-elements 0)
-            size-pred (if max-elements
-                        #(<= min-elements (count %) max-elements)
-                        #(<= min-elements (count %)))]
+      (core/let [min-elements (or min-elements 0)
+                 size-pred (if max-elements
+                             #(<= min-elements (count %) max-elements)
+                             #(<= min-elements (count %)))]
         (gen-bind
          (if max-elements
            (choose min-elements max-elements)
            (sized #(choose min-elements (+ min-elements %))))
          (fn [num-elements-rose]
-           (let [num-elements (rose/root num-elements-rose)]
+           (core/let [num-elements (rose/root num-elements-rose)]
              (make-gen
               (fn [rng gen-size]
                 (rose/filter
@@ -818,7 +818,7 @@
                  (cond-> (zero? min) (abs)))]
     (if (<= min res max)
       res
-      (let [res' (- res)]
+      (core/let [res' (- res)]
         (if (<= min res' max)
           res'
           (recur #?(:clj (bit-shift-right res 1)
@@ -832,10 +832,10 @@
   "Like large-integer*, but assumes range includes zero."
   [min max]
   (sized (fn [size]
-           (let [size (core/max size 1) ;; no need to worry about size=0
+           (core/let [size (core/max size 1) ;; no need to worry about size=0
                  max-bit-count (core/min size #?(:clj 64 :cljs 54))]
              (gen-fmap (fn [rose]
-                         (let [[bit-count x] (rose/root rose)]
+                         (core/let [[bit-count x] (rose/root rose)]
                            (int-rose-tree (long->large-integer bit-count x min max))))
                        (tuple (choose 1 max-bit-count)
                               gen-raw-long))))))
@@ -849,7 +849,7 @@
 
   Both :min and :max are optional."
   [{:keys [min max]}]
-  (let [min (or min MIN_INTEGER)
+  (core/let [min (or min MIN_INTEGER)
         max (or max MAX_INTEGER)]
     (assert (<= min max))
     (such-that #(<= min % max)
@@ -954,12 +954,12 @@
       :cljs
       (if (zero? x)
         -1023
-        (let [x (Math/abs x)
+        (core/let [x (Math/abs x)
 
-              res
-              (Math/floor (* (Math/log x) (.-LOG2E js/Math)))
+                   res
+                   (Math/floor (* (Math/log x) (.-LOG2E js/Math)))
 
-              t (scalb x (- res))]
+                   t (scalb x (- res))]
           (cond (< t 1) (dec res)
                 (<= 2 t) (inc res)
                 :else res)))))
@@ -970,24 +970,24 @@
   doubles within the given bounds."
   [lower-bound upper-bound]
   (letfn [(gen-exp [lb ub]
-                   (sized (fn [size]
-                            (let [qs8 (bit-shift-left 1 (quot (min 200 size) 8))]
-                              (cond (<= lb 0 ub)
-                                    (choose (max lb (- qs8)) (min ub qs8))
+            (sized (fn [size]
+                     (core/let [qs8 (bit-shift-left 1 (quot (min 200 size) 8))]
+                       (cond (<= lb 0 ub)
+                             (choose (max lb (- qs8)) (min ub qs8))
 
-                                    (< ub 0)
-                                    (choose (max lb (- ub qs8)) ub)
+                             (< ub 0)
+                             (choose (max lb (- ub qs8)) ub)
 
-                                    :else
-                                    (choose lb (min ub (+ lb qs8))))))))]
+                             :else
+                             (choose lb (min ub (+ lb qs8))))))))]
     (if (and (nil? lower-bound)
              (nil? upper-bound))
       (tuple (gen-exp -1023 1023)
              (elements [1.0 -1.0]))
-      (let [lower-bound (or lower-bound MIN_NEG_VALUE)
-            upper-bound (or upper-bound MAX_POS_VALUE)
-            lbexp (max -1023 (get-exponent lower-bound))
-            ubexp (max -1023 (get-exponent upper-bound))]
+      (core/let [lower-bound (or lower-bound MIN_NEG_VALUE)
+                 upper-bound (or upper-bound MAX_POS_VALUE)
+                 lbexp (max -1023 (get-exponent lower-bound))
+                 ubexp (max -1023 (get-exponent upper-bound))]
         (cond (<= 0.0 lower-bound)
               (tuple (gen-exp lbexp ubexp)
                      (return 1.0))
@@ -1011,7 +1011,7 @@
   range."
   [exp sign]
   (if (neg? sign)
-    (let [[low high] (block-bounds exp (- sign))]
+    (core/let [[low high] (block-bounds exp (- sign))]
       [(- high) (- low)])
     (if (= -1023 exp)
       [0.0 (-> 1.0 (scalb 52) dec (scalb -1074))]
@@ -1023,31 +1023,31 @@
   {:pre [(or (nil? lower-bound)
              (nil? upper-bound)
              (<= lower-bound upper-bound))]}
-  (let [pred (if lower-bound
-               (if upper-bound
-                 #(<= lower-bound % upper-bound)
-                 #(<= lower-bound %))
-               (if upper-bound
-                 #(<= % upper-bound)))
+  (core/let [pred (if lower-bound
+                    (if upper-bound
+                      #(<= lower-bound % upper-bound)
+                      #(<= lower-bound %))
+                    (if upper-bound
+                      #(<= % upper-bound)))
 
-        gen
-        (fmap (fn [[[exp sign] significand]]
-                (let [ ;; 1.0 <= base < 2.0
-                      base (inc (/ significand (Math/pow 2 52)))
-                      x (-> base (scalb exp) (* sign))]
-                  (if (or (nil? pred) (pred x))
-                    x
-                    ;; Scale things a bit when we have a partial range
-                    ;; to deal with. It won't be great for generating
-                    ;; simple numbers, but oh well.
-                    (let [[low high] (block-bounds exp sign)
+             gen
+             (fmap (fn [[[exp sign] significand]]
+                     (core/let [ ;; 1.0 <= base < 2.0
+                                base (inc (/ significand (Math/pow 2 52)))
+                                x (-> base (scalb exp) (* sign))]
+                       (if (or (nil? pred) (pred x))
+                         x
+                         ;; Scale things a bit when we have a partial range
+                         ;; to deal with. It won't be great for generating
+                         ;; simple numbers, but oh well.
+                         (core/let [[low high] (block-bounds exp sign)
 
-                          block-lb (cond-> low  lower-bound (max lower-bound))
-                          block-ub (cond-> high upper-bound (min upper-bound))
-                          x (+ block-lb (* (- block-ub block-lb) (- base 1)))]
-                      (-> x (min block-ub) (max block-lb))))))
-              (tuple (double-exp-and-sign lower-bound upper-bound)
-                     backwards-shrinking-significand))]
+                                    block-lb (cond-> low  lower-bound (max lower-bound))
+                                    block-ub (cond-> high upper-bound (min upper-bound))
+                                    x (+ block-lb (* (- block-ub block-lb) (- base 1)))]
+                           (-> x (min block-ub) (max block-lb))))))
+                   (tuple (double-exp-and-sign lower-bound upper-bound)
+                          backwards-shrinking-significand))]
     ;; wrapping in the such-that is necessary for staying in bounds
     ;; during shrinking
     (cond->> gen pred (such-that pred))))
@@ -1064,31 +1064,31 @@
   min precludes -Infinity, and supplying a max precludes +Infinity."
   [{:keys [infinite? NaN? min max]
     :or {infinite? true, NaN? true}}]
-  (let [frequency-arg (cond-> [[95 (double-finite min max)]]
+  (core/let [frequency-arg (cond-> [[95 (double-finite min max)]]
 
-                        (if (nil? min)
-                          (or (nil? max) (<= 0.0 max))
-                          (if (nil? max)
-                            (<= min 0.0)
-                            (<= min 0.0 max)))
-                        (conj
-                         ;; Add zeros here as a special case, since
-                         ;; the `finite` code considers zeros rather
-                         ;; complex (as they have a -1023 exponent)
-                         ;;
-                         ;; I think most uses can't distinguish 0.0
-                         ;; from -0.0, but seems worth throwing both
-                         ;; in just in case.
-                         [1 (return 0.0)]
-                         [1 (return -0.0)])
+                             (if (nil? min)
+                               (or (nil? max) (<= 0.0 max))
+                               (if (nil? max)
+                                 (<= min 0.0)
+                                 (<= min 0.0 max)))
+                             (conj
+                              ;; Add zeros here as a special case, since
+                              ;; the `finite` code considers zeros rather
+                              ;; complex (as they have a -1023 exponent)
+                              ;;
+                              ;; I think most uses can't distinguish 0.0
+                              ;; from -0.0, but seems worth throwing both
+                              ;; in just in case.
+                              [1 (return 0.0)]
+                              [1 (return -0.0)])
 
-                        (and infinite? (nil? max))
-                        (conj [1 (return POS_INFINITY)])
+                             (and infinite? (nil? max))
+                             (conj [1 (return POS_INFINITY)])
 
-                        (and infinite? (nil? min))
-                        (conj [1 (return NEG_INFINITY)])
+                             (and infinite? (nil? min))
+                             (conj [1 (return NEG_INFINITY)])
 
-                        NaN? (conj [1 (return NAN)]))]
+                             NaN? (conj [1 (return NAN)]))]
     (if (= 1 (count frequency-arg))
       (-> frequency-arg first second)
       (frequency frequency-arg))))
@@ -1257,13 +1257,13 @@
       ;; seems to be 10x faster
       (make-gen
        (fn [rng _size]
-         (let [[r1 r2] (random/split rng)
-               x1 (-> (random/rand-long r1)
-                      (bit-and -45057)
-                      (bit-or 0x4000))
-               x2 (-> (random/rand-long r2)
-                      (bit-or -9223372036854775808)
-                      (bit-and -4611686018427387905))]
+         (core/let [[r1 r2] (random/split rng)
+                    x1 (-> (random/rand-long r1)
+                           (bit-and -45057)
+                           (bit-or 0x4000))
+                    x2 (-> (random/rand-long r2)
+                           (bit-or -9223372036854775808)
+                           (bit-and -4611686018427387905))]
            (rose/make-rose
             (java.util.UUID. x1 x2)
             []))))
@@ -1273,7 +1273,7 @@
       ;; generating 31 numbers
       (fmap (fn [nibbles]
               (letfn [(hex [idx] (.toString (nibbles idx) 16))]
-                (let [rhex (-> (nibbles 15) (bit-and 3) (+ 8) (.toString 16))]
+                (core/let [rhex (-> (nibbles 15) (bit-and 3) (+ 8) (.toString 16))]
                   (core/uuid (str (hex 0)  (hex 1)  (hex 2)  (hex 3)
                                   (hex 4)  (hex 5)  (hex 6)  (hex 7)  "-"
                                   (hex 8)  (hex 9)  (hex 10) (hex 11) "-"
@@ -1330,7 +1330,7 @@
           "Second arg to recursive-gen must be a generator")
   (sized (fn [size]
            (bind (choose 1 5)
-                 (fn [height] (let [children-size (Math/pow size (/ 1 height))]
+                 (fn [height] (core/let [children-size (Math/pow size (/ 1 height))]
                                 (recursive-helper container-gen-fn scalar-gen size
                                                   children-size height)))))))
 
@@ -1342,3 +1342,48 @@
   "Like any, but avoids characters that the shell will interpret as actions,
   like 7 and 14 (bell and alternate character set command)"
   (recursive-gen container-type simple-type-printable))
+
+
+;; Macros
+;; ---------------------------------------------------------------------------
+
+(defmacro let
+  "Macro for building generators using values from other generators.
+  Uses a binding vector with the same syntax as clojure.core/let,
+  where the right-hand side of the binding pairs are generators, and
+  the left-hand side are names (or destructuring forms) for generated
+  values.
+
+  Subsequent generator expressions can refer to the previously bound
+  values, in the same way as clojure.core/let.
+
+  The body of the let can be either a value or a generator, and does
+  the expected thing in either case. In this way let provides the
+  functionality of both `bind` and `fmap`.
+
+  Examples:
+
+    (gen/let [strs (gen/not-empty (gen/list gen/string))
+              s (gen/elements strs)]
+      {:some-strings strs
+       :one-of-those-strings s})
+
+    ;; generates collections of \"users\" that have integer IDs
+    ;; from 0...N-1, but are in a random order
+    (gen/let [users (gen/list (gen/hash-map :name gen/string-ascii
+                                            :age gen/nat))]
+      (->> users
+           (map #(assoc %2 :id %1) (range))
+           (gen/shuffle)))"
+  [bindings & body]
+  (assert (vector? bindings)
+          "First arg to gen/let must be a vector of bindings.")
+  (assert (even? (count bindings))
+          "gen/let requires an even number of forms in binding vector")
+  (if (empty? bindings)
+    `(core/let [val# (do ~@body)]
+       (if (generator? val#)
+         val#
+         (return val#)))
+    (core/let [[binding gen & more] bindings]
+      `(bind ~gen (fn [~binding] (let [~@more] ~@body))))))

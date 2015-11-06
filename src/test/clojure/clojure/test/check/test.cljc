@@ -882,6 +882,25 @@
   (prop/for-all [a gen/int]
                 (integer? a)))
 
+;; let macro
+;; ---------------------------------------------------------------------------
+
+(defspec let-as-fmap-spec 20
+  (prop/for-all [s (gen/let [n gen/nat]
+                     (str n))]
+    (re-matches #"\d+" s)))
+
+(defspec let-as-bind-spec 20
+  (prop/for-all [[xs x] (gen/let [xs (gen/not-empty (gen/vector gen/nat))]
+                          (gen/tuple (gen/return xs) (gen/elements xs)))]
+    (some #{x} xs)))
+
+(defspec let-with-multiple-clauses-spec 20
+  (prop/for-all [[xs x] (gen/let [xs (gen/not-empty (gen/vector gen/nat))
+                                  x (gen/elements xs)]
+                          [xs x])]
+    (some #{x} xs)))
+
 ;; TCHECK-77 Regression
 ;; ---------------------------------------------------------------------------
 
