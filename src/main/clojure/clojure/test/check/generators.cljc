@@ -538,18 +538,20 @@
 
 (defn ^:private coll-distinct-by*
   "Returns a rose tree."
-  [empty-coll key-fn shuffle-fn gen rng size num-elements max-tries]
+  [empty-coll key-fn shuffle-fn gen rng size num-elements min-elements max-tries]
   {:pre [gen (:gen gen)]}
   (loop [rose-trees (transient [])
          s (transient #{})
          rng rng
          size size
          tries 0]
-    (cond (= max-tries tries)
-          (throw (ex-info "Couldn't generate enough distinct elements!"
-                          {:gen gen, :max-tries max-tries}))
+    (cond (and (= max-tries tries)
+               (< (count rose-trees) min-elements))
+          (throw (ex-info "Couldn't generate enough distinct elements!"))
 
-          (= (count rose-trees) num-elements)
+
+          (or (= max-tries tries)
+              (= (count rose-trees) num-elements))
           (->> (persistent! rose-trees)
                ;; we shuffle the rose trees so that we aren't biased
                ;; toward generating "smaller" elements earlier in the
@@ -605,7 +607,8 @@
    {:keys [num-elements min-elements max-elements max-tries] :or {max-tries 10}}]
   (let [shuffle-fn (if ordered?
                      the-shuffle-fn
-                     (fn [_rng coll] coll))]
+                     (fn [_rng coll] coll))
+        hard-min-elements (or num-elements min-elements 1)]
     (if num-elements
       (let [size-pred #(= num-elements (count %))]
         (assert (and (nil? min-elements) (nil? max-elements)))
@@ -618,8 +621,8 @@
               ;; step?
               (every-pred size-pred #(distinct-by? key-fn %))
               size-pred)
-            (coll-distinct-by* empty-coll key-fn shuffle-fn gen
-                               rng gen-size num-elements max-tries)))))
+            (coll-distinct-by* empty-coll key-fn shuffle-fn gen rng gen-size
+                               num-elements hard-min-elements max-tries)))))
       (let [min-elements (or min-elements 0)
             size-pred (if max-elements
                         #(<= min-elements (count %) max-elements)
@@ -637,8 +640,8 @@
                    ;; same comment as above
                    (every-pred size-pred #(distinct-by? key-fn %))
                    size-pred)
-                 (coll-distinct-by* empty-coll key-fn shuffle-fn gen
-                                    rng gen-size num-elements max-tries)))))))))))
+                 (coll-distinct-by* empty-coll key-fn shuffle-fn gen rng gen-size
+                                    num-elements hard-min-elements max-tries)))))))))))
 
 
 ;; I tried to reduce the duplication in these docstrings with a macro,

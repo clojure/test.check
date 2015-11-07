@@ -418,6 +418,14 @@
             (set))
        [[0 1 2] [0 2 1] [1 0 2] [1 2 0] [2 0 1] [2 1 0]]))))
 
+(defspec distinct-collections-with-few-possible-values 20
+  (prop/for-all [boolean-sets (gen/vector (gen/resize 5 (gen/set gen/boolean)) 100)]
+    (= 4 (count (distinct boolean-sets)))))
+
+(deftest can't-generate-set-of-five-booleans
+  (is (thrown? Exception
+               (gen/generate (gen/set gen/boolean {:num-elements 5})))))
+
 ;; Generating proper matrices
 ;; ---------------------------------------------------------------------------
 
