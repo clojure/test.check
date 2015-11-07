@@ -423,8 +423,9 @@
     (= 4 (count (distinct boolean-sets)))))
 
 (deftest can't-generate-set-of-five-booleans
-  (is (thrown? Exception
-               (gen/generate (gen/set gen/boolean {:num-elements 5})))))
+  (is (thrown-with-msg? #?(:clj Exception :cljs js/Error)
+                        #"Couldn't generate enough distinct elements"
+                        (gen/generate (gen/set gen/boolean {:num-elements 5})))))
 
 ;; Generating proper matrices
 ;; ---------------------------------------------------------------------------

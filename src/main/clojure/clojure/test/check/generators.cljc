@@ -547,7 +547,10 @@
          tries 0]
     (cond (and (= max-tries tries)
                (< (count rose-trees) min-elements))
-          (throw (ex-info "Couldn't generate enough distinct elements!"))
+          (throw (ex-info "Couldn't generate enough distinct elements!"
+                          {:gen gen
+                           :max-tries max-tries
+                           :num-elements num-elements}))
 
 
           (or (= max-tries tries)
