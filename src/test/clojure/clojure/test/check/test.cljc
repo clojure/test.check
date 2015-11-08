@@ -12,7 +12,7 @@
   (:require #?(:cljs
                 [cljs.test :as test :refer-macros [deftest testing is]])
             [clojure.test.check :as tc]
-            [clojure.test.check.generators :as gen]
+            [clojure.test.check.generators :as gen #?@(:cljs [:include-macros true])]
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [clojure.test.check.rose-tree :as rose]
             [clojure.test.check.random :as random]

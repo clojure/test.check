@@ -12,7 +12,8 @@
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace
                             set sorted-set uuid double let])
-  (:require [#?(:clj clojure.core :cljs cljs.core) :as core]
+  (:require [#?(:clj clojure.core :cljs cljs.core) :as core
+             #?@(:cljs [:include-macros true])]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]
             #?@(:cljs [[goog.string :as gstring]
