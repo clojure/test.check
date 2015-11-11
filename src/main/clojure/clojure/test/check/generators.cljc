@@ -551,7 +551,10 @@
           (throw (ex-info "Couldn't generate enough distinct elements!"
                           {:gen gen
                            :max-tries max-tries
-                           :num-elements num-elements}))
+                           :num-elements num-elements
+                           :so-far (->> rose-trees
+                                        (persistent!)
+                                        (core/map rose/root))}))
 
 
           (or (= max-tries tries)
