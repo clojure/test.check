@@ -94,7 +94,7 @@
 (let [begin-test-var-method (get-method ct/report #?(:clj  :begin-test-var
                                                      :cljs [::ct/default :begin-test-var]))]
   (defmethod ct/report #?(:clj  :begin-test-var
-                          :cljs [::ct/default :begin-test]) [m]
+                          :cljs [::ct/default :begin-test-var]) [m]
     (reset! last-trial-report (get-current-time-millis))
     (when begin-test-var-method (begin-test-var-method m))))
 
