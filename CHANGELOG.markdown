@@ -6,6 +6,7 @@
 release that requires Clojure 1.7.0 (due to using `cljc` files to unify
 the clj & cljs code).
 
+* `gen/let`
 * `gen/uuid`
 * `gen/double`
 * `gen/large-integer`
