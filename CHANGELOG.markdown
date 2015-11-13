@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.0
+
+0.9.0 contains an assortment of new generators, and is the first
+release that requires Clojure 1.7.0 (due to using `cljc` files to unify
+the clj & cljs code).
+
+* `gen/uuid`
+* `gen/double`
+* `gen/large-integer`
+* `gen/set`
+* `gen/sorted-set`
+* `gen/vector-distinct`
+* `gen/vector-distinct-by`
+* `gen/list-distinct`
+* `gen/list-distinct-by`
+* `gen/map` now takes sizing options, the same as the preceding
+  collection generators
+
+
 ## 0.8.2
 * Bugfix for [TCHECK-77](http://dev.clojure.org/jira/browse/TCHECK-77),
   which was a regression in the precision of `gen/choose` introduced in

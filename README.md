@@ -10,6 +10,8 @@ _test.check_ used to be called
 
 ## Releases and Dependency Information
 
+As of version `0.9.0`, test.check requires Clojure >= `1.7.0`.
+
 Please note a
 [breaking change for ClojureScript](https://github.com/clojure/test.check/blob/master/CHANGELOG.markdown#080)
 in the `0.8.*` releases.
@@ -17,7 +19,7 @@ in the `0.8.*` releases.
 ### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.8.2"]
+[org.clojure/test.check "0.9.0"]
 ```
 
 ### Maven
@@ -26,7 +28,7 @@ in the `0.8.*` releases.
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.8.2</version>
+  <version>0.9.0</version>
 </dependency>
 ```
 
