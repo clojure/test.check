@@ -16,7 +16,8 @@
   :codox {:defaults {:doc/format :markdown}
           :exclude [clojure.test.check.rose-tree
                     clojure.test.check.clojure-test
-                    clojure.test.check.properties]}
+                    clojure.test.check.properties
+                    clojure.test.check.random]}
   :cljsbuild
   {:builds
    [{:id "node-dev"
