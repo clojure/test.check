@@ -73,8 +73,8 @@
      (cons r1
            (lazy-random-states r2)))))
 
-(defn- gen-seq->seq-gen
-  "Takes a sequence of generators and returns a generator of sequences (er, vectors)."
+(defn- gen-tuple
+  "Takes a collection of generators and returns a generator of vectors."
   [gens]
   (make-gen
    (fn [rnd size]
@@ -396,7 +396,7 @@
   [& generators]
   (assert (every? generator? generators)
           "Args to tuple must be generators")
-  (gen-bind (gen-seq->seq-gen generators)
+  (gen-bind (gen-tuple generators)
             (fn [roses]
               (gen-pure (rose/zip core/vector roses)))))
 
@@ -436,9 +436,8 @@
    (gen-bind
      (sized #(choose 0 %))
      (fn [num-elements-rose]
-       (gen-bind (gen-seq->seq-gen
-                  (repeat (rose/root num-elements-rose)
-                          generator))
+       (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
+                                    generator))
                  (fn [roses]
                    (gen-pure (rose/shrink core/vector
                                           roses)))))))
@@ -450,9 +449,8 @@
    (gen-bind
      (choose min-elements max-elements)
      (fn [num-elements-rose]
-       (gen-bind (gen-seq->seq-gen
-                  (repeat (rose/root num-elements-rose)
-                          generator))
+       (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
+                                    generator))
                  (fn [roses]
                    (gen-bind
                      (gen-pure (rose/shrink core/vector
@@ -468,9 +466,8 @@
   (assert (generator? generator) "First arg to list must be a generator")
   (gen-bind (sized #(choose 0 %))
             (fn [num-elements-rose]
-              (gen-bind (gen-seq->seq-gen
-                         (repeat (rose/root num-elements-rose)
-                                 generator))
+              (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
+                                           generator))
                         (fn [roses]
                           (gen-pure (rose/shrink core/list
                                                  roses)))))))
