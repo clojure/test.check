@@ -154,6 +154,7 @@
 (defn generate
   "Returns a single sample value from the generator, using a default
   size of 30."
+  {:added "0.8.0"}
   ([generator]
      (generate generator 30))
   ([generator size]
@@ -236,6 +237,7 @@
   "Create a new generator that modifies the size parameter by the given function. Intended to
    support generators with sizes that need to grow at different rates compared to the normal
    linear scaling."
+  {:added "0.8.0"}
   ([f generator]
     (sized (fn [n] (resize (f n) generator)))))
 
@@ -666,6 +668,7 @@
     :max-tries     the number of times the generator will be tried before
                    failing when it does not produce distinct elements
                    (default 10)"
+  {:added "0.9.0"}
   ([gen] (vector-distinct gen {}))
   ([gen opts]
    (assert (generator? gen) "First arg to vector-distinct must be a generator!")
@@ -686,6 +689,7 @@
     :max-tries     the number of times the generator will be tried before
                    failing when it does not produce distinct elements
                    (default 10)"
+  {:added "0.9.0"}
   ([gen] (list-distinct gen {}))
   ([gen opts]
    (assert (generator? gen) "First arg to list-distinct must be a generator!")
@@ -706,6 +710,7 @@
     :max-tries     the number of times the generator will be tried before
                    failing when it does not produce distinct elements
                    (default 10)"
+  {:added "0.9.0"}
   ([key-fn gen] (vector-distinct-by key-fn gen {}))
   ([key-fn gen opts]
    (assert (generator? gen) "First arg to vector-distinct-by must be a generator!")
@@ -726,6 +731,7 @@
     :max-tries     the number of times the generator will be tried before
                    failing when it does not produce distinct elements
                    (default 10)"
+  {:added "0.9.0"}
   ([key-fn gen] (list-distinct-by key-fn gen {}))
   ([key-fn gen opts]
    (assert (generator? gen) "First arg to list-distinct-by must be a generator!")
@@ -745,6 +751,7 @@
     :max-tries     the number of times the generator will be tried before
                    failing when it does not produce distinct elements
                    (default 10)"
+  {:added "0.9.0"}
   ([gen] (set gen {}))
   ([gen opts]
    (assert (generator? gen) "First arg to set must be a generator!")
@@ -764,6 +771,7 @@
     :max-tries     the number of times the generator will be tried before
                    failing when it does not produce distinct elements
                    (default 10)"
+  {:added "0.9.0"}
   ([gen] (sorted-set gen {}))
   ([gen opts]
    (assert (generator? gen) "First arg to sorted-set must be a generator!")
@@ -849,6 +857,7 @@
     :max  the maximum integer (inclusive)
 
   Both :min and :max are optional."
+  {:added "0.9.0"}
   [{:keys [min max]}]
   (core/let [min (or min MIN_INTEGER)
         max (or max MAX_INTEGER)]
@@ -860,7 +869,7 @@
                    (fmap #(+ max %) (large-integer** (- min max) 0))
                    (fmap #(+ min %) (large-integer** 0 (- max min))))))))
 
-(def large-integer
+(def ^{:added "0.9.0"} large-integer
   "Generates a platform-native integer from the full available range
   (in clj, 64-bit Longs, and in cljs, numbers between -(2^53 - 1) and
   (2^53 - 1)).
@@ -1063,6 +1072,7 @@
 
   Note that the min/max options must be finite numbers. Supplying a
   min precludes -Infinity, and supplying a max precludes +Infinity."
+  {:added "0.9.0"}
   [{:keys [infinite? NaN? min max]
     :or {infinite? true, NaN? true}}]
   (core/let [frequency-arg (cond-> [[95 (double-finite min max)]]
@@ -1094,7 +1104,7 @@
       (-> frequency-arg first second)
       (frequency frequency-arg))))
 
-(def double
+(def ^{:added "0.9.0"} double
   "Generates 64-bit floating point numbers from the entire range,
   including +/- infinity and NaN. Use double* for more control."
   (double* {}))
@@ -1250,7 +1260,7 @@
     (tuple int
            (such-that (complement zero?) int))))
 
-(def uuid
+(def ^{:added "0.9.0"} uuid
   "Generates a random type-4 UUID. Does not shrink."
   (no-shrink
    #?(:clj
@@ -1376,6 +1386,7 @@
       (->> users
            (map #(assoc %2 :id %1) (range))
            (gen/shuffle)))"
+  {:added "0.9.0"}
   [bindings & body]
   (assert (vector? bindings)
           "First arg to gen/let must be a vector of bindings.")
