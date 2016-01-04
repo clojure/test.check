@@ -10,14 +10,13 @@
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.7.0"]
                                   [org.clojure/clojurescript "1.7.48"]]}}
   :global-vars {*warn-on-reflection* true}
-  :plugins [[codox "0.8.10"]
+  :plugins [[lein-codox "0.9.1"]
             [cider/cider-nrepl "0.8.1"]
             [lein-cljsbuild "1.1.0"]]
-  :codox {:defaults {:doc/format :markdown}
-          :exclude [clojure.test.check.rose-tree
-                    clojure.test.check.clojure-test
-                    clojure.test.check.properties
-                    clojure.test.check.random]}
+  :codox {:namespaces [clojure.test.check
+                       clojure.test.check.clojure-test
+                       clojure.test.check.generators
+                       clojure.test.check.properties]}
   :cljsbuild
   {:builds
    [{:id "node-dev"
