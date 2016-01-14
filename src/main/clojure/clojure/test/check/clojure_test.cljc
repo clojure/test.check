@@ -10,6 +10,7 @@
 (ns clojure.test.check.clojure-test
   (:require #?(:clj  [clojure.test :as ct]
                :cljs [cljs.test :as ct :include-macros true])
+            [clojure.test.check :as tc]
             [clojure.test.check.impl :refer [get-current-time-millis
                                              exception-like?]]))
 
@@ -33,6 +34,8 @@
         :else (throw (ex-info (str "Invalid defspec options: " (pr-str options))
                               {:bad-options options}))))
 
+(declare default-reporter-fn)
+
 #?(:clj
 (defmacro defspec
   "Defines a new clojure.test test var that uses `quick-check` to verify
@@ -45,10 +48,6 @@
   {:arglists '([name property] [name num-tests? property] [name options? property])}
   ([name property] `(defspec ~name nil ~property))
   ([name options property]
-     ;; consider my shame for introducing a cyclical dependency like this...
-     ;; Don't think we'll know what the solution is until clojure.test.check
-     ;; integration with another test framework is attempted.
-     (require 'clojure.test.check)
      `(defn ~(vary-meta name assoc
                         ::defspec true
                         :test `#(clojure.test.check.clojure-test/assert-check
@@ -57,10 +56,12 @@
               (apply ~name (:num-tests options#) (apply concat options#))))
         ([~'times & {:keys [~'seed ~'max-size] :as ~'quick-check-opts}]
          (apply
-          clojure.test.check/quick-check
+          tc/quick-check
           ~'times
           (vary-meta ~property assoc :name (str '~property))
-          (apply concat ~'quick-check-opts)))))))
+          (apply concat
+                 [:reporter-fn default-reporter-fn]
+                 ~'quick-check-opts)))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
@@ -146,23 +147,19 @@
         (println "Shrinking" (get-property-name m)
                  "starting with parameters" (pr-str (::params m)))))))
 
-(defn report-trial
-  [property-fun so-far num-tests]
-  (ct/report {:type ::trial
-              ::property property-fun
-              ::trial [so-far num-tests]}))
+(defn default-reporter-fn
+  "Default function passed as the :reporter-fn to clojure.test.check/quick-check.
+  Delegates to clojure.test/report."
+  [{:keys [type] :as args}]
+  (case type
+    :trial
+    (ct/report {:type ::trial
+                ::property (:property args)
+                ::trial [(:so-far args) (:num-tests args)]})
 
-(defn report-failure
-  [property-fun result trial-number failing-params]
-  ;; TODO this is wrong, makes it impossible to clojure.test quickchecks that
-  ;; should fail...
-  #_(ct/report (if (exception-like? result)
-                 {:type :error
-                  :message (.getMessage result)
-                  :actual result}
-                 {:type :fail
-                  :expected true
-                  :actual result}))
-  (ct/report {:type ::shrinking
-              ::property property-fun
-              ::params (vec failing-params)}))
+    :failure
+    (ct/report {:type ::shrinking
+                ::property (:property args)
+                ::params (vec (:failing-args args))})
+
+    nil))

@@ -9,7 +9,6 @@
 
 (ns clojure.test.check
   (:require [clojure.test.check.generators :as gen]
-            [clojure.test.check.clojure-test :as ct]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]
             [clojure.test.check.impl :refer [get-current-time-millis
@@ -26,7 +25,6 @@
 
 (defn- complete
   [property num-trials seed]
-  (ct/report-trial property num-trials num-trials)
   {:result true :num-tests num-trials :seed seed})
 
 (defn- not-falsey-or-exception?
@@ -36,25 +34,56 @@
 
 (defn quick-check
   "Tests `property` `num-tests` times.
-  Takes optional keys `:seed` and `:max-size`. The seed parameter
-  can be used to re-run previous tests, as the seed used is returned
-  after a test is run. The max-size can be used to control the 'size'
-  of generated values. The size will start at 0, and grow up to
-  max-size, as the number of tests increases. Generators will use
-  the size parameter to bound their growth. This prevents, for example,
-  generating a five-thousand element vector on the very first test.
+
+  Takes several optional keys:
+
+  `:seed`
+    Can be used to re-run previous tests, as the seed used is returned
+    after a test is run.
+
+  `:max-size`.
+    can be used to control the 'size' of generated values. The size will
+    start at 0, and grow up to max-size, as the number of tests increases.
+    Generators will use the size parameter to bound their growth. This
+    prevents, for example, generating a five-thousand element vector on
+    the very first test.
+
+  `:reporter-fn`
+    A callback function that will be called at various points in the test
+    run, with a map like:
+
+      ;; called after a passing trial
+      {:type      :trial
+       :property  #<...>
+       :so-far    <number of tests run so far>
+       :num-tests <total number of tests>}
+
+      ;; called after each failing trial
+      {:type         :start-shrinking
+       :property     #<...>
+       :result       ...
+       :trial-number <tests ran before failure found>
+       :failing-args [...]}
 
   Examples:
 
       (def p (for-all [a gen/pos-int] (> (* a a) a)))
+
       (quick-check 100 p)
-  "
-  [num-tests property & {:keys [seed max-size] :or {max-size 200}}]
+      (quick-check 200 p
+                   :seed 42
+                   :max-size 50
+                   :reporter-fn (fn [m]
+                                  (when (= :start-shrinking (:type m))
+                                    (println \"Uh oh...\"))))"
+  [num-tests property & {:keys [seed max-size reporter-fn]
+                         :or {max-size 200, reporter-fn (constantly nil)}}]
   (let [[created-seed rng] (make-rng seed)
         size-seq (gen/make-size-range-seq max-size)]
     (loop [so-far 0
            size-seq size-seq
            rstate rng]
+      (reporter-fn {:type :start-trial})
       (if (== so-far num-tests)
         (complete property num-tests created-seed)
         (let [[size & rest-size-seq] size-seq
@@ -64,10 +93,13 @@
               result (:result result-map)
               args (:args result-map)]
           (if (not-falsey-or-exception? result)
-            (do
-              (ct/report-trial property so-far num-tests)
-              (recur (inc so-far) rest-size-seq r2))
-            (failure property result-map-rose so-far size created-seed)))))))
+            (let [so-far' (inc so-far)]
+              (reporter-fn {:type :trial
+                            :property property
+                            :so-far so-far'
+                            :num-tests num-tests})
+              (recur so-far' rest-size-seq r2))
+            (failure property result-map-rose so-far size created-seed reporter-fn)))))))
 
 (defn- smallest-shrink
   [total-nodes-visited depth smallest]
@@ -110,12 +142,16 @@
               (recur tail (rose/root head) (inc total-nodes-visited) depth))))))))
 
 (defn- failure
-  [property failing-rose-tree trial-number size seed]
+  [property failing-rose-tree trial-number size seed reporter-fn]
   (let [root (rose/root failing-rose-tree)
         result (:result root)
         failing-args (:args root)]
 
-    (ct/report-failure property result trial-number failing-args)
+    (reporter-fn {:type :failure
+                  :property property
+                  :result result
+                  :trial-number trial-number
+                  :failing-args failing-args})
 
     {:result result
      :seed seed
