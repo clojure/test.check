@@ -11,7 +11,6 @@
                                   [org.clojure/clojurescript "1.7.48"]]}}
   :global-vars {*warn-on-reflection* true}
   :plugins [[lein-codox "0.9.1"]
-            [cider/cider-nrepl "0.8.1"]
             [lein-cljsbuild "1.1.0"]]
   :codox {:namespaces [clojure.test.check
                        clojure.test.check.clojure-test
