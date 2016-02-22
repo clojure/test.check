@@ -1,3 +1,3 @@
 # test.check user guide
 
-Hey folks what is up?
+Hey folks what is up‽
