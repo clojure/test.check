@@ -73,11 +73,11 @@
   `trial-report-dots`
 
   (Note that all reporting requires running `quick-check` within the scope of a
-  clojure.test run (via `test-ns`, `test-all-vars`, etc.)
+  clojure.test run (via `test-ns`, `test-all-vars`, etc.))
 
   Reporting functions offered by clojure.test.check include `trial-report-dots` and
   `trial-report-periodic` (which prints more verbose trial progress information
-  every `*trial-report-period*` milliseconds."
+  every `*trial-report-period*` milliseconds)."
   false)
 
 (def ^:dynamic *report-shrinking*
