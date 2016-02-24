@@ -23,28 +23,26 @@
 
 (def ^:dynamic *default-test-count* 100)
 
+(declare default-reporter-fn)
+
 (defn process-options
   {:no-doc true}
   [options]
-  (cond (nil? options) {:num-tests *default-test-count*}
-        (number? options) {:num-tests options}
-        (map? options) (if (:num-tests options)
-                         options
-                         (assoc options :num-tests *default-test-count*))
+  (cond (nil? options) {:num-tests *default-test-count* :reporter-fn default-reporter-fn}
+        (number? options) {:num-tests options :reporter-fn default-reporter-fn}
+        (map? options) (merge {:num-tests *default-test-count*
+                               :reporter-fn default-reporter-fn}
+                           options)
         :else (throw (ex-info (str "Invalid defspec options: " (pr-str options))
                               {:bad-options options}))))
 
-(declare default-reporter-fn)
-
 #?(:clj
 (defmacro defspec
-  "Defines a new clojure.test test var that uses `quick-check` to verify
-  [property] with the given [args] (should be a sequence of generators),
-  [default-times] times by default.  You can call the function defined as [name]
+  "Defines a new clojure.test test var that uses `quick-check` to verify the
+  property, running num-times trials by default.  You can call the function defined as `name`
   with no arguments to trigger this test directly (i.e., without starting a
-  wider clojure.test run), with a single argument that will override
-  [default-times], or with a map containing any of the keys
-  [:seed :max-size :num-tests]."
+  wider clojure.test run).  If called with arguments, the first argument is the number of
+  trials, optionally followed by keyword arguments as defined for `quick-check`."
   {:arglists '([name property] [name num-tests? property] [name options? property])}
   ([name property] `(defspec ~name nil ~property))
   ([name options property]
@@ -52,16 +50,16 @@
                         ::defspec true
                         :test `#(clojure.test.check.clojure-test/assert-check
                                    (assoc (~name) :test-var (str '~name))))
+        {:arglists '([] ~'[num-tests & {:keys [seed max-size reporter-fn]}])}
         ([] (let [options# (process-options ~options)]
               (apply ~name (:num-tests options#) (apply concat options#))))
-        ([~'times & {:keys [~'seed ~'max-size] :as ~'quick-check-opts}]
-         (apply
-          tc/quick-check
-          ~'times
-          (vary-meta ~property assoc :name (str '~property))
-          (apply concat
-                 [:reporter-fn default-reporter-fn]
-                 ~'quick-check-opts)))))))
+        ([times# & {:as quick-check-opts#}]
+         (let [options# (merge (process-options ~options) quick-check-opts#)]
+           (apply
+            tc/quick-check
+            times#
+            (vary-meta ~property assoc :name (str '~property))
+            (apply concat options#))))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.

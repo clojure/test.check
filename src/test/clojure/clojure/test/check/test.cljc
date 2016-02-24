@@ -869,6 +869,8 @@
 
 (defspec run-with-map1 {:num-tests 1} (prop/for-all* [gen/int] (constantly true)))
 
+;; run-with-map succeeds only because gen/int returns 0 for its first result.  If it runs
+;; multiple trials, we expect a failure.  This test verifies that the num-tests works.
 (defspec run-with-map {:num-tests 1
                        :seed 1}
   (prop/for-all [a gen/int]
@@ -876,9 +878,14 @@
 
 (def my-defspec-options {:num-tests 1 :seed 1})
 
+;; Regression test for old anaphoric issue with defspec: "seed", "times", and "max-size" were
+;; used literally as parameters in the test function signature and could unexpectedly
+;; shadow lexical names.
+(def seed 0)
+
 (defspec run-with-symbolic-options my-defspec-options
   (prop/for-all [a gen/int]
-                (= a 0)))
+                (= a seed)))
 
 (defspec run-with-no-options
   (prop/for-all [a gen/int]
@@ -887,6 +894,15 @@
 (defspec run-float-time 1e3
   (prop/for-all [a gen/int]
                 (integer? a)))
+
+;; verify that the created tests work when called by name with options
+(deftest spec-called-with-options
+  (is (= (select-keys (run-only-once) [:num-tests :result]) {:num-tests 1 :result true}))
+  ;; run-with-map should succeed only if it runs exactly once, otherwise it's expected to fail
+  (is (= (select-keys (run-with-map) [:num-tests :result]) {:num-tests 1 :result true}))
+  (is (false? (:result (run-with-map 25))))
+  (is (false? (:result (run-with-symbolic-options 100 :seed 1 :max-size 20))))
+  (is (:result (run-with-symbolic-options 1 :seed 1 :max-size 20))))
 
 ;; let macro
 ;; ---------------------------------------------------------------------------
