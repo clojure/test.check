@@ -53,14 +53,12 @@
            (is (let [p (prop/for-all* [gen/int gen/int gen/int] passes-monoid-properties)]
                  (:result
                    (tc/quick-check 1000 p)))))
+  ;; NOTE: no ratios in ClojureScript - David
   #?(:clj
     (testing "with ratios as well"
            (is (let [p (prop/for-all* [gen/ratio gen/ratio gen/ratio] passes-monoid-properties)]
                  (:result
-                   (tc/quick-check 1000 p)))))
-
-    ;; NOTE: no ratios in ClojureScript - David
-    ))
+                   (tc/quick-check 1000 p)))))))
 
 ;; reverse
 ;; ---------------------------------------------------------------------------
@@ -295,8 +293,7 @@
 
     (testing "vector" (t (gen/vector gen/int) vector?))
     (testing "list"   (t (gen/list gen/int)   list?))
-    (testing "map"    (t (gen/map gen/int gen/int) map?))
-    ))
+    (testing "map"    (t (gen/map gen/int gen/int) map?))))
 
 ;; Distinct collections
 ;; --------------------------------------------------------------------------
