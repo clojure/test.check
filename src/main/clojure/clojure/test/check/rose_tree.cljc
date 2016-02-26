@@ -123,7 +123,9 @@
 (defn ^:private unchunk
   "Returns an equivalent lazy seq that is not chunked."
   [a-lazy-seq]
-  (take Double/POSITIVE_INFINITY a-lazy-seq))
+  (take
+   #?(:clj Double/POSITIVE_INFINITY :cljs js/Infinity)
+   a-lazy-seq))
 
 (defn shrink
   {:no-doc true}
