@@ -557,7 +557,8 @@
                           (valid? (:left tree)))
                       (or (nil? (:right tree))
                           (valid? (:right tree)))))]
-    (prop/for-all [t btree] (valid? t))))
+    (prop/for-all [t btree] (or (nil? t)
+                                (valid? t)))))
 
 ;; NOTE cljs: adjust for JS numerics - NB
 
@@ -588,7 +589,7 @@
   [value]
   (= value (-> value prn-str edn/read-string)))
 
-(defspec edn-roundtrips 50
+(defspec edn-roundtrips 200
   (prop/for-all [a any-edn]
                 (edn-roundtrip? a)))
 

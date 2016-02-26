@@ -1320,15 +1320,44 @@
            (list inner-type)
            (map inner-type inner-type)]))
 
-(defn- recursive-helper
-  [container-gen-fn scalar-gen scalar-size children-size height]
-  (if (zero? height)
-    (resize scalar-size scalar-gen)
-    (resize children-size
-            (container-gen-fn
-              (recursive-helper
-                container-gen-fn scalar-gen
-                scalar-size children-size (dec height))))))
+;; A few helpers for recursive-gen
+
+(defn ^:private size->max-leaf-count
+  [size]
+  ;; chosen so that 200→1000; it might be worth adjusting this to
+  ;; optimize the number of leaf nodes that recursive-gen generates
+  ;; so that it is as high as possible while still having a very
+  ;; high probability of being <= `size`.
+  (long (Math/pow size 1.3038)))
+
+(core/let [log2 (Math/log 2)]
+  (defn ^:private random-pseudofactoring
+    "Returns (not generates) a random collection of integers `xs`
+  greater than 1 such that (<= (apply * xs) n)."
+    [n rng]
+    (if (<= n 2)
+      [n]
+      (core/let [log (Math/log n)
+                 [r1 r2] (random/split rng)
+                 n1 (-> (random/rand-double r1)
+                        (* (- log log2))
+                        (+ log2)
+                        (Math/exp)
+                        (long))
+                 n2 (quot n n1)]
+        (if (and (< 1 n1) (< 1 n2))
+          (cons n1 (random-pseudofactoring n2 r2))
+          [n])))))
+
+(defn ^:private randomized
+  "Like sized, but passes an rng instead of a size."
+  [func]
+  (make-gen (fn [rng size]
+              (core/let [[r1 r2] (random/split rng)]
+                (call-gen
+                 (func r1)
+                 r2
+                 size)))))
 
 (defn
   ^{:added "0.5.9"}
@@ -1346,15 +1375,46 @@
     (gen/recursive-gen (fn [inner] (gen/one-of [(gen/vector inner)
                                                 (gen/map inner inner)]))
                        (gen/one-of [gen/boolean gen/int]))
-  "
+
+  Note that raw scalar values will be generated as well. To prevent this, you
+  can wrap the returned generator with the function passed as the first arg,
+  e.g.:
+
+    (gen/vector (gen/recursive-gen gen/vector gen/boolean))"
   [container-gen-fn scalar-gen]
   (assert (generator? scalar-gen)
           "Second arg to recursive-gen must be a generator")
+  ;; The trickiest part about this is sizing. The strategy here is to
+  ;; assume that the container generators will (like the normal
+  ;; collection generators in this namespace) have a size bounded by
+  ;; the `size` parameter, and with that assumption we can give an
+  ;; upper bound to the total number of leaf nodes in the generated
+  ;; structure.
+  ;;
+  ;; So we first pick an upper bound, and pick it to be somewhat
+  ;; larger than the real `size` since on average they will be rather
+  ;; smaller. Then we factor that upper bound into integers to give us
+  ;; the size to use at each depth, assuming that the total size
+  ;; should sort of be the product of the factored sizes.
+  ;;
+  ;; This is all a bit weird and hard to explain precisely but I think
+  ;; it works reasonably and definitely better than the old code.
   (sized (fn [size]
-           (bind (choose 1 5)
-                 (fn [height] (core/let [children-size (Math/pow size (/ 1 height))]
-                                (recursive-helper container-gen-fn scalar-gen size
-                                                  children-size height)))))))
+           (bind (choose 0 (size->max-leaf-count size))
+                 (fn [max-leaf-count]
+                   (randomized
+                    (fn [rng]
+                      (core/let [sizes (random-pseudofactoring max-leaf-count rng)
+                                 sized-scalar-gen (resize size scalar-gen)]
+                        (reduce (fn [g size]
+                                  (bind (choose 0 10)
+                                        (fn [x]
+                                          (if (zero? x)
+                                            sized-scalar-gen
+                                            (resize size
+                                                    (container-gen-fn g))))))
+                                sized-scalar-gen
+                                sizes)))))))))
 
 (def any
   "A recursive generator that will generate many different, often nested, values"
