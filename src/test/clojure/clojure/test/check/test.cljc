@@ -956,3 +956,12 @@
           test-runs-during-shrinking (- @state)]
       (is (= test-runs-during-shrinking
              (get-in res [:shrunk :total-nodes-visited]))))))
+
+;; TCHECK-32 Regression
+;; ---------------------------------------------------------------------------
+
+;; This gives a stack error in CLJS, don't know why
+#?(:clj
+   (defspec merge-is-idempotent-and-this-spec-doesn't-OOM 200
+     (prop/for-all [m (gen/map gen/any gen/any)]
+       (= m (merge m m)))))
