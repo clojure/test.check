@@ -942,3 +942,16 @@
       -1 0
       0 Long/MAX_VALUE
       Long/MIN_VALUE Long/MAX_VALUE))))
+
+;; TCHECK-82 Regression
+;; ---------------------------------------------------------------------------
+
+(deftest shrinking-laziness-test
+  (testing "That the shrinking process doesn't accidentally do extra work"
+    (let [state (atom 80)
+          prop (prop/for-all [xs (gen/vector gen/large-integer)]
+                 (pos? (swap! state dec)))
+          res (tc/quick-check 100 prop :seed 42)
+          test-runs-during-shrinking (- @state)]
+      (is (= test-runs-during-shrinking
+             (get-in res [:shrunk :total-nodes-visited]))))))

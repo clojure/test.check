@@ -128,7 +128,10 @@
            depth 0]
       (if (empty? nodes)
         (smallest-shrink total-nodes-visited depth current-smallest)
-        (let [[head & tail] nodes
+        (let [;; can't destructure here because that could force
+              ;; evaluation of (second nodes)
+              head (first nodes)
+              tail (rest nodes)
               result (:result (rose/root head))]
           (if (not-falsey-or-exception? result)
             ;; this node passed the test, so now try testing its right-siblings

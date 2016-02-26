@@ -120,12 +120,17 @@
     (map-indexed (fn [index _] (exclude-nth index roses)) roses)
     (permutations (vec roses))))
 
+(defn ^:private unchunk
+  "Returns an equivalent lazy seq that is not chunked."
+  [a-lazy-seq]
+  (take Double/POSITIVE_INFINITY a-lazy-seq))
+
 (defn shrink
   {:no-doc true}
   [f roses]
   (if (core/seq roses)
     (make-rose (apply f (map root roses))
-               (map #(shrink f %) (remove roses)))
+               (map #(shrink f %) (remove (unchunk roses))))
     (make-rose (f) [])))
 
 (defn collapse
