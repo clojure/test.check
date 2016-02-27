@@ -276,6 +276,8 @@
   [generators]
   (assert (every? generator? generators)
           "Arg to one-of must be a collection of generators")
+  (assert (seq generators)
+          "one-of cannot be called with an empty collection")
   (bind (choose 0 (dec (count generators)))
         #(nth generators %)))
 
@@ -299,6 +301,8 @@
   (assert (every? (fn [[x g]] (and (number? x) (generator? g)))
                   pairs)
           "Arg to frequency must be a list of [num generator] pairs")
+  (assert (seq pairs)
+          "frequency cannot be called with an empty collection")
   (core/let [total (apply + (core/map first pairs))]
     (gen-bind (choose 1 total)
               #(pick pairs (rose/root %)))))
