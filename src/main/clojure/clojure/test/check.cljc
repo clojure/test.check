@@ -91,14 +91,15 @@
               result-map-rose (gen/call-gen property r1 size)
               result-map (rose/root result-map-rose)
               result (:result result-map)
-              args (:args result-map)]
+              args (:args result-map)
+              so-far (inc so-far)]
           (if (not-falsey-or-exception? result)
-            (let [so-far' (inc so-far)]
+            (do
               (reporter-fn {:type :trial
                             :property property
-                            :so-far so-far'
+                            :so-far so-far
                             :num-tests num-tests})
-              (recur so-far' rest-size-seq r2))
+              (recur so-far rest-size-seq r2))
             (failure property result-map-rose so-far size created-seed reporter-fn)))))))
 
 (defn- smallest-shrink
@@ -159,6 +160,6 @@
     {:result result
      :seed seed
      :failing-size size
-     :num-tests (inc trial-number)
+     :num-tests trial-number
      :fail (vec failing-args)
      :shrunk (shrink-loop failing-rose-tree)}))
