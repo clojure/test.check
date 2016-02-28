@@ -960,7 +960,8 @@
 ;; TCHECK-32 Regression
 ;; ---------------------------------------------------------------------------
 
-;; This gives a stack error in CLJS, don't know why
+;; This gives a stack error in CLJS, probably because of
+;; http://dev.clojure.org/jira/browse/CLJS-1594
 #?(:clj
    (defspec merge-is-idempotent-and-this-spec-doesn't-OOM 200
      (prop/for-all [m (gen/map gen/any gen/any)]
