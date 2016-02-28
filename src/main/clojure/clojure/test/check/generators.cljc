@@ -1318,14 +1318,28 @@
   (one-of [int large-integer double char-ascii string-ascii ratio boolean
            keyword keyword-ns symbol symbol-ns uuid]))
 
+#?(:cljs
+;; http://dev.clojure.org/jira/browse/CLJS-1594
+(defn ^:private hashable?
+  [x]
+  (if (number? x)
+    (not (or (js/isNaN x)
+             (= NEG_INFINITY x)
+             (= POS_INFINITY x)))
+    true)))
+
 (defn container-type
   [inner-type]
   (one-of [(vector inner-type)
            (list inner-type)
-           (set inner-type)
+           (set #?(:clj inner-type
+                   :cljs (such-that hashable? inner-type)))
            ;; scaling this by half since it naturally generates twice
            ;; as many elements
-           (scale #(quot % 2) (map inner-type inner-type))]))
+           (scale #(quot % 2)
+                  (map #?(:clj inner-type
+                          :cljs (such-that hashable? inner-type))
+                       inner-type))]))
 
 ;; A few helpers for recursive-gen
 

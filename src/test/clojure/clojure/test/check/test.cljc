@@ -960,9 +960,17 @@
 ;; TCHECK-32 Regression
 ;; ---------------------------------------------------------------------------
 
-;; This gives a stack error in CLJS, probably because of
-;; http://dev.clojure.org/jira/browse/CLJS-1594
-#?(:clj
-   (defspec merge-is-idempotent-and-this-spec-doesn't-OOM 200
-     (prop/for-all [m (gen/map gen/any gen/any)]
-       (= m (merge m m)))))
+;; Setting this to run sparsely on CLJS until I figure out why it's so
+;; slow
+(defspec merge-is-idempotent-and-this-spec-doesn't-OOM #?(:clj 200
+                                                          :cljs 10)
+  ;; using any-edn  here because:
+  ;;
+  ;; - NaN is problematic as a map key in general
+  ;; - NaN/infinity are a problem as a map key and set element on CLJS
+  ;;   because of CLJS-1594
+  ;; - NaN can be equal to itself in clj when identical? checks
+  ;;   short-circuit equality, but this doesn't seem to happen in CLJS
+  (prop/for-all [m (->> (gen/map any-edn any-edn)
+                        #?(:cljs (gen/scale #(* 20 %))))]
+    (= m (merge m m))))
