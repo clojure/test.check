@@ -24,7 +24,13 @@
       [non-nil-seed (random/make-random non-nil-seed)])))
 
 (defn- complete
-  [property num-trials seed]
+  [property num-trials seed reporter-fn]
+  (reporter-fn {:type :complete
+                :property property
+                :result true
+                :num-tests num-trials
+                :seed seed})
+
   {:result true :num-tests num-trials :seed seed})
 
 (defn- not-falsey-or-exception?
@@ -59,11 +65,13 @@
        :num-tests <total number of tests>}
 
       ;; called after each failing trial
-      {:type         :start-shrinking
+      {:type         :failure
        :property     #<...>
        :result       ...
        :trial-number <tests ran before failure found>
        :failing-args [...]}
+
+    It will also be called on :complete, :shrink-step and :shrunk.
 
   Examples:
 
@@ -74,7 +82,7 @@
                    :seed 42
                    :max-size 50
                    :reporter-fn (fn [m]
-                                  (when (= :start-shrinking (:type m))
+                                  (when (= :failure (:type m))
                                     (println \"Uh oh...\"))))"
   [num-tests property & {:keys [seed max-size reporter-fn]
                          :or {max-size 200, reporter-fn (constantly nil)}}]
@@ -83,9 +91,8 @@
     (loop [so-far 0
            size-seq size-seq
            rstate rng]
-      (reporter-fn {:type :start-trial})
       (if (== so-far num-tests)
-        (complete property num-tests created-seed)
+        (complete property num-tests created-seed reporter-fn)
         (let [[size & rest-size-seq] size-seq
               [r1 r2] (random/split rstate)
               result-map-rose (gen/call-gen property r1 size)
@@ -120,8 +127,10 @@
   but not backtrack
   * If a node fails the property, search its children
   The value returned is the left-most failing example at the depth where a
-  passing example was found."
-  [rose-tree]
+  passing example was found.
+
+  Calls reporter-fn on every shrink step."
+  [rose-tree reporter-fn]
   (let [shrinks-this-depth (rose/children rose-tree)]
     (loop [nodes shrinks-this-depth
            current-smallest (rose/root rose-tree)
@@ -133,7 +142,11 @@
               ;; evaluation of (second nodes)
               head (first nodes)
               tail (rest nodes)
-              result (:result (rose/root head))]
+              result (:result (rose/root head))
+              args (:args (rose/root head))]
+          (reporter-fn {:type :shrink-step
+                        :result result
+                        :args args})
           (if (not-falsey-or-exception? result)
             ;; this node passed the test, so now try testing its right-siblings
             (recur tail current-smallest (inc total-nodes-visited) depth)
@@ -157,9 +170,16 @@
                   :trial-number trial-number
                   :failing-args failing-args})
 
-    {:result result
-     :seed seed
-     :failing-size size
-     :num-tests trial-number
-     :fail (vec failing-args)
-     :shrunk (shrink-loop failing-rose-tree)}))
+    (let [shrunk (shrink-loop failing-rose-tree
+                              #(reporter-fn (assoc % :property property)))]
+      (reporter-fn {:type :shrunk
+                    :property property
+                    :trial-number trial-number
+                    :failing-args failing-args
+                    :shrunk shrunk})
+      {:result result
+       :seed seed
+       :failing-size size
+       :num-tests trial-number
+       :fail (vec failing-args)
+       :shrunk shrunk})))

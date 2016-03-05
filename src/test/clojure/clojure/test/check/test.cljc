@@ -921,6 +921,30 @@
                           [xs x])]
     (some #{x} xs)))
 
+;; reporter-fn
+;; ---------------------------------------------------------------------------
+
+(deftest reporter-fn-calls-test
+  (testing
+    "a failing prop"
+    (let [calls (atom [])
+          reporter-fn (partial swap! calls conj)
+          prop (prop/for-all [n gen/nat]
+                             (> 5 n))]
+      (tc/quick-check 10 prop :reporter-fn reporter-fn)
+      (is (= #{:trial :failure :shrink-step :shrunk}
+             (->> @calls (map :type) set)))))
+
+  (testing
+    "a successful prop"
+    (let [calls (atom [])
+          reporter-fn (partial swap! calls conj)
+          prop (prop/for-all [n gen/nat]
+                             (<= 0 n))]
+      (tc/quick-check 5 prop :reporter-fn reporter-fn)
+      (is (= #{:trial :complete}
+             (->> @calls (map :type) set))))))
+
 ;; TCHECK-77 Regression
 ;; ---------------------------------------------------------------------------
 
