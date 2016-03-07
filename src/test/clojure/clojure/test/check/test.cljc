@@ -960,17 +960,21 @@
 ;; TCHECK-32 Regression
 ;; ---------------------------------------------------------------------------
 
-;; Setting this to run sparsely on CLJS until I figure out why it's so
-;; slow
-(defspec merge-is-idempotent-and-this-spec-doesn't-OOM #?(:clj 200
-                                                          :cljs 10)
-  ;; using any-edn  here because:
+;; The original code reported in TCHECK-32 used 100 test runs,
+;; but I'm using 50 here because 100 pushes the limits of my
+;; node.js default memory allocation. I don't consider that
+;; the same as the original problem, though, because it's just
+;; as likely to OOM for (let [g (gen/vector gen/string)] (gen/map g g)),
+;; which shows that the problem has more to do with 2D collections of
+;; strings/etc. cranked up to size=200 than it has to do with
+;; gen/any in particular.
+(defspec merge-is-idempotent-and-this-spec-doesn't-OOM 50
+  ;; using any-edn instead of gen/any here because:
   ;;
   ;; - NaN is problematic as a map key in general
   ;; - NaN/infinity are a problem as a map key and set element on CLJS
   ;;   because of CLJS-1594
   ;; - NaN can be equal to itself in clj when identical? checks
   ;;   short-circuit equality, but this doesn't seem to happen in CLJS
-  (prop/for-all [m (->> (gen/map any-edn any-edn)
-                        #?(:cljs (gen/scale #(* 20 %))))]
+  (prop/for-all [m (gen/map any-edn any-edn)]
     (= m (merge m m))))
