@@ -143,20 +143,26 @@
               head (first nodes)
               tail (rest nodes)
               result (:result (rose/root head))
-              args (:args (rose/root head))]
-          (reporter-fn {:type :shrink-step
-                        :result result
-                        :args args})
+              args (:args (rose/root head))
+              shrink-step-map {:type :shrink-step
+                               :result result
+                               :args args}]
           (if (not-falsey-or-exception? result)
             ;; this node passed the test, so now try testing its right-siblings
-            (recur tail current-smallest (inc total-nodes-visited) depth)
+            (do
+              (reporter-fn (merge shrink-step-map {:pass? true
+                                                   :current-smallest current-smallest}))
+              (recur tail current-smallest (inc total-nodes-visited) depth))
             ;; this node failed the test, so check if it has children,
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
-            (if-let [children (seq (rose/children head))]
-              (recur children (rose/root head) (inc total-nodes-visited) (inc depth))
-              (recur tail (rose/root head) (inc total-nodes-visited) depth))))))))
+            (let [new-smallest (rose/root head)]
+              (reporter-fn (merge shrink-step-map {:pass? false
+                                                   :current-smallest new-smallest}))
+              (if-let [children (seq (rose/children head))]
+                (recur children new-smallest (inc total-nodes-visited) (inc depth))
+                (recur tail new-smallest (inc total-nodes-visited) depth)))))))))
 
 (defn- failure
   [property failing-rose-tree trial-number size seed reporter-fn]
