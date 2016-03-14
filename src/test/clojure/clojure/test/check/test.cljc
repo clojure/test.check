@@ -979,6 +979,34 @@
       (is (= #{:trial :complete}
              (->> @calls (map :type) set))))))
 
+(deftest shrink-step-events-test
+  (let [events (atom [])
+        reporter-fn (partial swap! events conj)
+        pred (fn [n] (not (< 100 n)))
+        prop (prop/for-all [n (gen/scale (partial * 10) gen/nat)]
+                           (pred n))]
+    (tc/quick-check 100 prop :reporter-fn reporter-fn)
+    (let [shrink-steps (filter #(= :shrink-step (:type %)) @events)
+          failing-steps (filter (complement :pass?) shrink-steps)
+          passing-steps (filter :pass? shrink-steps)
+          get-args-and-smallest-args (juxt (comp first :args) (comp first :args :current-smallest))]
+      (is (every? #(not (pred (-> % :args first))) failing-steps)
+          "pred on args is falsey in all failing steps")
+      (is (every? #(pred (-> % :args first)) passing-steps)
+          "pred on args is truthy in all passing steps")
+      (is (->> failing-steps
+               (map get-args-and-smallest-args)
+               (every? (fn [[args current-smallest-args]] (= args current-smallest-args))))
+          "for every failing step, current-smallest args are equal to args")
+      (is (->> passing-steps
+               (map get-args-and-smallest-args)
+               (every? (fn [[args current-smallest-args]] (< args current-smallest-args))))
+          "for every passing step, current-smallest args are smaller than args")
+      (let [shrunk-args (map (comp first :args) failing-steps)]
+        (is (= shrunk-args
+               (reverse (sort shrunk-args)))
+            "failing steps args are sorted in descending order")))))
+
 ;; TCHECK-77 Regression
 ;; ---------------------------------------------------------------------------
 
