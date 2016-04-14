@@ -522,7 +522,7 @@
 
 (deftest f-map-respected-during-shrinking
   (testing
-    "Generators created fmap should have that function applied
+    "Generators created with fmap should have that function applied
     during shrinking"
     (is (= [50]
            (let [result (tc/quick-check 100
