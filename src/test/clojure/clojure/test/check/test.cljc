@@ -531,6 +531,41 @@
                                           false))]
              (-> result :shrunk :smallest))))))
 
+;; Collections can shrink reasonably fast; regression for TCHECK-94
+;; ---------------------------------------------------------------------------
+
+(defspec collections-shrink-quickly 200
+  (prop/for-all [seed gen-seed
+                 coll-gen (let [coll-generators
+                                [gen/vector gen/list #_#_#_#_gen/set
+                                 gen/vector-distinct gen/list-distinct
+                                 #(gen/map % %)]
+                                coll-gen-gen (gen/elements coll-generators)]
+                            (gen/one-of [coll-gen-gen
+                                         #_
+                                         (gen/fmap (fn [[g1 g2]] (comp g1 g2))
+                                                   (gen/tuple coll-gen-gen
+                                                              coll-gen-gen))]))]
+    (let [g (coll-gen (gen/frequency [[100 gen/large-integer]
+                                      [1 (gen/return :oh-no!)]]))
+          scalars #(remove coll? (tree-seq coll? seq %))
+          ;; technically this could fail to fail, but running the test
+          ;; 10000 times should ensure it doesn't
+          result (tc/quick-check 10000
+                                 (prop/for-all [coll g]
+                                   (->> coll
+                                        (scalars)
+                                        (not-any? #{:oh-no!})))
+                                 :seed seed)
+
+          failing-size (-> result :fail first scalars count)
+          {:keys [smallest total-nodes-visited]} (:shrunk result)]
+      (and (< (count (scalars (first smallest))) 4)
+           ;; shrink-time should be in proportion to the log of the
+           ;; collection size; multiplying by 3 to add some wiggle
+           ;; room
+           (< total-nodes-visited (+ 5 (* 3 (Math/log failing-size))))))))
+
 ;; gen/int returns an integer when size is a double; regression for TCHECK-73
 ;; ---------------------------------------------------------------------------
 

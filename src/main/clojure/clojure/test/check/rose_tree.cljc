@@ -135,6 +135,36 @@
                (map #(shrink f %) (remove (unchunk roses))))
     (make-rose (f) [])))
 
+(declare shrink-vector*)
+
+(defn ^:private bifurcate
+  "Returns a sequence of rose trees representing shrinks that discard
+  half of the vector of roses."
+  [f roses]
+  (when (<= 4 (count roses))
+    (let [left-count (quot (count roses) 2)]
+      (lazy-seq
+       (cons
+        (shrink-vector* f (subvec roses 0 left-count))
+        (lazy-seq
+         (list (shrink-vector* f (subvec roses left-count)))))))))
+
+(defn ^:private shrink-vector*
+  [f roses]
+  (let [thing (shrink f roses)]
+    (make-rose (root thing)
+               (concat (bifurcate f roses) (children thing)))))
+
+(defn shrink-vector
+  [f roses]
+  {:pre [(vector? roses)]}
+  (let [rose (shrink-vector* f roses)
+        empty-rose (make-rose (f) [])]
+    (if (empty? roses)
+      rose
+      (make-rose (root rose)
+                 (cons empty-rose (children rose))))))
+
 (defn collapse
   "Return a new rose-tree whose depth-one children
   are the children from depth one _and_ two of the input
