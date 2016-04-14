@@ -718,10 +718,10 @@
            r (random/make-random)]
       (cond
        (== trials 10000)
-       (is nil (str "rand-range didn't return both of its bounds after 10000 trials; "
-                    "it is possible for this to fail without there being a problem, "
-                    "but we should be able to rely upon probability to not bother us "
-                    "too frequently."))
+       ;; the probability of this happening by chance is roughly 1 in
+       ;; 10^1761 so we can safely assume something's wrong if it does
+       (is nil "rand-range didn't return both of its bounds after 10000 trials")
+
        (empty? bounds) (is true)
        :else (let [[r1 r2] (random/split r)]
                (recur (inc trials) (disj bounds (rand-range r1)) r2))))))
@@ -734,10 +734,9 @@
                  (gen/sample-seq (gen/elements options)))
              (take 10000)
              (some empty?))
-        (str "elements didn't return all of its candidate values after 10000 trials; "
-             "it is possible for this to fail without there being a problem, "
-             "but we should be able to rely upon probability to not bother us "
-             "too frequently."))))
+        ;; the probability of this happening by chance is roughly 1 in
+        ;; 10^1249 so we can safely assume something's wrong if it does
+        "elements didn't return all of its candidate values after 10000 trials")))
 
 ;; shuffling a vector generates a permutation of that vector
 ;; ---------------------------------------------------------------------------
