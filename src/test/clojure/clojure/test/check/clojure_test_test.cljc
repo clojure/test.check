@@ -12,7 +12,7 @@
                 [[cljs.test :as test :refer [test-var] :refer-macros [is]]
                  [cljs.reader :refer [read-string]]])
             #?(:clj
-               [clojure.test :refer :all])
+               [clojure.test :as test :refer :all])
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [clojure.test.check.clojure-test :as ct #?@(:clj  [:refer (defspec)]
@@ -68,9 +68,20 @@
   #?(:clj
       (binding [ct/*report-trials* ct/trial-report-periodic
                 ct/*trial-report-period* 500]
-        (is (re-seq
-              #"(Passing trial \d{3} / 1000 for .+\n)+"
-              (capture-test-var #'long-running-spec)))))
+        (let [last-trial-report @#'ct/last-trial-report
+              trial-report-0 @last-trial-report
+              _ (test/report {:type :begin-test-var})
+              trial-report-1 @last-trial-report]
+          (is (> trial-report-1 trial-report-0)
+              "calling with {:type :begin-test-var} makes last-trial-report to increment")
+          (test/report {:type :end-test-var})
+          (is (= trial-report-1 @last-trial-report)
+              "calling with other :type keeps last-trial-report constant")
+          (is (re-seq
+                #"(Passing trial \d{3} / 1000 for .+\n)+"
+                (capture-test-var #'long-running-spec)))
+          (is (> @last-trial-report trial-report-1)
+              "running the test makes last-trial-report to increment"))))
 
   (let [[report-counters stdout]
         #?(:clj
