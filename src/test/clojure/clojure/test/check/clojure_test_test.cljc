@@ -24,10 +24,19 @@
 (defspec trial-counts 5000
   (prop/for-all* [gen/int] (constantly true)))
 
-;; NOTE: No Thread/sleep in JS, so no :cljs version - David
-#?(:clj
-    (defspec long-running-spec 1000
-      (prop/for-all* [] #(do (Thread/sleep 1) true))))
+(defspec long-running-spec 1000
+  (prop/for-all* []
+    #(do
+       #?(:clj
+          (Thread/sleep 1)
+          :cljs
+          (let [start (.valueOf (js/Date.))]
+            ;; let's do some busy waiting for 1 msec, so we avoid setTimeout
+            ;; which would make our test async
+            (while (= start
+                      (.valueOf (js/Date.)))
+              (apply + (range 50)))))
+       true)))
 
 (defn- vector-elements-are-unique*
   [v]
@@ -64,24 +73,22 @@
                           :cljs #"\.{5}[\s\S]+")
                        output))))
 
-  ;; NOTE: No Thread/sleep in JS - David
-  #?(:clj
-      (binding [ct/*report-trials* ct/trial-report-periodic
-                ct/*trial-report-period* 500]
-        (let [last-trial-report @#'ct/last-trial-report
-              trial-report-0 @last-trial-report
-              _ (test/report {:type :begin-test-var})
-              trial-report-1 @last-trial-report]
-          (is (> trial-report-1 trial-report-0)
-              "calling with {:type :begin-test-var} makes last-trial-report to increment")
-          (test/report {:type :end-test-var})
-          (is (= trial-report-1 @last-trial-report)
-              "calling with other :type keeps last-trial-report constant")
-          (is (re-seq
-                #"(Passing trial \d{3} / 1000 for .+\n)+"
-                (capture-test-var #'long-running-spec)))
-          (is (> @last-trial-report trial-report-1)
-              "running the test makes last-trial-report to increment"))))
+  (binding [ct/*report-trials* ct/trial-report-periodic
+            ct/*trial-report-period* 500]
+    (let [last-trial-report @#'ct/last-trial-report
+          trial-report-0 @last-trial-report
+          _ (test/report {:type :begin-test-var})
+          trial-report-1 @last-trial-report]
+      (is (> trial-report-1 trial-report-0)
+          "calling with {:type :begin-test-var} makes last-trial-report to increment")
+      (test/report {:type :end-test-var})
+      (is (= trial-report-1 @last-trial-report)
+          "calling with other :type keeps last-trial-report constant")
+      (is (re-seq
+            #"(Passing trial \d{3} / 1000 for .+\n)+"
+            (capture-test-var #'long-running-spec)))
+      (is (> @last-trial-report trial-report-1)
+          "running the test makes last-trial-report to increment")))
 
   (let [[report-counters stdout]
         #?(:clj
