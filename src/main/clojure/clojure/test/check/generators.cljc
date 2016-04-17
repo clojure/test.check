@@ -425,13 +425,11 @@
   (fmap #(* -1 %) nat))
 
 (def s-pos-int
-  "Generate strictly positive integers bounded by the generator's `size`
-   parameter."
+  "Generate strictly positive integers bounded by the generator's `size` + 1"
   (fmap inc nat))
 
 (def s-neg-int
-  "Generate strictly negative integers bounded by the generator's `size`
-   parameter."
+  "Generate strictly negative integers bounded by the generator's `size` + 1"
   (fmap dec neg-int))
 
 (defn vector
