@@ -86,7 +86,8 @@
                                     (println \"Uh oh...\"))))"
   [num-tests property & {:keys [seed max-size reporter-fn]
                          :or {max-size 200, reporter-fn (constantly nil)}}]
-  (let [[created-seed rng] (make-rng seed)
+  (let [num-tests (long num-tests)
+        [created-seed rng] (make-rng seed)
         size-seq (gen/make-size-range-seq max-size)]
     (loop [so-far 0
            size-seq size-seq

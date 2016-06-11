@@ -7,8 +7,13 @@
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.7.0"]
-                                  [org.clojure/clojurescript "1.7.48"]]}}
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0-alpha5"]
+                                  [org.clojure/clojurescript "1.7.48"]]}
+             :test {:injections [(try
+                                   (require 'clojure.spec)
+                                   (require 'clojure.test.check.specs)
+                                   ((clojure.spec/instrument-all))
+                                   (catch Exception e))]}}
   :global-vars {*warn-on-reflection* true}
   :plugins [[lein-codox "0.9.1"]
             [lein-cljsbuild "1.1.0"]]
