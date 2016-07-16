@@ -844,7 +844,7 @@
   [min max]
   (sized (fn [size]
            (core/let [size (core/max size 1) ;; no need to worry about size=0
-                 max-bit-count (core/min size #?(:clj 64 :cljs 54))]
+                      max-bit-count (core/min size #?(:clj 64 :cljs 54))]
              (gen-fmap (fn [rose]
                          (core/let [[bit-count x] (rose/root rose)]
                            (int-rose-tree (long->large-integer bit-count x min max))))
