@@ -6,17 +6,17 @@
 (defmulti reporter-fn-return :type)
 ; (defmethod reporter-fn-return )
 
-(s/def ::t.c/seed long?)
-(s/def ::t.c/max-size nat-long?)
+(s/def ::t.c/seed int?)
+(s/def ::t.c/max-size nat-int?)
 (s/def ::t.c/reporter-fn
-  (s/fspec :args (s/cat :arg ::s/any)
-           :ret ::s/any))
-(s/def ::t.c/result ::s/any)
-(s/def ::t.c/num-tests nat-long?)
-(s/def ::t.c/failing-size nat-long?)
+  (s/fspec :args (s/cat :arg any?)
+           :ret any?))
+(s/def ::t.c/result any?)
+(s/def ::t.c/num-tests nat-int?)
+(s/def ::t.c/failing-size nat-int?)
 (s/def ::t.c/fail ::t.c/result)
-(s/def ::t.c/total-nodes-visited nat-long?)
-(s/def ::t.c/depth nat-long?)
+(s/def ::t.c/total-nodes-visited nat-int?)
+(s/def ::t.c/depth nat-int?)
 (s/def ::t.c/smallest vector?)
 (s/def ::t.c/shrunk (s/keys :req-un [::t.c/total-nodes-visited
                                      ::t.c/depth ::t.c/result
