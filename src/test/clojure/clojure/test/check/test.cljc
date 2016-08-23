@@ -965,7 +965,7 @@
           reporter-fn (partial swap! calls conj)
           prop (prop/for-all [n gen/nat]
                              (> 5 n))]
-      (tc/quick-check 10 prop :reporter-fn reporter-fn)
+      (tc/quick-check 1000 prop :reporter-fn reporter-fn)
       (is (= #{:trial :failure :shrink-step :shrunk}
              (->> @calls (map :type) set)))))
 
