@@ -57,7 +57,7 @@
 (defn ^:private capture-clojure-test-reports
   [func]
   (let [log (atom [])]
-    (with-redefs [clojure.test/report #(swap! log conj %)]
+    (with-redefs [test/report #(swap! log conj %)]
       (func))
     @log))
 
