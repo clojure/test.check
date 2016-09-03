@@ -68,10 +68,10 @@
           (= {:test-var "trial-counts", :result true, :num-tests 5000})))
 
   (binding [ct/*report-trials* true]
-     (let [output (capture-test-var #'trial-counts)]
-       (is (re-matches #?(:clj  #"(?s)\.{5}.+"
-                          :cljs #"\.{5}[\s\S]+")
-                       output))))
+    (let [output (capture-test-var #'trial-counts)]
+      (is (re-matches #?(:clj  #"(?s)\.{5}.+"
+                         :cljs #"\.{5}[\s\S]+")
+                      output))))
 
   (binding [ct/*report-trials* ct/trial-report-periodic
             ct/*trial-report-period* 500]
@@ -85,17 +85,17 @@
       (is (= trial-report-1 @last-trial-report)
           "calling with other :type keeps last-trial-report constant")
       (is (re-seq
-            #"(Passing trial \d{3} / 1000 for .+\n)+"
-            (capture-test-var #'long-running-spec)))
+           #"(Passing trial \d{3} / 1000 for .+\n)+"
+           (capture-test-var #'long-running-spec)))
       (is (> @last-trial-report trial-report-1)
           "running the test makes last-trial-report to increment")))
 
   (let [[report-counters stdout]
         #?(:clj
            (binding [ct/*report-shrinking* true
-                      ; need to keep the failure of this-is-supposed-to-fail from
-                      ; affecting the clojure.test.check test run
-                      *report-counters* (ref *initial-report-counters*)]
+                     ;; need to keep the failure of this-is-supposed-to-fail from
+                     ;; affecting the clojure.test.check test run
+                     *report-counters* (ref *initial-report-counters*)]
              (let [out (capture-test-var #'this-is-supposed-to-fail)]
                [@*report-counters* out]))
 
@@ -111,9 +111,9 @@
                [(:report-counters env) report-str])))]
     (is (== 1 (:fail report-counters)))
     (is (re-seq
-          #?(:clj
-             #"(?s)Shrinking vector-elements-are-unique starting with parameters \[\[.+"
+         #?(:clj
+            #"(?s)Shrinking vector-elements-are-unique starting with parameters \[\[.+"
 
-             :cljs
-             #"Shrinking vector-elements-are-unique starting with parameters \[\[[\s\S]+")
-          stdout))))
+            :cljs
+            #"Shrinking vector-elements-are-unique starting with parameters \[\[[\s\S]+")
+         stdout))))
