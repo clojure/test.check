@@ -51,9 +51,8 @@
 
 (defn- capture-test-var
   [v]
-  (doto (with-out-str #?(:clj  (binding [*test-out* *out*] (test-var v))
-                         :cljs (test-var v)))
-    println))
+  (with-out-str #?(:clj  (binding [*test-out* *out*] (test-var v))
+                   :cljs (test-var v))))
 
 (defn test-ns-hook
   []
