@@ -38,6 +38,10 @@
                 ::property (:property args)
                 ::params (vec (:failing-args args))})
 
+    :shrunk
+    (ct/report {:type ::shrunk
+                ::property (:property args)
+                ::params (-> args :shrunk :smallest vec)})
     nil))
 
 (def ^:dynamic *default-opts*

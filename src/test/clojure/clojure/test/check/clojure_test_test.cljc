@@ -54,6 +54,13 @@
   (with-out-str #?(:clj  (binding [*test-out* *out*] (test-var v))
                    :cljs (test-var v))))
 
+(defn ^:private capture-clojure-test-reports
+  [func]
+  (let [log (atom [])]
+    (with-redefs [clojure.test/report #(swap! log conj %)]
+      (func))
+    @log))
+
 (defn test-ns-hook
   []
   (is (-> (capture-test-var #'default-trial-counts)
@@ -115,4 +122,21 @@
 
             :cljs
             #"Shrinking vector-elements-are-unique starting with parameters \[\[[\s\S]+")
-         stdout))))
+         stdout)))
+
+  ;;
+  ;; Test for TCHECK-118
+  ;;
+  (let [{trial ::ct/trial, shrinking ::ct/shrinking, shrunk ::ct/shrunk}
+        (group-by :type (capture-clojure-test-reports this-is-supposed-to-fail))]
+    ;; should have had some successful runs because the initial size
+    ;; is too small for duplicates
+    (is (seq trial))
+
+    (is (= 1 (count shrinking)))
+    (is (not (-> shrinking first ::ct/params first (->> (apply distinct?)))))
+
+    (is (= 1 (count shrunk)))
+    (let [[a b & more] (-> shrunk first ::ct/params first)]
+      (is (empty? more))
+      (is (and a b (= a b))))))
