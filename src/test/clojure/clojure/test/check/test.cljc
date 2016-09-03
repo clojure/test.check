@@ -974,6 +974,13 @@
                           [xs x])]
     (some #{x} xs)))
 
+(defspec let-with-map-bindings
+  (prop/for-all [[x y] (gen/let {x gen/large-integer
+                                 y gen/large-integer}
+                         [x y])]
+    (and (number? x)
+         (number? y))))
+
 ;; reporter-fn
 ;; ---------------------------------------------------------------------------
 

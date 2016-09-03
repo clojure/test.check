@@ -1536,6 +1536,10 @@
   Subsequent generator expressions can refer to the previously bound
   values, in the same way as clojure.core/let.
 
+  Alternately, when the clauses are all independent, you can use a
+  map instead of a vector for the bindings. This will expand to
+  `tuple` instead of `bind`, which allows more effective shrinking.
+
   The body of the let can be either a value or a generator, and does
   the expected thing in either case. In this way let provides the
   functionality of both `bind` and `fmap`.
@@ -1547,6 +1551,11 @@
       {:some-strings strs
        :one-of-those-strings s})
 
+    ;; map bindings for independent generators:
+    (gen/let {a gen/large-integer
+              b gen/large-integer}
+      (+' a b))
+
     ;; generates collections of \"users\" that have integer IDs
     ;; from 0...N-1, but are in a random order
     (gen/let [users (gen/list (gen/hash-map :name gen/string-ascii
@@ -1556,14 +1565,23 @@
            (gen/shuffle)))"
   {:added "0.9.0"}
   [bindings & body]
-  (assert (vector? bindings)
-          "First arg to gen/let must be a vector of bindings.")
-  (assert (even? (count bindings))
-          "gen/let requires an even number of forms in binding vector")
-  (if (empty? bindings)
-    `(core/let [val# (do ~@body)]
-       (if (generator? val#)
-         val#
-         (return val#)))
-    (core/let [[binding gen & more] bindings]
-      `(bind ~gen (fn [~binding] (let [~@more] ~@body))))))
+  (cond
+    (vector? bindings)
+    (do
+      (assert (even? (count bindings))
+              "gen/let requires an even number of forms in binding vector")
+      (if (empty? bindings)
+        `(core/let [val# (do ~@body)]
+           (if (generator? val#)
+             val#
+             (return val#)))
+        (core/let [[binding gen & more] bindings]
+          `(bind ~gen (fn [~binding] (let [~@more] ~@body))))))
+
+    (map? bindings)
+    `(let [[~@(keys bindings)]
+           (tuple ~@(vals bindings))]
+       ~@body)
+
+    :else
+    (throw (ex-info "gen/let requires a vector or map of bindings" {:arg bindings}))))
