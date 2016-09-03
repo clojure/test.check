@@ -282,16 +282,20 @@
         #(nth generators %)))
 
 (defn- pick
-  [[h & tail] n]
-  (core/let [[chance gen] h]
-    (if (<= n chance)
-      gen
-      (recur tail (- n chance)))))
+  "Returns an index into the `likelihoods` sequence."
+  [likelihoods n]
+  (->> likelihoods
+       (reductions + 0)
+       (rest)
+       (take-while #(<= % n))
+       (count)))
 
 (defn frequency
   "Create a generator that chooses a generator from `pairs` based on the
   provided likelihoods. The likelihood of a given generator being chosen is
-  its likelihood divided by the sum of all likelihoods
+  its likelihood divided by the sum of all likelihoods. Shrinks toward
+  choosing an earlier generator, as well as shrinking the value generated
+  by the chosen generator.
 
   Examples:
 
@@ -304,8 +308,25 @@
   (assert (seq pairs)
           "frequency cannot be called with an empty collection")
   (core/let [total (apply + (core/map first pairs))]
-    (gen-bind (choose 1 total)
-              #(pick pairs (rose/root %)))))
+    ;; low-level impl so that shrinking is optimal
+    (make-gen
+     (fn [rnd size]
+       (call-gen
+        (gen-bind (choose 0 (dec total))
+                  (fn [x]
+                    (core/let [idx (pick (core/map first pairs) (rose/root x))]
+                      (gen-fmap (fn [rose]
+                                  (rose/make-rose (rose/root rose)
+                                                  (lazy-seq
+                                                   (concat
+                                                    ;; try to shrink to earlier generators first
+                                                    (for [idx (range idx)]
+                                                      (call-gen (second (nth pairs idx))
+                                                                rnd
+                                                                size))
+                                                    (rose/children rose)))))
+                                (second (nth pairs idx))))))
+        rnd size)))))
 
 (defn elements
   "Create a generator that randomly chooses an element from `coll`.

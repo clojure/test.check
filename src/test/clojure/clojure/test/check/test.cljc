@@ -1064,3 +1064,22 @@
   ;;   short-circuit equality, but this doesn't seem to happen in CLJS
   (prop/for-all [m (gen/map any-edn any-edn)]
     (= m (merge m m))))
+
+;; TCHECK-114 Regression
+;; ---------------------------------------------------------------------------
+
+(deftest frequency-should-be-able-to-shrink-to-earlier-generators
+  (let [prop (prop/for-all [x (gen/frequency [[1 (gen/return [:gen1 :bad])]
+                                              [10 (gen/fmap (partial vector :gen2)
+                                                            (gen/list (gen/elements [:good
+                                                                                     42
+                                                                                     "a string"
+                                                                                     :bad])))]])]
+               (not (re-find #"bad" (pr-str x))))]
+    ;; we can't test that gen2 ALWAYS shrinks to gen1 because of TCHECK-120
+    (is (->> (range 1000)
+             (map #(tc/quick-check 1000 prop :seed %))
+             (some (fn [{:keys [fail shrunk]}]
+                     (and shrunk
+                          (= :gen2 (ffirst fail))
+                          (= :gen1 (ffirst (:smallest shrunk))))))))))
