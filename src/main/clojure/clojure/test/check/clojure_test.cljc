@@ -23,16 +23,36 @@
 
 (def ^:dynamic *default-test-count* 100)
 
-(declare default-reporter-fn)
+(defn default-reporter-fn
+  "Default function passed as the :reporter-fn to clojure.test.check/quick-check.
+  Delegates to clojure.test/report."
+  [{:keys [type] :as args}]
+  (case type
+    :trial
+    (ct/report {:type ::trial
+                ::property (:property args)
+                ::trial [(:so-far args) (:num-tests args)]})
+
+    :failure
+    (ct/report {:type ::shrinking
+                ::property (:property args)
+                ::params (vec (:failing-args args))})
+
+    nil))
+
+(def ^:dynamic *default-opts*
+  "The default options passed to clojure.test.check/quick-check
+  by defspec."
+  {:reporter-fn default-reporter-fn})
 
 (defn process-options
   {:no-doc true}
   [options]
-  (cond (nil? options) {:num-tests *default-test-count* :reporter-fn default-reporter-fn}
-        (number? options) {:num-tests options :reporter-fn default-reporter-fn}
-        (map? options) (merge {:num-tests *default-test-count*
-                               :reporter-fn default-reporter-fn}
-                           options)
+  (cond (nil? options) (merge {:num-tests *default-test-count*} *default-opts*)
+        (number? options) (assoc *default-opts* :num-tests options)
+        (map? options) (merge {:num-tests *default-test-count*}
+                              *default-opts*
+                              options)
         :else (throw (ex-info (str "Invalid defspec options: " (pr-str options))
                               {:bad-options options}))))
 
@@ -144,20 +164,3 @@
       (fn []
         (println "Shrinking" (get-property-name m)
                  "starting with parameters" (pr-str (::params m)))))))
-
-(defn default-reporter-fn
-  "Default function passed as the :reporter-fn to clojure.test.check/quick-check.
-  Delegates to clojure.test/report."
-  [{:keys [type] :as args}]
-  (case type
-    :trial
-    (ct/report {:type ::trial
-                ::property (:property args)
-                ::trial [(:so-far args) (:num-tests args)]})
-
-    :failure
-    (ct/report {:type ::shrinking
-                ::property (:property args)
-                ::params (vec (:failing-args args))})
-
-    nil))
