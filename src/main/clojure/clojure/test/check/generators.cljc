@@ -143,7 +143,10 @@
 
 (defn sample
   "Return a sequence of `num-samples` (default 10)
-  realized values from `generator`."
+  realized values from `generator`.
+
+  Note that this function is a dev helper and is not meant to be used
+  as part of a larger generator."
   ([generator]
    (sample generator 10))
   ([generator num-samples]
@@ -153,7 +156,10 @@
 
 (defn generate
   "Returns a single sample value from the generator, using a default
-  size of 30."
+  size of 30.
+
+  Note that this function is a dev helper and is not meant to be used
+  as part of a larger generator."
   {:added "0.8.0"}
   ([generator]
      (generate generator 30))
