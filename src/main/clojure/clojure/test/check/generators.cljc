@@ -1572,15 +1572,15 @@
               "gen/let requires an even number of forms in binding vector")
       (if (empty? bindings)
         `(core/let [val# (do ~@body)]
-           (if (generator? val#)
+           (if (clojure.test.check.generators/generator? val#)
              val#
              (return val#)))
         (core/let [[binding gen & more] bindings]
-          `(bind ~gen (fn [~binding] (let [~@more] ~@body))))))
+          `(clojure.test.check.generators/bind ~gen (fn [~binding] (let [~@more] ~@body))))))
 
     (map? bindings)
     `(let [[~@(keys bindings)]
-           (tuple ~@(vals bindings))]
+           (clojure.test.check.generators/tuple ~@(vals bindings))]
        ~@body)
 
     :else

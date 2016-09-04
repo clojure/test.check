@@ -299,14 +299,14 @@
 ;; --------------------------------------------------------------------------
 
 (deftest such-that-allows-customizing-exceptions
-  (is (thrown-with-msg? Exception #"Oh well!"
+  (is (thrown-with-msg? #?(:clj Exception :cljs js/Error) #"Oh well!"
                         (gen/generate
                          (gen/such-that
                           #(apply distinct? %)
                           (gen/vector gen/boolean 5)
                           {:ex-fn (fn [{:keys [pred gen max-tries]}]
                                     (is (and pred gen max-tries))
-                                    (throw (Exception. "Oh well!")))})))))
+                                    (throw (#?(:clj Exception. :cljs js/Error.) "Oh well!")))})))))
 
 ;; Distinct collections
 ;; --------------------------------------------------------------------------
