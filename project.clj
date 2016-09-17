@@ -9,7 +9,7 @@
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
                                   [org.clojure/clojurescript "1.7.48"]]}
-             :specs {:dependencies [[org.clojure/clojure "1.9.0-alpha11"]]
+             :specs {:dependencies [[org.clojure/clojure "1.9.0-alpha12"]]
                      :injections [(require 'clojure.spec)
                                   (require 'clojure.spec.test)
                                   (require 'clojure.test.check.specs)

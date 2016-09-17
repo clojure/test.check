@@ -20,7 +20,7 @@
 (s/def ::t.c/seed int?)
 (s/def ::t.c/max-size nat-int?)
 (s/def ::t.c/reporter-fn
-  (s/fspec :args (s/cat :arg any?)
+  (s/fspec :args (s/cat :arg (s/keys))
            :ret any?))
 (s/def ::t.c/result any?)
 (s/def ::t.c/num-tests nat-int?)
@@ -45,10 +45,6 @@
                      :property property?
                      :opts (s/keys* :opt-un [::t.c/seed
                                              ::t.c/max-size
-                                             ;; TODO: why does this
-                                             ;; fail everywhere with
-                                             ;; instrumentation?
-                                             #_
                                              ::t.c/reporter-fn]))
         :ret ::quick-check-ret)
 
@@ -57,7 +53,7 @@
 ;;
 
 (s/def ::gen/fmap-fn (s/fspec :args (s/cat :arg any?) :ret any?))
-(s/def ::gen/size (s/and number? #(<= 0 %)))
+(s/def ::gen/size (s/and number? #(<= 0 %) #(< % Double/POSITIVE_INFINITY)))
 
 (s/fdef gen/fmap
         :args (s/cat :f ifn? #_::gen/fmap-fn ;; TODO: why can't I?
@@ -86,9 +82,7 @@
                      :generator gen/generator?)
         :ret gen/generator?)
 (s/fdef gen/scale
-        :args (s/cat :f ifn?
-                     ;; TODO: why can't I?
-                     #_ (s/fspec :args (s/cat :size ::gen/size)
+        :args (s/cat :f (s/fspec :args (s/cat :size ::gen/size)
                                  :ret ::gen/size)
                      :gen gen/generator?)
         :ret gen/generator?)
@@ -96,7 +90,6 @@
         :args (s/cat :lower int?
                      :upper int?)
         :ret gen/generator?)
-#_#_
 (s/fdef gen/one-of
         :args (s/cat :gens (s/spec (s/cat :gens (s/+ gen/generator?))))
         :ret gen/generator?)
@@ -104,3 +97,32 @@
         :args (s/cat :pairs (s/coll-of
                              (s/tuple pos-int? gen/generator?)))
         :ret gen/generator?)
+(s/fdef gen/elements
+        :args (s/cat :coll (s/spec
+                            (s/cat :elements (s/+ any?))))
+        :ret gen/generator?)
+(s/def ::gen/max-tries pos-int?)
+(s/def ::gen/pred
+  (s/with-gen ifn?
+    #(gen/return (constantly true))))
+(s/def ::gen/gen
+  (s/with-gen gen/generator?
+    #(gen/return (gen/return 42))))
+(s/def ::gen/ex-fn
+  (s/fspec :args (s/cat :arg (s/keys :req-un [::gen/max-tries
+                                              ::gen/pred
+                                              ::gen/gen]))
+           :ret #(instance? Throwable %)))
+(s/fdef gen/such-that
+        :args (s/cat :pred ifn?
+                     :gen gen/generator?
+                     :max-tries-or-opts (s/?
+                                         (s/alt :max-tries nat-int?
+                                                :opts (s/keys :opt-un
+                                                              [::gen/max-tries
+                                                               ::gen/ex-fn]))))
+        :ret gen/generator?)
+
+
+;; TODO: Don't commit this
+(clojure.spec.test/instrument)
