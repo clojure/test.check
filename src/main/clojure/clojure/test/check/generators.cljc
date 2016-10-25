@@ -403,7 +403,9 @@
                          (throw (ex-info "Bad argument to such-that!" {:max-tries-or-opts
                                                                        max-tries-or-opts})))
               opts (merge default-such-that-opts opts)]
-     (assert (generator? gen) "Second arg to such-that must be a generator")
+
+     (assert (generator? gen) (str "Second arg to such-that must be a generator" (class gen)))
+
      (make-gen
       (fn [rand-seed size]
         (such-that-helper pred gen opts rand-seed size))))))

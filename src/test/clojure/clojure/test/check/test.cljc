@@ -8,7 +8,8 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.test
-  (:require #?(:cljs
+  (:require [clojure.spec.test :as spec-test]
+            #?(:cljs
                [cljs.test :as test :refer-macros [deftest testing is]])
             #?(:clj
                [clojure.test :refer :all])
@@ -988,7 +989,7 @@
 
 (deftest reporter-fn-calls-test
   ;; can't leave this in here or the 1.8 tests will fail :/
-  (clojure.spec.test/with-instrument-disabled
+  (spec-test/with-instrument-disabled
     (testing
         "a failing prop"
       (let [calls (atom [])

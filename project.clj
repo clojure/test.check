@@ -7,9 +7,9 @@
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0-alpha13"]
                                   [org.clojure/clojurescript "1.7.48"]]}
-             :specs {:dependencies [[org.clojure/clojure "1.9.0-alpha12"]]
+             :specs {:dependencies [[org.clojure/clojure "1.9.0-alpha13"]]
                      :injections [(require 'clojure.spec)
                                   (require 'clojure.spec.test)
                                   (require 'clojure.test.check.specs)

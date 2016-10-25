@@ -123,6 +123,33 @@
                                                                ::gen/ex-fn]))))
         :ret gen/generator?)
 
+(s/fdef gen/not-empty
+        :args (s/cat :gen gen/generator?)
+        :ret gen/generator?)
+
+(s/fdef gen/no-shrink
+        :args (s/cat :gen gen/generator?)
+        :ret gen/generator?)
+
+(s/fdef gen/shrink-2
+        :args (s/cat :gen gen/generator?)
+        :ret gen/generator?)
+
+(s/fdef gen/tuple
+        :args (s/cat :gens (s/* gen/generator?))
+        :ret gen/generator?)
+
+(s/fdef gen/vector
+        :args (s/cat :gen gen/generator?
+                     :size-opts (s/? (s/alt :num-elements nat-int?
+                                            ;; TODO: use s/and somehow to say max >= min?
+                                            :min-and-max (s/cat :min-elements nat-int?
+                                                                :max-elements nat-int?))))
+        :ret gen/generator?)
+
+(s/fdef gen/list
+        :args (s/cat :gen gen/generator?)
+        :ret gen/generator?)
 
 ;; TODO: Don't commit this
 (clojure.spec.test/instrument)
