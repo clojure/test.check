@@ -151,5 +151,90 @@
         :args (s/cat :gen gen/generator?)
         :ret gen/generator?)
 
+(s/fdef gen/shuffle
+        :args (s/cat :coll coll?)
+        :ret gen/generator?)
+
+(s/fdef gen/hash-map
+        :args (s/cat :kvs (s/* (s/cat :k keyword? :gen gen/generator?)))
+        :ret gen/generator?)
+
+(s/def ::gen/num-elements nat-int?)
+(s/def ::gen/min-elements nat-int?)
+(s/def ::gen/max-elements nat-int?)
+(s/def ::gen/distinct-coll-gen-opts
+  (s/keys :opt-un [::gen/num-elements ::gen/min-elements ::gen/max-elements ::gen/max-tries ::gen/ex-fn]))
+
+(s/fdef gen/vector-distinct
+        :args (s/cat :gen gen/generator?
+                     :opts (s/? ::gen/distinct-coll-gen-opts))
+        :ret gen/generator?)
+(s/fdef gen/list-distinct
+        :args (s/cat :gen gen/generator?
+                     :opts (s/? ::gen/distinct-coll-gen-opts))
+        :ret gen/generator?)
+(s/fdef gen/vector-distinct-by
+        :args (s/cat :key-fn ifn?
+                     :gen gen/generator?
+                     :opts (s/? ::gen/distinct-coll-gen-opts))
+        :ret gen/generator?)
+(s/fdef gen/list-distinct-by
+        :args (s/cat :key-fn ifn?
+                     :gen gen/generator?
+                     :opts (s/? ::gen/distinct-coll-gen-opts))
+        :ret gen/generator?)
+(s/fdef gen/set
+        :args (s/cat :gen gen/generator?
+                     :opts (s/? ::gen/distinct-coll-gen-opts))
+        :ret gen/generator?)
+(s/fdef gen/sorted-set
+        :args (s/cat :gen gen/generator?
+                     :opts (s/? ::gen/distinct-coll-gen-opts))
+        :ret gen/generator?)
+(s/fdef gen/map
+        :args (s/cat :key-gen gen/generator?
+                     :val-gen gen/generator?
+                     :opts (s/? ::gen/distinct-coll-gen-opts))
+        :ret gen/generator?)
+
+(s/def :clojure.test.check.generators.large-integer*/max int?)
+(s/def :clojure.test.check.generators.large-integer*/min int?)
+
+(s/fdef gen/large-integer*
+        :args (s/cat :opts (s/keys :opt-un [:clojure.test.check.generators.large-integer*/max
+                                            :clojure.test.check.generators.large-integer*/min]))
+        :ret gen/generator?)
+
+(s/def :clojure.test.check.generators.double*/max double?)
+(s/def :clojure.test.check.generators.double*/min double?)
+(s/def ::gen/infinite? boolean?)
+(s/def ::gen/NaN? boolean?)
+
+(s/fdef gen/double*
+        :args (s/cat :opts (s/keys :opt-un [:clojure.test.check.generators.double*/max
+                                            :clojure.test.check.generators.double*/min
+                                            ::gen/infinite?
+                                            ::gen/NaN?]))
+        :ret gen/generator?)
+
+(s/fdef gen/recursive-gen
+        :args (s/cat :container-gen-fn ifn?
+                     :scalar-gen gen/generator?)
+        :ret gen/generator?)
+
+(s/def :clojure.test.check.generators.let/bindings
+  (s/or :vector-bindings
+        ;; TODO: use vcat if it starts existing?
+        (s/cat :pairs (s/* (s/cat :name simple-symbol?
+                                  :gen-form any?)))
+
+        :map-bindings
+        (s/map-of simple-symbol? any?)))
+
+(s/fdef gen/let
+        :args (s/cat :bindings :clojure.test.check.generators.let/bindings
+                     :body (s/* any?)))
+
+
 ;; TODO: Don't commit this
 (clojure.spec.test/instrument)
