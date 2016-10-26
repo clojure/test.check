@@ -12,6 +12,8 @@
     clojure.test.check.specs
   (:require [clojure.test.check :as t.c]
             [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]
+            [clojure.test.check.clojure-test :as clojure-test]
             [clojure.spec :as s]))
 
 (defmulti reporter-fn-return :type)
@@ -47,6 +49,20 @@
                                              ::t.c/max-size
                                              ::t.c/reporter-fn]))
         :ret ::quick-check-ret)
+
+(s/fdef prop/for-all*
+        :args (s/cat :args (s/coll-of gen/generator?)
+                     :function ifn?)
+        :ret property?)
+
+(s/fdef prop/for-all
+        :args (s/cat :bindings :clojure.core.specs/bindings
+                     :body (s/* any?)))
+
+(s/fdef clojure-test/defspec
+        :args (s/cat :name simple-symbol?
+                     :opts (s/? any?)
+                     :property any?))
 
 ;;
 ;; Generators
@@ -222,17 +238,12 @@
                      :scalar-gen gen/generator?)
         :ret gen/generator?)
 
-(s/def :clojure.test.check.generators.let/bindings
-  (s/or :vector-bindings
-        ;; TODO: use vcat if it starts existing?
-        (s/cat :pairs (s/* (s/cat :name simple-symbol?
-                                  :gen-form any?)))
-
-        :map-bindings
-        (s/map-of simple-symbol? any?)))
-
 (s/fdef gen/let
-        :args (s/cat :bindings :clojure.test.check.generators.let/bindings
+        :args (s/cat :bindings (s/or :vector-bindings
+                                     :clojure.core.specs/bindings
+
+                                     :map-bindings
+                                     (s/map-of :clojure.core.specs/binding-form any?))
                      :body (s/* any?)))
 
 
