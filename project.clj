@@ -7,8 +7,8 @@
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.7.0"]
-                                  [org.clojure/clojurescript "1.7.48"]]}
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
+                                  [org.clojure/clojurescript "1.9.293"]]}
              :self-host {:dependencies [[org.clojure/clojure "1.8.0"]
                                         [org.clojure/clojurescript "1.9.227"]]
                          :main clojure.main
