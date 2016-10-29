@@ -1,0 +1,6 @@
+#!/bin/bash
+
+rm -rf target/out-self-host
+mkdir -p target/out-self-host/cljs/analyzer
+lein with-profile self-host run script/test-self-host.clj
+node target/out-self-host/main.js

@@ -13,7 +13,11 @@
                      :injections [(require 'clojure.spec)
                                   (require 'clojure.spec.test)
                                   (require 'clojure.test.check.specs)
-                                  ((resolve 'clojure.spec.test/instrument))]}}
+                                  ((resolve 'clojure.spec.test/instrument))]}
+             :self-host {:dependencies [[org.clojure/clojure "1.8.0"]
+                                        [org.clojure/clojurescript "1.9.227"]]
+                         :main clojure.main
+                         :global-vars {*warn-on-reflection* false}}}
   :aliases {"test-specs" ["with-profile" "+specs" "test"]}
   :global-vars {*warn-on-reflection* true}
   :plugins [[lein-codox "0.9.1"]
