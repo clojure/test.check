@@ -15,7 +15,7 @@
                          :global-vars {*warn-on-reflection* false}}}
   :global-vars {*warn-on-reflection* true}
   :plugins [[lein-codox "0.9.1"]
-            [lein-cljsbuild "1.1.0"]]
+            [lein-cljsbuild "1.1.4"]]
   :codox {:namespaces [clojure.test.check
                        clojure.test.check.clojure-test
                        clojure.test.check.generators
