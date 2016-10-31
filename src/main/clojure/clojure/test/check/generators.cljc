@@ -464,7 +464,7 @@
   "Generates a positive or negative integer bounded by the generator's
   `size` parameter.
   (Really returns a long)"
-  (sized (fn [size] (choose (- size) size))))
+  (sized (fn [size] (choose (long (- size)) (long size)))))
 
 (def nat
   "Generates natural numbers, starting at zero. Shrinks to zero."

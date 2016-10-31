@@ -8,7 +8,8 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.test
-  (:require #?(:cljs
+  (:require [clojure.spec.test :as spec-test]
+            #?(:cljs
                [cljs.test :as test :refer-macros [deftest testing is]])
             #?(:clj
                [clojure.test :refer :all])
@@ -675,7 +676,9 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest elements-with-empty
-  (is (thrown? #?(:clj AssertionError :cljs js/Error)
+  ;; can't be more specific here about the kind of error because
+  ;; sometimes we run it with spec instrumentation on :/
+  (is (thrown? #?(:clj Throwable :cljs js/Error)
                (gen/elements ()))))
 
 (defspec elements-with-a-set 100
@@ -985,25 +988,27 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest reporter-fn-calls-test
-  (testing
-    "a failing prop"
-    (let [calls (atom [])
-          reporter-fn (partial swap! calls conj)
-          prop (prop/for-all [n gen/nat]
-                             (> 5 n))]
-      (tc/quick-check 1000 prop :reporter-fn reporter-fn)
-      (is (= #{:trial :failure :shrink-step :shrunk}
-             (->> @calls (map :type) set)))))
+  ;; can't leave this in here or the 1.8 tests will fail :/
+  (spec-test/with-instrument-disabled
+    (testing
+        "a failing prop"
+      (let [calls (atom [])
+            reporter-fn (partial swap! calls conj)
+            prop (prop/for-all [n gen/nat]
+                   (> 5 n))]
+        (tc/quick-check 1000 prop :reporter-fn reporter-fn)
+        (is (= #{:trial :failure :shrink-step :shrunk}
+               (->> @calls (map :type) set)))))
 
-  (testing
-    "a successful prop"
-    (let [calls (atom [])
-          reporter-fn (partial swap! calls conj)
-          prop (prop/for-all [n gen/nat]
-                             (<= 0 n))]
-      (tc/quick-check 5 prop :reporter-fn reporter-fn)
-      (is (= #{:trial :complete}
-             (->> @calls (map :type) set))))))
+    (testing
+        "a successful prop"
+      (let [calls (atom [])
+            reporter-fn (partial swap! calls conj)
+            prop (prop/for-all [n gen/nat]
+                   (<= 0 n))]
+        (tc/quick-check 5 prop :reporter-fn reporter-fn)
+        (is (= #{:trial :complete}
+               (->> @calls (map :type) set)))))))
 
 (deftest shrink-step-events-test
   (let [events (atom [])
