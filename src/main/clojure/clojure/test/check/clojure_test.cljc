@@ -12,13 +12,15 @@
                :cljs [cljs.test :as ct :include-macros true])
             [clojure.test.check :as tc]
             [clojure.test.check.impl :refer [get-current-time-millis
-                                             exception-like?]]))
+                                             exception-like?]]
+            [clojure.test.check.results :as results]))
 
 (defn assert-check
-  [{:keys [result] :as m}]
+  [{:keys [result result-data] :as m}]
   (prn m)
-  (if (exception-like? result)
-    (throw result)
+  (if (and (not (results/passing? result))
+           (exception-like? (:clojure.test.check.properties/error result-data)))
+    (throw (:clojure.test.check.properties/error result-data))
     (ct/is result)))
 
 (def ^:dynamic *default-test-count* 100)

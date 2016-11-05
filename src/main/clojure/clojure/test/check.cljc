@@ -10,6 +10,7 @@
 (ns clojure.test.check
   (:require [clojure.test.check.generators :as gen]
             [clojure.test.check.random :as random]
+            [clojure.test.check.results :as results]
             [clojure.test.check.rose-tree :as rose]
             [clojure.test.check.impl :refer [get-current-time-millis
                                              exception-like?]]))
@@ -32,11 +33,6 @@
                 :seed seed})
 
   {:result true :num-tests num-trials :seed seed})
-
-(defn- not-falsey-or-exception?
-  "True if the value is not falsy or an exception"
-  [value]
-  (and value (not (exception-like? value))))
 
 (defn quick-check
   "Tests `property` `num-tests` times.
@@ -100,7 +96,7 @@
               result (:result result-map)
               args (:args result-map)
               so-far (inc so-far)]
-          (if (not-falsey-or-exception? result)
+          (if (results/passing? result)
             (do
               (reporter-fn {:type :trial
                             :property property
@@ -111,10 +107,12 @@
 
 (defn- smallest-shrink
   [total-nodes-visited depth smallest]
-  {:total-nodes-visited total-nodes-visited
-   :depth depth
-   :result (:result smallest)
-   :smallest (:args smallest)})
+  (let [{:keys [result]} smallest]
+    {:total-nodes-visited total-nodes-visited
+     :depth depth
+     :result (results/passing? result)
+     :result-data (results/result-data result)
+     :smallest (:args smallest)}))
 
 (defn- shrink-loop
   "Shrinking a value produces a sequence of smaller values of the same type.
@@ -147,7 +145,7 @@
               shrink-step-map {:type :shrink-step
                                :result result
                                :args args}]
-          (if (not-falsey-or-exception? result)
+          (if (results/passing? result)
             ;; this node passed the test, so now try testing its right-siblings
             (do
               (reporter-fn (merge shrink-step-map {:pass? true
@@ -172,7 +170,8 @@
 
     (reporter-fn {:type :failure
                   :property property
-                  :result result
+                  :result (results/passing? result)
+                  :result-data (results/result-data result)
                   :trial-number trial-number
                   :failing-args failing-args})
 
@@ -183,7 +182,8 @@
                     :trial-number trial-number
                     :failing-args failing-args
                     :shrunk shrunk})
-      {:result result
+      {:result (results/passing? result)
+       :result-data (results/result-data result)
        :seed seed
        :failing-size size
        :num-tests trial-number
