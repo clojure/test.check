@@ -42,6 +42,29 @@
 
 ;; worth doing better than this?
 (def property? gen/generator?)
+(s/def ::prop/property property?)
+
+(s/fdef t.c/quick-check
+        :args (s/cat :num-tests number?
+                     :property ::prop/property
+                     :opts (s/* any?) #_ (s/keys* #_#_:opt-un [#_#_#_::t.c/seed
+                                             ::t.c/max-size
+                                             ::t.c/reporter-fn]))
+        :ret ::quick-check-ret)
+
+(s/fdef prop/for-all*
+        :args (s/cat :args (s/coll-of gen/generator?)
+                     :function ifn?)
+        :ret property?)
+
+(s/fdef prop/for-all
+        :args (s/cat :bindings :clojure.core.specs/bindings
+                     :body (s/* any?)))
+
+(s/fdef clojure-test/defspec
+        :args (s/cat :name simple-symbol?
+                     :opts (s/? any?)
+                     :property any?))
 
 ;;
 ;; Generators
@@ -104,11 +127,14 @@
 (s/def ::gen/gen
   (s/with-gen gen/generator?
     #(gen/return (gen/return 42))))
+(defn error?
+  [x]
+  (instance? #?(:clj Throwable :cljs js/Error) x))
 (s/def ::gen/ex-fn
   (s/fspec :args (s/cat :arg (s/keys :req-un [::gen/max-tries
                                               ::gen/pred
                                               ::gen/gen]))
-           :ret #(instance? Throwable %)))
+           :ret error?))
 (s/fdef gen/such-that
         :args (s/cat :pred ifn?
                      :gen gen/generator?

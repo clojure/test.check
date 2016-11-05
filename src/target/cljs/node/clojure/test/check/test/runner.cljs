@@ -6,6 +6,7 @@
             [clojure.test.check.random-test]
             [clojure.test.check.rose-tree-test]
             [clojure.test.check.clojure-test-test]
+            [clojure.test.check.specs :as specs]
             [clojure.test.check.generators :as gen]))
 
 (nodejs/enable-util-print!)

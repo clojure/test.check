@@ -9,6 +9,8 @@
 
 (ns clojure.test.check.test
   (:require [clojure.spec.test :as spec-test]
+            #?(:clj [clojure.spec :as s]
+               :cljs [cljs.spec :as s])
             #?(:cljs
                [cljs.test :as test :refer-macros [deftest testing is]])
             #?(:clj
@@ -437,7 +439,11 @@
        [[0 1 2] [0 2 1] [1 0 2] [1 2 0] [2 0 1] [2 1 0]]))))
 
 (defspec distinct-collections-with-few-possible-values 20
-  (prop/for-all [boolean-sets (gen/vector (gen/resize 5 (gen/set gen/boolean)) 100)]
+  ;; the collection size has to be rather high here to make the test
+  ;; unlikely to fail, I think because for most sizes the generator will aim
+  ;; at a set size of >2 and settle for 2, so the singleton sets
+  ;; aren't hit very often
+  (prop/for-all [boolean-sets (gen/vector (gen/resize 5 (gen/set gen/boolean)) 1000)]
     (= 4 (count (distinct boolean-sets)))))
 
 (deftest can't-generate-set-of-five-booleans
@@ -1114,3 +1120,21 @@
                      (and shrunk
                           (= :gen2 (ffirst fail))
                           (= :gen1 (ffirst (:smallest shrunk))))))))))
+
+;;
+;; WTF
+;;
+
+(s/fdef fake-quick-check
+        :args (s/cat ;:num-tests number?
+                     ;:property ::prop/property
+                     :opts #_(s/* integer?) (s/keys*)))
+
+(defn fake-quick-check
+  [#_#_num-tests prop & opts]
+  :welp)
+
+(defn test-ns-hook
+  []
+  (println "HI EVERYBODY THIS IS GREAT")
+  (println "FAKE QUICK CHECK IS" (fake-quick-check #_#_1 2 "not int")))
