@@ -19,6 +19,7 @@
             [clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])]
             [clojure.test.check.rose-tree :as rose]
             [clojure.test.check.random :as random]
+            [clojure.test.check.results :as results]
             [clojure.test.check.clojure-test :as ct #?(:clj :refer :cljs :refer-macros) (defspec)]
             #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn])))
@@ -115,7 +116,21 @@
                   (let [result
                         (tc/quick-check
                           1000 (prop/for-all* [gen/int] exception-thrower))]
-                    [(:result result) (get-in result [:shrunk :smallest])])))))
+                    [(::prop/error (:result-data result))
+                     (get-in result [:shrunk :smallest])])))))
+
+;; result-data
+;; ---------------------------------------------------------------------------
+
+(deftest custom-result-data-is-returned-on-failure
+  (is (= {:foo :bar :baz [42]}
+         (:result-data
+          (tc/quick-check 100
+                          (prop/for-all [x gen/nat]
+                            (reify results/Result
+                              (passing? [_] false)
+                              (result-data [_]
+                                {:foo :bar :baz [42]}))))))))
 
 ;; Count and concat work as expected
 ;; ---------------------------------------------------------------------------
