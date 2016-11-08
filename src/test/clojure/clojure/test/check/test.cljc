@@ -8,6 +8,8 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.test
+  #?(:cljs
+     (:refer-clojure :exclude [infinite?]))
   (:require #?(:cljs
                [cljs.test :as test :refer-macros [deftest testing is]])
             #?(:clj
