@@ -9,7 +9,11 @@
 
 (ns clojure.test.check.clojure-test-test
   (:require #?@(:cljs
-                [[cljs.test :as test :refer [test-var] :refer-macros [is]]
+                [[cljs.test
+                  :as test
+                  :include-macros true
+                  :refer [test-var]
+                  :refer-macros [is]]
                  [cljs.reader :refer [read-string]]])
             #?(:clj
                [clojure.test :as test :refer :all])
@@ -49,10 +53,25 @@
 
 (defspec this-is-supposed-to-fail 100 vector-elements-are-unique)
 
-(defn- capture-test-var
+(defspec this-throws-an-exception
+  (prop/for-all [x gen/nat]
+    (throw (ex-info "this property is terrible" {}))))
+
+(defn ^:private capture-test-var
+  "Returns [report-counters out-str]."
   [v]
-  (with-out-str #?(:clj  (binding [*test-out* *out*] (test-var v))
-                   :cljs (test-var v))))
+  #?(:clj
+     (binding [*report-counters* (ref *initial-report-counters*)]
+       (let [out (with-out-str (binding [*test-out* *out*] (test-var v)))]
+         [@*report-counters* out]))
+
+     :cljs
+     (let [restore-env    (test/get-current-env)
+           _              (test/set-env! (test/empty-env))
+           out            (with-out-str (test-var v))
+           env            (test/get-current-env)]
+       (test/set-env! restore-env)
+       [(:report-counters env) out])))
 
 (defn ^:private capture-clojure-test-reports
   [func]
@@ -64,17 +83,19 @@
 (defn test-ns-hook
   []
   (is (-> (capture-test-var #'default-trial-counts)
+          second
           read-string
           :num-tests
           (= ct/*default-test-count*)))
 
   (is (-> (capture-test-var #'trial-counts)
+          second
           read-string
           (select-keys [:test-var :result :num-tests])
           (= {:test-var "trial-counts", :result true, :num-tests 5000})))
 
   (binding [ct/*report-trials* true]
-    (let [output (capture-test-var #'trial-counts)]
+    (let [output (second (capture-test-var #'trial-counts))]
       (is (re-matches #?(:clj  (java.util.regex.Pattern/compile "(?s)\\.{5}.+")
                          :cljs #"\.{5}[\s\S]+")
                       output))))
@@ -92,29 +113,14 @@
           "calling with other :type keeps last-trial-report constant")
       (is (re-seq
            #"(Passing trial \d{3} / 1000 for .+\n)+"
-           (capture-test-var #'long-running-spec)))
+           (second
+            (capture-test-var #'long-running-spec))))
       (is (> @last-trial-report trial-report-1)
           "running the test makes last-trial-report to increment")))
 
   (let [[report-counters stdout]
-        #?(:clj
-           (binding [ct/*report-shrinking* true
-                     ;; need to keep the failure of this-is-supposed-to-fail from
-                     ;; affecting the clojure.test.check test run
-                     *report-counters* (ref *initial-report-counters*)]
-             (let [out (capture-test-var #'this-is-supposed-to-fail)]
-               [@*report-counters* out]))
-
-           :cljs
-           (binding [ct/*report-shrinking* true]
-             ;; need to keep the failure of this-is-supposed-to-fail from
-             ;; affecting the clojure.test.check test run
-             (let [restore-env    (test/get-current-env)
-                   _              (test/set-env! (test/empty-env))
-                   report-str     (capture-test-var #'this-is-supposed-to-fail)
-                   env            (test/get-current-env)]
-               (test/set-env! restore-env)
-               [(:report-counters env) report-str])))]
+        (binding [ct/*report-shrinking* true]
+          (capture-test-var #'this-is-supposed-to-fail))]
     (is (== 1 (:fail report-counters)))
     (is (re-seq
          #?(:clj
@@ -123,6 +129,12 @@
             :cljs
             #"Shrinking vector-elements-are-unique starting with parameters \[\[[\s\S]+")
          stdout)))
+
+  (test/testing "exceptions in properties are re-thrown to clojure.test"
+    (let [[report-counters stdout]
+          (capture-test-var #'this-throws-an-exception)]
+      (is (= report-counters {:test 1, :pass 0, :fail 0, :error 1}))
+      (is (re-find #"ERROR in \(this-throws-an-exception\)" stdout))))
 
   ;;
   ;; Test for TCHECK-118
