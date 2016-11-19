@@ -231,7 +231,6 @@
 ;; A constant generator always returns its created value
 (defspec constant-generators 100
   (prop/for-all [a (gen/return 42)]
-                (print "")
                 (= a 42)))
 
 (deftest constant-generators-dont-shrink
@@ -1111,3 +1110,15 @@
                      (and shrunk
                           (= :gen2 (ffirst fail))
                           (= :gen1 (ffirst (:smallest shrunk))))))))))
+
+;; prop/for-all
+;; ---------------------------------------------------------------------------
+
+(deftest for-all-takes-multiple-expressions
+  (let [a (atom [])
+        p (prop/for-all [x gen/nat]
+            (swap! a conj x)
+            (= x x))]
+    (is (:result (tc/quick-check 1000 p)))
+    (is (= 1000 (count @a)))
+    (is (every? integer? @a))))
