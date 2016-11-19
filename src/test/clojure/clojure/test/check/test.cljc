@@ -31,15 +31,15 @@
 
 (deftest generators-are-generators
   (testing "generator? returns true when called with a generator"
-           (is (gen/generator? gen/int))
-           (is (gen/generator? (gen/vector gen/int)))
-           (is (gen/generator? (gen/return 5)))))
+    (is (gen/generator? gen/int))
+    (is (gen/generator? (gen/vector gen/int)))
+    (is (gen/generator? (gen/return 5)))))
 
 (deftest values-are-not-generators
   (testing "generator? returns false when called with a value"
-           (is (not (gen/generator? 5)))
-           (is (not (gen/generator? int)))
-           (is (not (gen/generator? [1 2 3])))))
+    (is (not (gen/generator? 5)))
+    (is (not (gen/generator? int)))
+    (is (not (gen/generator? [1 2 3])))))
 
 ;; plus and 0 form a monoid
 ;; ---------------------------------------------------------------------------
@@ -52,15 +52,15 @@
 
 (deftest plus-and-0-are-a-monoid
   (testing "+ and 0 form a monoid"
-           (is (let [p (prop/for-all* [gen/int gen/int gen/int] passes-monoid-properties)]
-                 (:result
-                   (tc/quick-check 1000 p)))))
+    (is (let [p (prop/for-all* [gen/int gen/int gen/int] passes-monoid-properties)]
+          (:result
+           (tc/quick-check 1000 p)))))
   ;; NOTE: no ratios in ClojureScript - David
   #?(:clj
-    (testing "with ratios as well"
-           (is (let [p (prop/for-all* [gen/ratio gen/ratio gen/ratio] passes-monoid-properties)]
-                 (:result
-                   (tc/quick-check 1000 p)))))))
+     (testing "with ratios as well"
+       (is (let [p (prop/for-all* [gen/ratio gen/ratio gen/ratio] passes-monoid-properties)]
+             (:result
+              (tc/quick-check 1000 p)))))))
 
 ;; reverse
 ;; ---------------------------------------------------------------------------
@@ -73,17 +73,17 @@
 
 (deftest reverse-equal?
   (testing "For all vectors L, reverse(reverse(L)) == L"
-           (is (let [p (prop/for-all* [(gen/vector gen/int)] reverse-equal?-helper)]
-                 (:result (tc/quick-check 1000 p))))))
+    (is (let [p (prop/for-all* [(gen/vector gen/int)] reverse-equal?-helper)]
+          (:result (tc/quick-check 1000 p))))))
 
 ;; failing reverse
 ;; ---------------------------------------------------------------------------
 
 (deftest bad-reverse-test
   (testing "For all vectors L, L == reverse(L). Not true"
-           (is (false?
-                 (let [p (prop/for-all* [(gen/vector gen/int)] #(= (reverse %) %))]
-                   (:result (tc/quick-check 1000 p)))))))
+    (is (false?
+         (let [p (prop/for-all* [(gen/vector gen/int)] #(= (reverse %) %))]
+           (:result (tc/quick-check 1000 p)))))))
 
 ;; failing element remove
 ;; ---------------------------------------------------------------------------
@@ -95,9 +95,9 @@
 (deftest bad-remove
   (testing "For all vectors L, if we remove the first element E, E should not
            longer be in the list. (This is a false assumption)"
-           (is (false?
-                 (let [p (prop/for-all* [(gen/vector gen/int)] first-is-gone)]
-                   (:result (tc/quick-check 1000 p)))))))
+    (is (false?
+         (let [p (prop/for-all* [(gen/vector gen/int)] first-is-gone)]
+           (:result (tc/quick-check 1000 p)))))))
 
 ;; exceptions shrink and return as result
 ;; ---------------------------------------------------------------------------
@@ -111,11 +111,11 @@
 (deftest exceptions-are-caught
   (testing "Exceptions during testing are caught. They're also shrunk as long
            as they continue to throw."
-           (is (= [exception [0]]
-                  (let [result
-                        (tc/quick-check
-                          1000 (prop/for-all* [gen/int] exception-thrower))]
-                    [(:result result) (get-in result [:shrunk :smallest])])))))
+    (is (= [exception [0]]
+           (let [result
+                 (tc/quick-check
+                  1000 (prop/for-all* [gen/int] exception-thrower))]
+             [(:result result) (get-in result [:shrunk :smallest])])))))
 
 ;; Count and concat work as expected
 ;; ---------------------------------------------------------------------------
@@ -128,10 +128,10 @@
 (deftest count-and-concat
   (testing "For all vectors A and B:
            length(A + B) == length(A) + length(B)"
-           (is (:result
-                 (let [p (prop/for-all* [(gen/vector gen/int)
-                                        (gen/vector gen/int)] concat-counts-correct)]
-                   (tc/quick-check 1000 p))))))
+    (is (:result
+         (let [p (prop/for-all* [(gen/vector gen/int)
+                                 (gen/vector gen/int)] concat-counts-correct)]
+           (tc/quick-check 1000 p))))))
 
 ;; Interpose (Count)
 ;; ---------------------------------------------------------------------------
@@ -141,16 +141,14 @@
   (let [interpose-count (count (interpose :i v))
         original-count (count v)]
     (or
-      (= (* 2 original-count) interpose-count)
-      (= (dec (* 2 original-count)) interpose-count))))
-
+     (= (* 2 original-count) interpose-count)
+     (= (dec (* 2 original-count)) interpose-count))))
 
 (deftest interpose-creates-sequence-twice-the-length
-  (testing
-    "Interposing a collection with a value makes its count
-    twice the original collection, or ones less."
+  (testing "Interposing a collection with a value makes its count
+           twice the original collection, or ones less."
     (is (:result
-          (tc/quick-check 1000 (prop/for-all [v (gen/vector gen/int)] (interpose-twice-the-length v)))))))
+         (tc/quick-check 1000 (prop/for-all [v (gen/vector gen/int)] (interpose-twice-the-length v)))))))
 
 ;; Lists and vectors are equivalent with seq abstraction
 ;; ---------------------------------------------------------------------------
@@ -163,12 +161,10 @@
   (= a (apply list (vec a))))
 
 (deftest list-and-vector-round-trip
-  (testing
-    ""
-    (is (:result
-          (tc/quick-check
-            1000 (prop/for-all*
-                   [(gen/list gen/int)] list-vector-round-trip-equiv))))))
+  (is (:result
+       (tc/quick-check
+        1000 (prop/for-all*
+              [(gen/list gen/int)] list-vector-round-trip-equiv)))))
 
 ;; keyword->string->keyword roundtrip
 ;; ---------------------------------------------------------------------------
@@ -183,31 +179,28 @@
 ;; NOTE cljs: this is one of the slowest due to how keywords are constructed
 ;; drop N to 100 - David
 (deftest keyword-string-roundtrip
-  (testing
-    "For all keywords, turning them into a string and back is equivalent
-    to the original string (save for the `:` bit)"
+  (testing "For all keywords, turning them into a string and back is equivalent
+           to the original string (save for the `:` bit)"
     (is (:result
-          (let [n #?(:clj 1000 :cljs 100)]
-            (tc/quick-check n (prop/for-all*
-                                [gen/keyword] keyword-string-roundtrip-equiv)
-                            :max-size 25))))))
+         (let [n #?(:clj 1000 :cljs 100)]
+           (tc/quick-check n (prop/for-all*
+                              [gen/keyword] keyword-string-roundtrip-equiv)
+                           :max-size 25))))))
 
 ;; Boolean and/or
 ;; ---------------------------------------------------------------------------
 
 (deftest boolean-or
-  (testing
-    "`or` with true and anything else should be true"
+  (testing "`or` with true and anything else should be true"
     (is (:result (tc/quick-check
-                   1000 (prop/for-all*
-                          [gen/boolean] #(or % true)))))))
+                  1000 (prop/for-all*
+                        [gen/boolean] #(or % true)))))))
 
 (deftest boolean-and
-  (testing
-    "`and` with false and anything else should be false"
+  (testing "`and` with false and anything else should be false"
     (is (:result (tc/quick-check
-                   1000 (prop/for-all*
-                          [gen/boolean] #(not (and % false))))))))
+                  1000 (prop/for-all*
+                        [gen/boolean] #(not (and % false))))))))
 
 ;; Sorting
 ;; ---------------------------------------------------------------------------
@@ -217,13 +210,12 @@
   (every? identity (map <= (partition 2 1 (sort v)))))
 
 (deftest sorting
-  (testing
-    "For all vectors V, sorted(V) should have the elements in order"
+  (testing "For all vectors V, sorted(V) should have the elements in order"
     (is (:result
-          (tc/quick-check
-            1000
-            (prop/for-all*
-              [(gen/vector gen/int)] elements-are-in-order-after-sorting))))))
+         (tc/quick-check
+          1000
+          (prop/for-all*
+           [(gen/vector gen/int)] elements-are-in-order-after-sorting))))))
 
 ;; Constant generators
 ;; ---------------------------------------------------------------------------
@@ -231,15 +223,14 @@
 ;; A constant generator always returns its created value
 (defspec constant-generators 100
   (prop/for-all [a (gen/return 42)]
-                (= a 42)))
+    (= a 42)))
 
 (deftest constant-generators-dont-shrink
-  (testing
-    "Generators created with `gen/return` should not shrink"
+  (testing "Generators created with `gen/return` should not shrink"
     (is (= [42]
            (let [result (tc/quick-check 100
                                         (prop/for-all
-                                          [a (gen/return 42)]
+                                         [a (gen/return 42)]
                                           false))]
              (-> result :shrunk :smallest))))))
 
@@ -254,7 +245,7 @@
   [seed]
   (tc/quick-check 1000
                   (prop/for-all*
-                    [(gen/vector gen/int)] vector-elements-are-unique)
+                   [(gen/vector gen/int)] vector-elements-are-unique)
                   :seed seed))
 
 (defn equiv-runs
@@ -264,28 +255,24 @@
 (deftest tests-are-deterministic
   (testing "If two runs are started with the same seed, they should
            return the same results."
-           (is (:result
-                 (tc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
+    (is (:result
+         (tc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
 
 ;; Generating basic generators
 ;; --------------------------------------------------------------------------
 (deftest generators-test
   (let [t (fn [generator pred]
             (is (:result (tc/quick-check 100
-                           (prop/for-all [x generator]
-                             (pred x))))))
+                                         (prop/for-all [x generator]
+                                           (pred x))))))
         is-char-fn #?(:clj char? :cljs string?)]
 
     (testing "keyword"              (t gen/keyword keyword?))
 
     ;; No ratio in cljs
-    #?@(:clj [
-    (testing "ratio"                (t gen/ratio   (some-fn ratio? integer?)))
-    (testing "byte"                 (t gen/byte    #(instance? Byte %)))
-    (testing "bytes"                (t gen/bytes   #(instance? (Class/forName "[B") %)))])
-
-
-    (testing "char"                 (t gen/char                 is-char-fn))
+    #?@(:clj [(testing "ratio"                (t gen/ratio   (some-fn ratio? integer?)))
+              (testing "byte"                 (t gen/byte    #(instance? Byte %)))
+              (testing "bytes"                (t gen/bytes   #(instance? (Class/forName "[B") %)))]) (testing "char"                 (t gen/char                 is-char-fn))
     (testing "char-ascii"           (t gen/char-ascii           is-char-fn))
     (testing "char-alphanumeric"    (t gen/char-alphanumeric    is-char-fn))
     (testing "string"               (t gen/string               string?))
@@ -461,12 +448,11 @@
     (every? (partial = first-size) (map count (rest mtx)))))
 
 (deftest proper-matrix-test
-  (testing
-    "can generate proper matrices"
+  (testing "can generate proper matrices"
     (is (:result (tc/quick-check
                   100 (prop/for-all
                        [mtx (gen/vector (gen/vector gen/int 3) 3)]
-                       (proper-matrix? mtx)))))))
+                        (proper-matrix? mtx)))))))
 
 (def bounds-and-vector
   (gen/bind (gen/tuple gen/s-pos-int gen/s-pos-int)
@@ -477,15 +463,14 @@
                            (gen/vector gen/int minimum maximum))))))
 
 (deftest proper-vector-test
-  (testing
-    "can generate vectors with sizes in a provided range"
+  (testing "can generate vectors with sizes in a provided range"
     (is (:result (tc/quick-check
                   100 (prop/for-all
                        [b-and-v bounds-and-vector]
-                       (let [[[minimum maximum] v] b-and-v
-                             c (count v)]
-                         (and (<= c maximum)
-                              (>= c minimum)))))))))
+                        (let [[[minimum maximum] v] b-and-v
+                              c (count v)]
+                          (and (<= c maximum)
+                               (>= c minimum)))))))))
 
 ;; Tuples and Pairs retain their count during shrinking
 ;; ---------------------------------------------------------------------------
@@ -509,14 +494,14 @@
 (defn inner-tuple-property
   [size]
   (prop/for-all [t (get-tuple-gen size)]
-                false))
+    false))
 
 (defspec tuples-retain-size-during-shrinking 1000
   (prop/for-all [index (gen/choose 1 6)]
-                (let [result (tc/quick-check
-                               100 (inner-tuple-property index))]
-                  (= index (count (-> result
-                                    :shrunk :smallest first))))))
+    (let [result (tc/quick-check
+                  100 (inner-tuple-property index))]
+      (= index (count (-> result
+                          :shrunk :smallest first))))))
 
 ;; Bind works
 ;; ---------------------------------------------------------------------------
@@ -532,7 +517,7 @@
 
 (defspec element-is-in-vec 100
   (prop/for-all [[element coll] vec-and-elem]
-                (some #{element} coll)))
+    (some #{element} coll)))
 
 ;; fmap is respected during shrinking
 ;; ---------------------------------------------------------------------------
@@ -541,13 +526,12 @@
   (gen/fmap (partial + 50) gen/nat))
 
 (deftest f-map-respected-during-shrinking
-  (testing
-    "Generators created with fmap should have that function applied
-    during shrinking"
+  (testing "Generators created with fmap should have that function applied
+           during shrinking"
     (is (= [50]
            (let [result (tc/quick-check 100
                                         (prop/for-all
-                                          [a plus-fifty]
+                                         [a plus-fifty]
                                           false))]
              (-> result :shrunk :smallest))))))
 
@@ -618,17 +602,17 @@
 ;; NOTE cljs: adjust for JS numerics - NB
 
 #?(:clj
-(deftest calc-long-increasing
+   (deftest calc-long-increasing
   ;; access internal gen/calc-long function for testing
-  (are [low high] (apply < (map #(@#'gen/calc-long % low high) (range 0.0 0.9999 0.111)))
+     (are [low high] (apply < (map #(@#'gen/calc-long % low high) (range 0.0 0.9999 0.111)))
       ;; low and high should not be too close, 100 is a reasonable spread
-      (- Long/MAX_VALUE 100) Long/MAX_VALUE
-      Long/MIN_VALUE (+ Long/MIN_VALUE 100)
-      Long/MIN_VALUE 0
-      0 100
-      -100 0
-      0 Long/MAX_VALUE
-      Long/MIN_VALUE Long/MAX_VALUE)))
+       (- Long/MAX_VALUE 100) Long/MAX_VALUE
+       Long/MIN_VALUE (+ Long/MIN_VALUE 100)
+       Long/MIN_VALUE 0
+       0 100
+       -100 0
+       0 Long/MAX_VALUE
+       Long/MIN_VALUE Long/MAX_VALUE)))
 
 ;; edn rountrips
 ;; ---------------------------------------------------------------------------
@@ -646,14 +630,14 @@
 
 (defspec edn-roundtrips 200
   (prop/for-all [a any-edn]
-                (edn-roundtrip? a)))
+    (edn-roundtrip? a)))
 
 ;; not-empty works
 ;; ---------------------------------------------------------------------------
 
 (defspec not-empty-works 100
   (prop/for-all [v (gen/not-empty (gen/vector gen/boolean))]
-                (not-empty v)))
+    (not-empty v)))
 
 ;; no-shrink works
 ;; ---------------------------------------------------------------------------
@@ -662,15 +646,15 @@
   [i]
   (tc/quick-check 100
                   (prop/for-all [coll (gen/vector gen/nat)]
-                                (some #{i} coll))))
+                    (some #{i} coll))))
 
 (defspec no-shrink-works 100
   (prop/for-all [i gen/nat]
-                (let [result (run-no-shrink i)]
-                  (if (:result result)
-                    true
-                    (= (:fail result)
-                       (-> result :shrunk :smallest))))))
+    (let [result (run-no-shrink i)]
+      (if (:result result)
+        true
+        (= (:fail result)
+           (-> result :shrunk :smallest))))))
 
 ;; elements works with a variety of input
 ;; ---------------------------------------------------------------------------
@@ -682,7 +666,6 @@
 (defspec elements-with-a-set 100
   (prop/for-all [num (gen/elements #{9 10 11 12})]
     (<= 9 num 12)))
-
 
 ;; choose respects bounds during shrinking
 ;; ---------------------------------------------------------------------------
@@ -696,14 +679,13 @@
   (prop/for-all [[mini maxi] range-gen
                  random-seed gen/nat
                  size gen/nat]
-                (let [tree (gen/call-gen
-                             (gen/choose mini maxi)
-                             (random/make-random random-seed)
-                             size)]
-                  (every?
-                    #(and (<= mini %) (>= maxi %))
-                    (rose/seq tree)))))
-
+    (let [tree (gen/call-gen
+                (gen/choose mini maxi)
+                (random/make-random random-seed)
+                size)]
+      (every?
+       #(and (<= mini %) (>= maxi %))
+       (rose/seq tree)))))
 
 ;; rand-range copes with full range of longs as bounds
 ;; ---------------------------------------------------------------------------
@@ -711,20 +693,20 @@
 ;; NOTE cljs: need to adjust for JS numerics - David
 
 #?(:clj
-(deftest rand-range-copes-with-full-range-of-longs
-  (let [[low high] (reduce
-                    (fn [[low high :as margins] x]
-                      (cond
-                       (< x low) [x high]
-                       (> x high) [low x]
-                       :else margins))
-                    [Long/MAX_VALUE Long/MIN_VALUE]
+   (deftest rand-range-copes-with-full-range-of-longs
+     (let [[low high] (reduce
+                       (fn [[low high :as margins] x]
+                         (cond
+                           (< x low) [x high]
+                           (> x high) [low x]
+                           :else margins))
+                       [Long/MAX_VALUE Long/MIN_VALUE]
                     ; choose uses rand-range directly, reasonable proxy for its
                     ; guarantees
-                    (take 1e6 (gen/sample-seq (gen/choose Long/MIN_VALUE Long/MAX_VALUE))))]
-    (is (< low high))
-    (is (< low Integer/MIN_VALUE))
-    (is (> high Integer/MAX_VALUE)))))
+                       (take 1e6 (gen/sample-seq (gen/choose Long/MIN_VALUE Long/MAX_VALUE))))]
+       (is (< low high))
+       (is (< low Integer/MIN_VALUE))
+       (is (> high Integer/MAX_VALUE)))))
 
 ;; rand-range yields values inclusive of both lower & upper bounds provided to it
 ;; further, that generators that use rand-range use its full range of values
@@ -737,21 +719,21 @@
            bounds (set bounds)
            r (random/make-random)]
       (cond
-       (== trials 10000)
+        (== trials 10000)
        ;; the probability of this happening by chance is roughly 1 in
        ;; 10^1761 so we can safely assume something's wrong if it does
-       (is nil "rand-range didn't return both of its bounds after 10000 trials")
+        (is nil "rand-range didn't return both of its bounds after 10000 trials")
 
-       (empty? bounds) (is true)
-       :else (let [[r1 r2] (random/split r)]
-               (recur (inc trials) (disj bounds (rand-range r1)) r2))))))
+        (empty? bounds) (is true)
+        :else (let [[r1 r2] (random/split r)]
+                (recur (inc trials) (disj bounds (rand-range r1)) r2))))))
 
 (deftest elements-generates-all-provided-values
   (let [options [:a 42 'c/d "foo"]]
     (is (->> (reductions
-                 disj
-                 (set options)
-                 (gen/sample-seq (gen/elements options)))
+              disj
+              (set options)
+              (gen/sample-seq (gen/elements options)))
              (take 10000)
              (some empty?))
         ;; the probability of this happening by chance is roughly 1 in
@@ -763,7 +745,7 @@
 
 (def original-vector-and-permutation
   (gen/bind (gen/vector gen/int)
-        #(gen/tuple (gen/return %) (gen/shuffle %))))
+            #(gen/tuple (gen/return %) (gen/shuffle %))))
 
 (defspec shuffled-vector-is-a-permutation-of-original 100
   (prop/for-all [[coll permutation] original-vector-and-permutation]
@@ -886,7 +868,6 @@
                                                            :NaN? false)))))]
     (pred x)))
 
-
 ;; vector can generate large vectors; regression for TCHECK-49
 ;; ---------------------------------------------------------------------------
 
@@ -926,7 +907,7 @@
 (defspec run-with-map {:num-tests 1
                        :seed 1}
   (prop/for-all [a gen/int]
-                (= a 0)))
+    (= a 0)))
 
 (def my-defspec-options {:num-tests 1 :seed 1})
 
@@ -937,15 +918,15 @@
 
 (defspec run-with-symbolic-options my-defspec-options
   (prop/for-all [a gen/int]
-                (= a seed)))
+    (= a seed)))
 
 (defspec run-with-no-options
   (prop/for-all [a gen/int]
-                (integer? a)))
+    (integer? a)))
 
 (defspec run-float-time 1e3
   (prop/for-all [a gen/int]
-                (integer? a)))
+    (integer? a)))
 
 ;; verify that the created tests work when called by name with options
 (deftest spec-called-with-options
@@ -986,22 +967,20 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest reporter-fn-calls-test
-  (testing
-    "a failing prop"
+  (testing "a failing prop"
     (let [calls (atom [])
           reporter-fn (partial swap! calls conj)
           prop (prop/for-all [n gen/nat]
-                             (> 5 n))]
+                 (> 5 n))]
       (tc/quick-check 1000 prop :reporter-fn reporter-fn)
       (is (= #{:trial :failure :shrink-step :shrunk}
              (->> @calls (map :type) set)))))
 
-  (testing
-    "a successful prop"
+  (testing "a successful prop"
     (let [calls (atom [])
           reporter-fn (partial swap! calls conj)
           prop (prop/for-all [n gen/nat]
-                             (<= 0 n))]
+                 (<= 0 n))]
       (tc/quick-check 5 prop :reporter-fn reporter-fn)
       (is (= #{:trial :complete}
              (->> @calls (map :type) set))))))
@@ -1011,7 +990,7 @@
         reporter-fn (partial swap! events conj)
         pred (fn [n] (not (< 100 n)))
         prop (prop/for-all [n (gen/scale (partial * 10) gen/nat)]
-                           (pred n))]
+               (pred n))]
     (tc/quick-check 100 prop :reporter-fn reporter-fn)
     (let [shrink-steps (filter #(= :shrink-step (:type %)) @events)
           failing-steps (filter (complement :pass?) shrink-steps)
@@ -1039,23 +1018,22 @@
 
 ;; Note cljs: need to adjust for JS numerics - NB
 #?(:clj
-(deftest choose-distribution-sanity-check
-  (testing
-      "Should not get the same random value more than 90% of the time"
+   (deftest choose-distribution-sanity-check
+     (testing "Should not get the same random value more than 90% of the time"
     ;; This is a probabilistic test; the odds of a false-positive
     ;; failure for the ranges with two elements should be roughly 1 in
     ;; 10^162 (and even rarer for larger ranges), so it will never
     ;; ever happen.
-    (are [low high] (let [xs (gen/sample (gen/choose low high) 1000)
-                          count-of-most-frequent (apply max (vals (frequencies xs)))]
-                      (< count-of-most-frequent 900))
-      (dec Long/MAX_VALUE) Long/MAX_VALUE
-      Long/MIN_VALUE (inc Long/MIN_VALUE)
-      Long/MIN_VALUE 0
-      0 1
-      -1 0
-      0 Long/MAX_VALUE
-      Long/MIN_VALUE Long/MAX_VALUE))))
+       (are [low high] (let [xs (gen/sample (gen/choose low high) 1000)
+                             count-of-most-frequent (apply max (vals (frequencies xs)))]
+                         (< count-of-most-frequent 900))
+         (dec Long/MAX_VALUE) Long/MAX_VALUE
+         Long/MIN_VALUE (inc Long/MIN_VALUE)
+         Long/MIN_VALUE 0
+         0 1
+         -1 0
+         0 Long/MAX_VALUE
+         Long/MIN_VALUE Long/MAX_VALUE))))
 
 ;; TCHECK-82 Regression
 ;; ---------------------------------------------------------------------------

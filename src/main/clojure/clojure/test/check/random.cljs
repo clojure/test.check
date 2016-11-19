@@ -9,7 +9,7 @@
 
 (ns ^{:author "Gary Fredericks"
       :doc "Purely functional and splittable pseudo-random number generators."}
-  clojure.test.check.random
+ clojure.test.check.random
   (:refer-clojure :exclude [+ * bit-xor bit-or bit-count
                             unsigned-bit-shift-right])
   (:require [clojure.test.check.random.doubles :as doubles]
@@ -82,11 +82,11 @@
       (bxoubsr 33)
       (bit-or longs/ONE)
       (as-> z
-        (cond-> z
-          (> 24 (-> z
-                    (bxoubsr 1)
-                    (bit-count)))
-          (bit-xor mix-gamma-const-3)))))
+            (cond-> z
+              (> 24 (-> z
+                        (bxoubsr 1)
+                        (bit-count)))
+              (bit-xor mix-gamma-const-3)))))
 
 (deftype JavaUtilSplittableRandom [gamma state]
   IRandom
@@ -135,7 +135,6 @@
        (swap! a (fn [{:keys [state]}]
                   (let [[r1 r2] (split state)]
                     {:state r1 :returned r2})))))))
-
 
 (defn make-random
   "Given an optional integer (or goog.math.Long) seed, returns an

@@ -8,7 +8,7 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns ^{:author "Gary Fredericks"}
-  clojure.test.check.random.doubles
+ clojure.test.check.random.doubles
   (:require [clojure.test.check.random.longs :as longs]))
 
 (def ^:private double-unit

@@ -46,11 +46,11 @@
   "Exclude the nth value in a collection."
   [n coll]
   (lazy-seq
-    (when-let [s (core/seq coll)]
-      (if (zero? n)
-        (rest coll)
-        (cons (first s)
-              (exclude-nth (dec n) (rest s)))))))
+   (when-let [s (core/seq coll)]
+     (if (zero? n)
+       (rest coll)
+       (cons (first s)
+             (exclude-nth (dec n) (rest s)))))))
 
 (defn join
   "Turn a tree of trees into a single tree. Does this by concatenating
@@ -63,7 +63,6 @@
         inner-children (children outer-root)]
     (make-rose inner-root (concat (map join outer-children)
                                   inner-children))))
-
 
 (defn pure
   "Puts a value `x` into a Rose tree, with no children."
@@ -117,8 +116,8 @@
   {:no-doc true}
   [roses]
   (concat
-    (map-indexed (fn [index _] (exclude-nth index roses)) roses)
-    (permutations (vec roses))))
+   (map-indexed (fn [index _] (exclude-nth index roses)) roses)
+   (permutations (vec roses))))
 
 (defn ^:private unchunk
   "Returns an equivalent lazy seq that is not chunked."

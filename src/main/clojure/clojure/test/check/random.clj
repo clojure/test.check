@@ -9,9 +9,8 @@
 
 (ns ^{:author "Gary Fredericks"
       :doc "Purely functional and splittable pseudo-random number generators."}
-  clojure.test.check.random
+ clojure.test.check.random
   (:refer-clojure :exclude [unsigned-bit-shift-right]))
-
 
 (defprotocol IRandom
   (rand-long [rng]
@@ -37,7 +36,6 @@
 
   Note: to maintain independence you should not call more than one
   function in the IRandom protocol with the same argument"))
-
 
 ;; Immutable version of Java 8's java.util.SplittableRandom
 ;;
@@ -121,10 +119,10 @@
        (bit-or 1)
        (as-> z#
              (cond-> z#
-                     (> 24 (-> z#
-                               (bxoubsr 1)
-                               (Long/bitCount)))
-                     (bit-xor (longify 0xaaaaaaaaaaaaaaaa))))))
+               (> 24 (-> z#
+                         (bxoubsr 1)
+                         (Long/bitCount)))
+               (bit-xor (longify 0xaaaaaaaaaaaaaaaa))))))
 
 (def ^:private ^:const double-unit (/ 1.0 (double (bit-set 0 53))))
 ;; Java: 0x1.0p-53 or (1.0 / (1L << 53))

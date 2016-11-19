@@ -32,8 +32,8 @@
   "
   [args function]
   (gen/fmap
-    (apply-gen function)
-    (apply gen/tuple args)))
+   (apply-gen function)
+   (apply gen/tuple args)))
 
 (defn- binding-vars
   [bindings]

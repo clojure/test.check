@@ -19,7 +19,6 @@
             #?@(:cljs [[goog.string :as gstring]
                        [clojure.string]])))
 
-
 ;; Gen
 ;; (internal functions)
 ;; ---------------------------------------------------------------------------
@@ -44,25 +43,25 @@
   {:no-doc true}
   [value]
   (make-gen
-    (fn [rnd size]
-      value)))
+   (fn [rnd size]
+     value)))
 
 (defn gen-fmap
   {:no-doc true}
   [k {h :gen}]
   (make-gen
-    (fn [rnd size]
-      (k (h rnd size)))))
+   (fn [rnd size]
+     (k (h rnd size)))))
 
 (defn gen-bind
   {:no-doc true}
   [{h :gen} k]
   (make-gen
-    (fn [rnd size]
-      (core/let [[r1 r2] (random/split rnd)
-            inner (h r1 size)
-            {result :gen} (k inner)]
-        (result r2 size)))))
+   (fn [rnd size]
+     (core/let [[r1 r2] (random/split rnd)
+                inner (h r1 size)
+                {result :gen} (k inner)]
+       (result r2 size)))))
 
 (defn lazy-random-states
   "Given a random number generator, returns an infinite lazy sequence
@@ -88,7 +87,6 @@
   (assert (generator? gen) "Second arg to fmap must be a generator")
   (gen-fmap #(rose/fmap f %) gen))
 
-
 (defn return
   "Create a generator that always returns `value`,
   and never shrinks. You can think of this as
@@ -101,9 +99,9 @@
   (fn [rose]
     (gen-fmap rose/join
               (make-gen
-                (fn [rnd size]
-                  (rose/fmap #(call-gen % rnd size)
-                             (rose/fmap k rose)))))))
+               (fn [rnd size]
+                 (rose/fmap #(call-gen % rnd size)
+                            (rose/fmap k rose)))))))
 
 (defn bind
   "Create a new generator that passes the result of `gen` into function
@@ -136,7 +134,7 @@
   ([generator] (sample-seq generator 100))
   ([generator max-size]
    (core/let [r (random/make-random)
-         size-seq (make-size-range-seq max-size)]
+              size-seq (make-size-range-seq max-size)]
      (core/map #(rose/root (call-gen generator %1 %2))
                (lazy-random-states r)
                size-seq))))
@@ -153,7 +151,6 @@
    (assert (generator? generator) "First arg to sample must be a generator")
    (take num-samples (sample-seq generator))))
 
-
 (defn generate
   "Returns a single sample value from the generator, using a default
   size of 30.
@@ -162,11 +159,10 @@
   as part of a larger generator."
   {:added "0.8.0"}
   ([generator]
-     (generate generator 30))
+   (generate generator 30))
   ([generator size]
-     (core/let [rng (random/make-random)]
-       (rose/root (call-gen generator rng size)))))
-
+   (core/let [rng (random/make-random)]
+     (rose/root (call-gen generator rng size)))))
 
 ;; Internal Helpers
 ;; ---------------------------------------------------------------------------
@@ -210,7 +206,7 @@
 
      :cljs
      (long (Math/floor (+ lower (- (* factor (+ 1.0 upper))
-                                    (* factor lower)))))))
+                                   (* factor lower)))))))
 
 (defn- rand-range
   [rnd lower upper]
@@ -223,9 +219,9 @@
   a generator."
   [sized-gen]
   (make-gen
-    (fn [rnd size]
-      (core/let [sized-gen (sized-gen size)]
-        (call-gen sized-gen rnd size)))))
+   (fn [rnd size]
+     (core/let [sized-gen (sized-gen size)]
+       (call-gen sized-gen rnd size)))))
 
 ;; Combinators and helpers
 ;; ---------------------------------------------------------------------------
@@ -245,7 +241,7 @@
    linear scaling."
   {:added "0.8.0"}
   ([f generator]
-    (sized (fn [n] (resize (f n) generator)))))
+   (sized (fn [n] (resize (f n) generator)))))
 
 (defn choose
   #?(:clj
@@ -257,11 +253,11 @@
   [lower upper]
   ;; cast to long to support doubles as arguments per TCHECK-73
   (core/let #?(:clj
-          [lower (long lower)
-           upper (long upper)]
+               [lower (long lower)
+                upper (long upper)]
 
-          :cljs ;; does nothing, no long in cljs
-          [])
+               :cljs ;; does nothing, no long in cljs
+               [])
     (make-gen
      (fn [rnd _size]
        (core/let [value (rand-range rnd lower upper)]
@@ -492,31 +488,31 @@
   ([generator]
    (assert (generator? generator) "Arg to vector must be a generator")
    (gen-bind
-     (sized #(choose 0 %))
-     (fn [num-elements-rose]
-       (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
-                                    generator))
-                 (fn [roses]
-                   (gen-pure (rose/shrink-vector core/vector
-                                                 roses)))))))
+    (sized #(choose 0 %))
+    (fn [num-elements-rose]
+      (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
+                                   generator))
+                (fn [roses]
+                  (gen-pure (rose/shrink-vector core/vector
+                                                roses)))))))
   ([generator num-elements]
    (assert (generator? generator) "First arg to vector must be a generator")
    (apply tuple (repeat num-elements generator)))
   ([generator min-elements max-elements]
    (assert (generator? generator) "First arg to vector must be a generator")
    (gen-bind
-     (choose min-elements max-elements)
-     (fn [num-elements-rose]
-       (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
-                                    generator))
-                 (fn [roses]
-                   (gen-bind
-                     (gen-pure (rose/shrink-vector core/vector
-                                                   roses))
-                     (fn [rose]
-                       (gen-pure (rose/filter
-                                   (fn [v] (and (>= (count v) min-elements)
-                                                (<= (count v) max-elements))) rose))))))))))
+    (choose min-elements max-elements)
+    (fn [num-elements-rose]
+      (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
+                                   generator))
+                (fn [roses]
+                  (gen-bind
+                   (gen-pure (rose/shrink-vector core/vector
+                                                 roses))
+                   (fn [rose]
+                     (gen-pure (rose/filter
+                                (fn [v] (and (>= (count v) min-elements)
+                                             (<= (count v) max-elements))) rose))))))))))
 
 (defn list
   "Like `vector`, but generates lists."
@@ -553,14 +549,14 @@
 ;; NOTE cljs: Comment out for now - David
 
 #?(:clj
-    (def byte
-      "Generates `java.lang.Byte`s, using the full byte-range."
-      (fmap core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE))))
+   (def byte
+     "Generates `java.lang.Byte`s, using the full byte-range."
+     (fmap core/byte (choose Byte/MIN_VALUE Byte/MAX_VALUE))))
 
 #?(:clj
-    (def bytes
-      "Generates byte-arrays."
-      (fmap core/byte-array (vector byte))))
+   (def bytes
+     "Generates byte-arrays."
+     (fmap core/byte-array (vector byte))))
 
 (defn hash-map
   "Like clojure.core/hash-map, except the values are generators.
@@ -574,7 +570,7 @@
   [& kvs]
   (assert (even? (count kvs)))
   (core/let [ks (take-nth 2 kvs)
-        vs (take-nth 2 (rest kvs))]
+             vs (take-nth 2 (rest kvs))]
     (assert (every? generator? vs)
             "Value args to hash-map must be generators")
     (fmap #(zipmap ks %)
@@ -623,9 +619,9 @@
 
           :else
           (core/let [[rng1 rng2] (random/split rng)
-                rose (call-gen gen rng1 size)
-                root (rose/root rose)
-                k (key-fn root)]
+                     rose (call-gen gen rng1 size)
+                     root (rose/root rose)
+                     k (key-fn root)]
             (if (transient-set-contains? s k)
               (recur rose-trees s rng2 (inc size) (inc tries))
               (recur (conj! rose-trees rose)
@@ -647,14 +643,14 @@
   Note that this is not a generator, it is just a utility function."
   [rng coll]
   (core/let [empty-coll (empty coll)
-        v (vec coll)
-        card (count coll)
-        dec-card (dec card)]
+             v (vec coll)
+             card (count coll)
+             dec-card (dec card)]
     (into empty-coll
           (first
            (reduce (fn [[v rng] idx]
                      (core/let [[rng1 rng2] (random/split rng)
-                           swap-idx (rand-range rng1 idx dec-card)]
+                                swap-idx (rand-range rng1 idx dec-card)]
                        [(swap v [idx swap-idx]) rng2]))
                    [v rng]
                    (range card))))))
@@ -665,9 +661,9 @@
     :or {max-tries 10
          ex-fn #(ex-info "Couldn't generate enough distinct elements!" %)}}]
   (core/let [shuffle-fn (if ordered?
-                     the-shuffle-fn
-                     (fn [_rng coll] coll))
-        hard-min-elements (or num-elements min-elements 1)]
+                          the-shuffle-fn
+                          (fn [_rng coll] coll))
+             hard-min-elements (or num-elements min-elements 1)]
     (if num-elements
       (core/let [size-pred #(= num-elements (count %))]
         (assert (and (nil? min-elements) (nil? max-elements)))
@@ -701,7 +697,6 @@
                    size-pred)
                  (coll-distinct-by* empty-coll key-fn shuffle-fn gen rng gen-size
                                     num-elements hard-min-elements max-tries ex-fn)))))))))))
-
 
 ;; I tried to reduce the duplication in these docstrings with a macro,
 ;; but couldn't make it work in cljs.
@@ -901,7 +896,7 @@
   [bit-count x min max]
   (loop [res (-> x
                  (#?(:clj bit-shift-right :cljs .shiftRight)
-                    (- 64 bit-count))
+                  (- 64 bit-count))
                  #?(:cljs .toNumber)
                  ;; so we don't get into an infinite loop bit-shifting
                  ;; -1
@@ -930,7 +925,6 @@
                        (tuple (choose 1 max-bit-count)
                               gen-raw-long))))))
 
-
 (defn large-integer*
   "Like large-integer, but accepts options:
 
@@ -941,7 +935,7 @@
   {:added "0.9.0"}
   [{:keys [min max]}]
   (core/let [min (or min MIN_INTEGER)
-        max (or max MAX_INTEGER)]
+             max (or max MAX_INTEGER)]
     (assert (<= min max))
     (such-that #(<= min % max)
                (if (<= min 0 max)
@@ -957,7 +951,6 @@
 
   Use large-integer* for more control."
   (large-integer* {}))
-
 
 ;; doubles
 ;; ---------------------------------------------------------------------------
@@ -1110,7 +1103,7 @@
        (-> 1.0 (scalb 52) dec (scalb (- exp 51)))])))
 
 (defn ^:private double-finite
-  [ lower-bound upper-bound]
+  [lower-bound upper-bound]
   {:pre [(or (nil? lower-bound)
              (nil? upper-bound)
              (<= lower-bound upper-bound))]}
@@ -1123,7 +1116,7 @@
 
              gen
              (fmap (fn [[[exp sign] significand]]
-                     (core/let [ ;; 1.0 <= base < 2.0
+                     (core/let [;; 1.0 <= base < 2.0
                                 base (inc (/ significand (Math/pow 2 52)))
                                 x (-> base (scalb exp) (* sign))]
                        (if (or (nil? pred) (pred x))
@@ -1189,7 +1182,6 @@
   "Generates 64-bit floating point numbers from the entire range,
   including +/- infinity and NaN. Use double* for more control."
   (double* {}))
-
 
 ;; Characters & Strings
 ;; ---------------------------------------------------------------------------
@@ -1348,9 +1340,9 @@
   "Generates a `clojure.lang.Ratio`. Shrinks toward 0. Not all values generated
   will be ratios, as many values returned by `/` are not ratios."
   (fmap
-    (fn [[a b]] (/ a b))
-    (tuple int
-           (such-that (complement zero?) int))))
+   (fn [[a b]] (/ a b))
+   (tuple int
+          (such-that (complement zero?) int))))
 
 (def ^{:added "0.9.0"} uuid
   "Generates a random type-4 UUID. Does not shrink."
@@ -1397,13 +1389,13 @@
 
 #?(:cljs
 ;; http://dev.clojure.org/jira/browse/CLJS-1594
-(defn ^:private hashable?
-  [x]
-  (if (number? x)
-    (not (or (js/isNaN x)
-             (= NEG_INFINITY x)
-             (= POS_INFINITY x)))
-    true)))
+   (defn ^:private hashable?
+     [x]
+     (if (number? x)
+       (not (or (js/isNaN x)
+                (= NEG_INFINITY x)
+                (= POS_INFINITY x)))
+       true)))
 
 (defn container-type
   [inner-type]
@@ -1521,7 +1513,6 @@
   "Like any, but avoids characters that the shell will interpret as actions,
   like 7 and 14 (bell and alternate character set command)"
   (recursive-gen container-type simple-type-printable))
-
 
 ;; Macros
 ;; ---------------------------------------------------------------------------

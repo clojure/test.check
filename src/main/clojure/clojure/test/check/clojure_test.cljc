@@ -69,20 +69,20 @@
   {:arglists '([name property] [name num-tests? property] [name options? property])}
   ([name property] `(defspec ~name nil ~property))
   ([name options property]
-     `(defn ~(vary-meta name assoc
-                        ::defspec true
-                        :test `#(clojure.test.check.clojure-test/assert-check
-                                   (assoc (~name) :test-var (str '~name))))
-        {:arglists '([] ~'[num-tests & {:keys [seed max-size reporter-fn]}])}
-        ([] (let [options# (process-options ~options)]
-              (apply ~name (:num-tests options#) (apply concat options#))))
-        ([times# & {:as quick-check-opts#}]
-         (let [options# (merge (process-options ~options) quick-check-opts#)]
-           (apply
-            tc/quick-check
-            times#
-            (vary-meta ~property assoc :name (str '~property))
-            (apply concat options#)))))))
+   `(defn ~(vary-meta name assoc
+                      ::defspec true
+                      :test `#(clojure.test.check.clojure-test/assert-check
+                               (assoc (~name) :test-var (str '~name))))
+      {:arglists '([] ~'[num-tests & {:keys [seed max-size reporter-fn]}])}
+      ([] (let [options# (process-options ~options)]
+            (apply ~name (:num-tests options#) (apply concat options#))))
+      ([times# & {:as quick-check-opts#}]
+       (let [options# (merge (process-options ~options) quick-check-opts#)]
+         (apply
+          tc/quick-check
+          times#
+          (vary-meta ~property assoc :name (str '~property))
+          (apply concat options#)))))))
 
 (def ^:dynamic *report-trials*
   "Controls whether property trials should be reported via clojure.test/report.
