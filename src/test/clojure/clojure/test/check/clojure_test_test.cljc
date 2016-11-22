@@ -136,6 +136,7 @@
       (is (= report-counters {:test 1, :pass 0, :fail 0, :error 1}))
       (is (re-find #"ERROR in \(this-throws-an-exception\)" stdout))))
 
+  #_
   ;;
   ;; Test for TCHECK-118
   ;;
