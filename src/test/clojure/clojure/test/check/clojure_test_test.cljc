@@ -150,7 +150,7 @@
         (let [initial-trial-report @last-trial-report]
           (wait-for-clock-tick initial-trial-report)
           (is (re-seq
-                #"(Passing trial \d{3} / 1000 for .+\n)+"
+                #"(Passing trial \d{3} / 1000 for long-running-spec\n)+"
                 (:test-out
                  (capture-test-var #'long-running-spec))))
           (is (> @last-trial-report initial-trial-report)))))))
@@ -190,9 +190,7 @@
     (binding [ct/*report-shrinking* true]
       (let [{:keys [report-counters test-out]} (capture-test-var #'this-is-supposed-to-fail)]
         (is (== 1 (:fail report-counters)))
-        (is (re-seq #?(:clj (java.util.regex.Pattern/compile
-                              "(?s)Shrinking vector-elements-are-unique starting with parameters \\[\\[.+")
-                       :cljs #"Shrinking vector-elements-are-unique starting with parameters \[\[[\s\S]+")
+        (is (re-seq #"Shrinking this-is-supposed-to-fail starting with parameters \[\[[\s\S]+"
                     test-out))))))
 
 (deftest tcheck-118-pass-shrunk-input-on-to-clojure-test

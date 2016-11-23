@@ -92,7 +92,7 @@
          (apply
           tc/quick-check
           times#
-          (vary-meta ~property assoc :name (str '~property))
+          (vary-meta ~property assoc :name '~name)
           (apply concat options#)))))))
 
 (def ^:dynamic *report-trials*
