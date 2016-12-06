@@ -3,13 +3,14 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test.check</artifactId>
   <version>0.9.1-SNAPSHOT</version>
-  <name>${project.artifactId}</name>
+  <name>test.check</name>
   <description>A QuickCheck inspired property-based testing library</description>
+  <url>https://github.com/clojure/build.poms</url>
 
   <parent>
     <groupId>org.clojure</groupId>
     <artifactId>pom.contrib</artifactId>
-    <version>0.1.2</version>
+    <version>0.2.0</version>
   </parent>
 
   <licenses>
@@ -49,37 +50,4 @@
     <tag>HEAD</tag>
   </scm>
 
-  <build>
-    <plugins>
-      <plugin>
-        <!-- By default, compile everything as a sanity check, but do
-             not include any AOT-compiled .class files in the
-             JAR. Projects may override as needed. -->
-        <groupId>com.theoryinpractise</groupId>
-        <artifactId>clojure-maven-plugin</artifactId>
-        <version>1.7.1</version>
-        <extensions>true</extensions>
-        <configuration>
-          <warnOnReflection>${clojure.warnOnReflection}</warnOnReflection>
-          <temporaryOutputDirectory>true</temporaryOutputDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <id>clojure-compile</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>clojure-test</id>
-            <phase>test</phase>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>
