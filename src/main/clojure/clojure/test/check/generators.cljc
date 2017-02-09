@@ -1214,16 +1214,16 @@
         (one-of [(choose 65 90)
                  (choose 97 122)])))
 
-(def ^{:private true} char-symbol-special
+(def ^:private char-symbol-special
   "Generate non-alphanumeric characters that can be in a symbol."
   (elements [\* \+ \! \- \_ \?]))
 
-(def ^{:private true} char-keyword-rest
+(def ^:private char-keyword-rest
   "Generate characters that can be the char following first of a keyword."
   (frequency [[2 char-alphanumeric]
               [1 char-symbol-special]]))
 
-(def ^{:private true} char-keyword-first
+(def ^:private char-keyword-first
   "Generate characters that can be the first char of a keyword."
   (frequency [[2 char-alpha]
               [1 char-symbol-special]]))
@@ -1263,24 +1263,24 @@
                          (#?(:clj = :cljs identical?) \- c))
                      (digit? d))))
 
-(def ^{:private true} namespace-segment
+(def ^:private namespace-segment
   "Generate the segment of a namespace."
   (->> (tuple char-keyword-first (vector char-keyword-rest))
        (such-that (fn [[c [d]]] (not (+-or---digit? c d))))
        (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
 
-(def ^{:private true} namespace
+(def ^:private namespace
   "Generate a namespace (or nil for no namespace)."
   (->> (vector namespace-segment)
        (fmap (fn [v] (when (seq v)
                        (clojure.string/join "." v))))))
 
-(def ^{:private true} keyword-segment-rest
+(def ^:private keyword-segment-rest
   "Generate segments of a keyword (between \\:)"
   (->> (tuple char-keyword-rest (vector char-keyword-rest))
        (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
 
-(def ^{:private true} keyword-segment-first
+(def ^:private keyword-segment-first
   "Generate segments of a keyword that can be first (between \\:)"
   (->> (tuple char-keyword-first (vector char-keyword-rest))
        (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
@@ -1308,12 +1308,12 @@
                (core/keyword ns (clojure.string/join (cons c cs)))))
        (resize-symbolish-generator)))
 
-(def ^{:private true} char-symbol-first
+(def ^:private char-symbol-first
   (frequency [[10 char-alpha]
               [5 char-symbol-special]
               [1 (return \.)]]))
 
-(def ^{:private true} char-symbol-rest
+(def ^:private char-symbol-rest
   (frequency [[10 char-alphanumeric]
               [5 char-symbol-special]
               [1 (return \.)]]))
