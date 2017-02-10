@@ -149,7 +149,7 @@
 
 (defn sample-seq
   "Return a sequence of realized values from `generator`."
-  ([generator] (sample-seq generator 100))
+  ([generator] (sample-seq generator 200))
   ([generator max-size]
    (core/let [r (random/make-random)
               size-seq (make-size-range-seq max-size)]
