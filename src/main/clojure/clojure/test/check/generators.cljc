@@ -945,6 +945,11 @@
   (make-gen (fn [rnd _size]
               (rose/pure (random/rand-long rnd)))))
 
+(def ^:private gen-raw-double
+  "Generates a single uniformly random double, does not shrink."
+  (make-gen (fn [rnd _size]
+              (rose/pure (random/rand-double rnd)))))
+
 (def ^:private MAX_INTEGER
   #?(:clj Long/MAX_VALUE :cljs (dec (apply * (repeat 53 2)))))
 (def ^:private MIN_INTEGER
@@ -985,6 +990,7 @@
                          (core/let [[bit-count x] (rose/root rose)]
                            (int-rose-tree (long->large-integer bit-count x min max))))
                        (tuple (choose 1 max-bit-count)
+
                               gen-raw-long))))))
 
 (defn large-integer*
@@ -1016,6 +1022,485 @@
 
   Use large-integer* for more control."
   (large-integer* {}))
+
+;; large-integer distribution overhaul
+;; ---------------------------------------------------------------------------
+
+(def ^:private gen-raw-double
+  "Generates a single uniformly random double, does not shrink."
+  (make-gen (fn [rnd _size]
+              (rose/pure (random/rand-double rnd)))))
+
+;; If we make a new algorithm where we pick a "bit size" uniformly at
+;; random (considering negative numbers to have negative bit sizes),
+;; can we avoid the translation that happens below?
+;;
+;; problem is what we do when certain subranges are sparsely
+;; populated. I guess we're already choosing uniformly at random
+;; within a range, so maybe that's the easiest thing...
+;;
+;; could also scale down the probability of a given range if it's truncated
+;;
+;;
+;; Another idea...is it possible to do this with a smoother distribution?
+;; e.g., weight each N by 1/N? Then log(n) is the integral of that...
+;; messing with doubles might not be bad.
+;;
+;; Steve's approximation idea might work, if we zoom in far enough
+;; that the log function is basically linear; is e^x basically linear
+;; at that point too?
+;;
+;; How about this. Do the naive implementation of the 1/N
+;; distribution, but when you go to do e^x, check e^(x.prev) and
+;; e^(x.succ) to see *if* there's a precision issue. If so, somehow
+;; get the range of numbers targeted by x, and pick uniformly (which
+;; also isn't trivial).
+;;
+;;
+;; So I think we can use Math/exp for 32-bit integers. Beyond that,
+;; what about having a memoized binary tree, where each node keeps its
+;; total probability value, and the leaves are at a level where it's
+;; okay to use a linear approximation to the log function?
+;;
+;; Speaking of which, how do you invert the derivative of a linear
+;; function? The math HAS to be something we can do with bigints.
+;;
+;; E.g., if we say the PDF for 1024..2047 is
+;;
+;; f(1024) = 1/1024
+;; f(2048) = 1/2048
+;; f(x) = (-1/2097152)x + 3/2048
+;;
+;; The sum from 1024..2047 is 3073/4096
+;;
+;; F(x) = (-1/4194304)x² + (3/2048)x
+;; The sqrt portion of this is guaranteed to be a square ratio, so
+;; could be done exactly
+;; F¯¹(x) = (/ (- -3/4096 (Math/sqrt (+ 9/16777216 (* x -1/4194304)))) -1/4194304)
+
+
+(defn ^:private chunk-id
+  [x]
+  (cond (pos? x) (count (Long/toString x 2))
+        (zero? x) 0
+        (neg? x) (- (chunk-id (- x)))))
+
+(defn ^:private chunk-bounds
+  [id]
+  (cond (zero? id) [0 0]
+        (pos? id)  (core/let [X (bit-shift-left 1 (dec id))]
+                     ;; doesn't work for (= id 63)
+                     [X (dec (bit-shift-left X 1))])
+        (neg? id)  (core/let [[b1 b2] (chunk-bounds (- id))] [(- b2) (- b1)])))
+
+;; stats on the precision of the Math/exp method
+;;
+;; What's the first positive integer for which
+;; (not= x (Math/exp (Math/log x)))?
+(comment
+  (->> (range 1 1000000)
+       (core/map #(* % % %))
+       (filter #(not= % (Math/round (Math/exp (Math/log %)))))
+       (first))
+  138943539274184
+
+  )
+
+
+(defn ^:private small?
+  [n]
+  (<= Integer/MIN_VALUE n Integer/MAX_VALUE))
+
+(def ^:private smallest-big-integer (inc Integer/MAX_VALUE))
+
+(defn ^:private ten-after
+  [x dir]
+  (nth (iterate #(Math/nextAfter % dir) x) 10))
+
+(defn ^:private double-block
+  [x]
+  {:post [(<= (first %) x (second %))
+          (apply < %)]}
+  [(-> x doubles/parse-double (update 2 bit-and 0x7fffffffffffff00) doubles/unparse-double)
+   (-> x doubles/parse-double (update 2 bit-or  0xff) doubles/unparse-double)])
+
+(defn ^:private linear-approximation
+  [a b]
+  ;; what's it cost to do this in only bigints?
+  (core/let [a+b (+ a b)
+             a+b² (* a+b a+b)
+             ab2 (* a b 2)]
+    {:PDF
+     (fn [n] (+ (/ n a b -1) (/ a) (/ b)))
+     :CDF
+     (fn [n] (+ (/ (* n n) -2 a b) (* n (+ (/ a) (/ b)))))
+     :CDF¯¹
+     (fn [q]
+       (- a+b
+          (Math/round (Math/sqrt (- a+b² (* ab2 q))))))}))
+
+;; dev helper function
+(defn linearly-random-integer-fn
+  [min max]
+  (core/let [{:keys [CDF CDF¯¹]} (linear-approximation min max)
+             CDF-min (CDF (- min 1/2))
+             totes (core/double (- (CDF (+ max 1/2)) CDF-min))]
+    (fn []
+      (CDF¯¹ (+ CDF-min (rand totes))))))
+
+(defn test-linearly-random-integer-fn
+  [min max]
+  (reduce (fn [freqs n]
+            (when-let [[x _] (first freqs)]
+              (when (< x min)
+                (throw (ex-info "Generated out of range!" {:x x :min min}))))
+            (when-let [[x _] (first (rseq freqs))]
+              (when (< max x)
+                (throw (ex-info "Generated out of range!" {:x x :max max}))))
+            (core/let [freqs (update freqs n (fnil inc 0))]
+              (if (and (= (inc (- max min)) (count freqs))
+                       (apply > (vals freqs)))
+                (reduced (vary-meta ["Converged after" (reduce + (vals freqs))]
+                                    assoc :freqs freqs))
+                freqs)))
+          (sorted-map)
+          (repeatedly (linearly-random-integer-fn min max))))
+
+(defn large-integer-2
+  [{:keys [min max]}]
+  (core/let [min (or min MIN_INTEGER)
+             max (or max MAX_INTEGER)]
+    ;; spec?
+    (assert (<= max MAX_INTEGER))
+    (assert (>= min MIN_INTEGER))
+
+    ;; there are three potentially empty portions of this:
+    ;; - large negatives
+    ;; - small numbers
+    ;; - large positives
+    ;;
+    ;; we should figure out which ones are nonempty and act
+    ;; accordingly. if only small numbers is nonempty we
+    ;; should be able to make a generator that only uses
+    ;; one double
+    ;;
+    ;; oh remember there's also sizing.
+    (sized
+     (fn [size]
+       (core/let [ ;; shitsticks, what do we do for small sizes with
+                  ;; large mins? gaaauuuaggh maybe add the bit length
+                  ;; of the min to the size? I think so.
+                  two (apply *' (repeat size 2))
+                  min (core/max min (- two))
+                  max (core/min max two)]
+         (assert (<= min max))
+         (core/let [small-integer-section
+                    (core/let [min (core/max min 1)
+                               max (core/min max Integer/MAX_VALUE)
+                               density (- (Math/log (inc max))
+                                          (Math/log min))
+                               rand (fn [x]
+                                      (Math/round (Math/exp (+ x (Math/log min)))))]
+                      {:density density, :rand rand})
+
+                    zero-section
+                    (if (<= min 0 max)
+                      {:density 1.0, :rand (constantly 0)}
+                      {:density 0.0})
+
+                    large-integer-section
+                    (core/let [min (core/max min smallest-big-integer)
+                               max (core/min max MAX_INTEGER)
+                               log-min (Math/log min)
+                               ;; even this line has precision
+                               ;; issues!!!  e.g., it'll be 0 when the
+                               ;; range is small enough
+                               density (- (Math/log (inc max)) log-min)
+                               rand (fn [x]
+                                      ;; do I really want to use
+                                      ;; double-block on the *inputs*
+                                      ;; to exp? or should it be the
+                                      ;; outputs? Man I dunno.
+                                      (let [[lower-x upper-x] (double-block x)
+                                            lower (Math/round (Math/exp (+ lower-x log-min)))
+                                            upper (Math/round (Math/exp (+ upper-x log-min)))]
+                                        (if (= lower upper)
+                                          (do
+                                            (assert (<= min lower max))
+                                            lower)
+                                          ;; linear approximation
+                                          (let [min (core/max min lower)
+                                                max (core/min max upper)]
+                                            ;; so I figured out how to
+                                            ;; do this with ratios...
+                                            ;; how does that help?
+
+                                            ;; what about having a
+                                            ;; more static set of
+                                            ;; ranges? maybe by
+                                            ;; rounding the fractional
+                                            ;; part of the double?
+                                            ;; that has to work with
+                                            ;; truncated ranges
+                                            ;; though...
+                                            ;;
+                                            ;; Oh snapchat, I just
+                                            ;; noticed that the linear
+                                            ;; approximation will have
+                                            ;; discontinuities, as it
+                                            ;; will tend to "push down"
+                                            ;; the probability of the
+                                            ;; fringe numbers, favoring
+                                            ;; the inner ones -- but
+                                            ;; only when included as
+                                            ;; part of a larger
+                                            ;; distribution. I.e.,
+                                            ;; it doesn't compose well.
+
+
+                                            ))))]
+                      {:density density, :rand rand})
+
+                    sections (filter (comp pos? :density)
+                                     [small-integer-section
+                                      zero-section
+                                      large-integer-section])
+                    total-density (reduce + (core/map :density sections))]
+           (assert (pos? total-density))
+           (gen-bind gen-raw-double
+                     (fn [x-rose]
+                       (core/let [x (rose/root x-rose)]
+                         (loop [[next-section & more] sections
+                                density-left (* x total-density)]
+                           (core/let [{:keys [density rand]} next-section]
+                             (if (< density-left density)
+                               (gen-pure (int-rose-tree (rand density-left)))
+                               (if (empty? more)
+                                 (throw (ex-info "FUCK" {}))
+                                 (recur more (- density-left density)))))))))
+           ))))))
+
+(defn square-root
+  "Returns an approximation of x^(1/2), where x is a bigdec."
+  [x bits]
+  {:pre [(< 1M x)]}
+  (time
+   (loop [res 1.0M
+          next-thing 0.5M
+          bit-count 0]
+     (if (< bits bit-count)
+       res
+       (core/let [res+next-thing (+ res next-thing)]
+         (recur (if (<= (* res+next-thing res+next-thing) x)
+                  res+next-thing
+                  res)
+                (/ next-thing 2M)
+                (inc bit-count)))))))
+
+#_
+(def square-roots-of-2
+  "2^(1/(2^n))"
+  (with-precision 400
+    (vec
+     (take 400 (iterate #(square-root % 400) 2M)))))
+
+#_
+(let [cache (atom [2M])
+      precision 400]
+  (defn square-roots-of-2
+    ))
+
+(alter-var-root #'square-root memoize)
+
+(defn bigdec-floor
+  [^BigDecimal x]
+  (bigdec (.toBigInteger x)))
+
+(defn exp2
+  "Computes floor(2^exponent); arg is a bigdec, return is a long."
+  [exponent]
+  (core/let [precision 200]
+    (with-precision precision
+      (core/let [exponent-int (bigdec-floor ^BigDecimal exponent)]
+        (loop [res (.pow 2M (core/int exponent-int))
+               exponent (- exponent exponent-int)
+               root-idx 1]
+          (cond (zero? exponent)
+                #_res
+                (long (.toBigInteger ^BigDecimal res))
+
+                (<= 0.5M exponent)
+                (core/let [root (or (get square-roots-of-2 root-idx)
+                                    (throw (ex-info "No more roots!"
+                                                    {:idx root-idx})))
+                           res' (* res root)
+                           res-int (bigdec-floor res')]
+                  ;; I'm not sure this stopping rule is mathematically legit
+                  ;; weeellllll....maybe it is.
+                  (if (= res-int (bigdec-floor (* res' root)))
+                    #_res'
+                    (long (.toBigInteger ^BigDecimal res-int))
+                    (recur res'
+                           (* 2M (- exponent 0.5M))
+                           (inc root-idx))))
+
+                :else
+                (recur res (* 2M exponent) (inc root-idx))))))))
+
+(defn large-integer-base2
+  "Arg is a random bigdec uniformly between 0 (inclusive) and 1 (exclusive)."
+  [x]
+  ;; want to do something like floor(2^(x*logincmax))
+  (core/let [logincmax 63M]
+    (exp2 (* x logincmax))))
+
+(def two128 (bigdec (apply * (repeat 128 2N))))
+
+(defn bits128-rand
+  []
+  (/ (BigInteger. 128 (java.util.Random.)) two128))
+
+(defn lib2-128
+  [x]
+  (try
+    (large-integer-base2 (/ x two128))
+    (catch Exception e
+      (throw (ex-info "WTF" {:% x, :bd (/ x two128)} e)))))
+
+(defn bounds
+  [target]
+  {:pre [(<= 1 target Long/MAX_VALUE)]}
+  (cond (= 1 target)
+        (core/let [[lb ub] (bounds 2)]
+          [0M (dec lb)])
+
+        (= Long/MAX_VALUE target)
+        (core/let [[lb ub] (bounds (dec target))]
+          [(inc ub) (dec two128)])
+
+        :else
+        [;; lowest
+         (loop [low 0M
+                high (dec two128)]
+           ;; invariant: high gives >= target, low gives < target
+           (if (= high (inc low))
+             high
+             (core/let [mid (-> low
+                                (+ high)
+                                (/ 2M)
+                                (bigdec-floor))]
+               (if (< (lib2-128 mid) target)
+                 (recur mid high)
+                 (recur low mid)))))
+         ;; highest
+         (loop [low 0M
+                high (dec two128)]
+           ;; invariant: high gives > target, low gives <= target
+           (if (= high (inc low))
+             low
+             (core/let [mid (-> low
+                                (+ high)
+                                (/ 2M)
+                                (bigdec-floor))]
+               (if (<= (lib2-128 mid) target)
+                 (recur mid high)
+                 (recur low mid)))))]))
+
+(defn likelihood
+  [x]
+  (core/let [[lb ub] (bounds x)]
+    (inc (- ub lb))))
+
+(defn measure-large-integer-base2-precision
+  []
+
+  ;; is there anything interesting here besides the distance between
+  ;; the highest two numbers...?
+  (core/let [two128 (bigdec (apply * (repeat 128 2N)))]
+    (assert (= Long/MAX_VALUE (lib2-128 (dec two128))))
+
+    (core/let [target (dec Long/MAX_VALUE)
+               ;; let's figure out the largest and smallest inputs
+               ;; that give the target
+               ]
+      (bounds target))))
+
+;; Items to research:
+;; - Is 128 bit rand really precise enough? (I think so)
+;;   - need some code to measure these things
+;; - Can we speed it up by decreasing the precision at different points,
+;;   perhaps based on the input?
+;; - Once we've done that ⇑, how does the performance compare to the
+;;   imprecise Math/exp impl?
+;;   - if it's bad, can we use Math/exp for low-precision situations
+;;     to speed it up?
+;;     - if we do that, is there a distribution shift due to the base
+;;       change?
+;; - rewriting with bigints instead of bigdecs
+;;   - this could mean using fixed-precision base 2 instead of base 10,
+;;     which could affect performance
+;; - oh! How do I expect to compute log_2(x) on the fly? are there any
+;;   workarounds where we estimate and retry?
+
+(comment
+
+  (defn bit-length [x] (count (Long/toString x 2)))
+
+  ;; this has the distribution I want; just need to decide what to do
+  ;; about precision.
+  ;;
+  ;; I know! Use Math/nextAfter to figure out the error bounds, and
+  ;; then pick uniformly within that! I suppose the distribution will
+  ;; squeeze up a bit at the end if we're only targeting a subset of
+  ;; the error bounds :/
+  (defn smoothly-random-integer
+    ([max]
+     (core/let [total (Math/log (inc' max))
+                x (* total (rand))]
+       (long (Math/exp x))))
+    ([min max]
+     (core/let [$ (Math/log min)
+                total (- (Math/log (inc' max)) $)
+                x (* total (rand))]
+       ;; ah right whoopsiedoodle. exp can't do this.
+       ;;
+       ;; (* (Math/exp x) (Math/exp $)) is algebraically the same
+       ;; thing, but still going to have precision problems using
+       ;; doubles.
+       (long (Math/exp (+ x $))))))
+
+  ;; is there an intermediate distribution where within each bitcount
+  ;; we have a linearly changing likelihood?
+  ;; the math might get weird; it might bias larger ranges:
+  ;; actually it looks not bad
+  ;;
+  ;; how about selecting a number from within the range? especially
+  ;; if it's truncated. have to be able to do that in constant time.
+  ;;
+  ;; well it just turns into a parabola I believe. buuuuuut still
+  ;; can't use doubles for the largest ranges. so what's the
+  ;; arithmetic exactly?
+  (letfn [(f [x1 x2]
+            (core/double
+             (core/let [avg (/ (+ (/ x1) (/ x2)) 2)]
+               (- (* avg (inc (- x2 x1))) (/ x2)))))]
+    [;; 1
+     1
+     ;; 2-3
+     (f 2 4)
+     ;; 4-7
+     (f 4 8)
+     (f 8 16)
+     (f 16 32)
+     (f 32 64)
+     (f 64 128)
+     (f 128 256)
+     (f 256 512)
+     (f 512 1024)
+     (f 1024 2048)
+     (f 2048 4096)
+     ])
+  )
 
 ;; doubles
 ;; ---------------------------------------------------------------------------

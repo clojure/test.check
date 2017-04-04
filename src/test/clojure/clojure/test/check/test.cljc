@@ -827,6 +827,22 @@
              [MIN_INTEGER (/ MIN_INTEGER 2)]
              [(/ MAX_INTEGER 2) MAX_INTEGER]])))
 
+(defspec bounded-large-integer-distribution-spec 5
+  (prop/for-all [xs (gen/no-shrink
+                     (gen/vector (gen/resize 150 (gen/large-integer* {:min -60 :max 60}))
+                                 10000))]
+    (letfn [(classify [x]
+              (cond (<= -60 x -30) :big-neg
+                    (<= -29 x -1) :little-neg
+                    (zero? x) :zero
+                    (<= 1 x 29) :little-pos
+                    (<= 30 x 60) :big-pos))]
+      (let [stats (frequencies (map classify xs))]
+        (and (< (stats :big-neg) (stats :little-neg))
+             (< (stats :big-neg) (stats :little-pos))
+             (< (stats :big-pos) (stats :little-neg))
+             (< (stats :big-pos) (stats :little-pos)))))))
+
 ;; doubles
 ;; ---------------------------------------------------------------------------
 
