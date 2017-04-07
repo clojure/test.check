@@ -266,7 +266,7 @@ combine our compound types with a simple function, and the two scalars with
 ;;  (false false) {true -3, false false, -7 1}})
 ```
 
-And we see we got a list whose first element is the empty the list. The second
+And we see we got a list whose first element is the empty list. The second
 element is a map with int keys and values. Etc.
 
 ---
