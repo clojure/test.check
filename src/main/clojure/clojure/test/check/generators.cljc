@@ -1113,10 +1113,6 @@
 
 (def ^:private smallest-big-integer (inc Integer/MAX_VALUE))
 
-(defn ^:private ten-after
-  [x dir]
-  (nth (iterate #(Math/nextAfter % dir) x) 10))
-
 (defn ^:private double-block
   [x]
   {:post [(<= (first %) x (second %))
@@ -1187,7 +1183,7 @@
     ;; oh remember there's also sizing.
     (sized
      (fn [size]
-       (core/let [ ;; shitsticks, what do we do for small sizes with
+       (core/let [;; shitsticks, what do we do for small sizes with
                   ;; large mins? gaaauuuaggh maybe add the bit length
                   ;; of the min to the size? I think so.
                   two (apply *' (repeat size 2))
@@ -1347,6 +1343,8 @@
                 :else
                 (recur res (* 2M exponent) (inc root-idx))))))))
 
+(def two128 (bigdec (apply * (repeat 128 2N))))
+
 (defn large-integer-base2
   "Arg is a random bigdec uniformly between 0 (inclusive) and 1 (exclusive)."
   [x]
@@ -1354,7 +1352,41 @@
   (core/let [logincmax 63M]
     (exp2 (* x logincmax))))
 
-(def two128 (bigdec (apply * (repeat 128 2N))))
+(def ^:static LOG2 (Math/log 2))
+
+(defn estimated-lb
+  "Returns an integer that is close to, but <= to, the real
+  lower bound."
+  [x]
+  {:pre [(<= 1 x)]}
+  (if (= 1 x)
+    0M
+    (-> x
+        (Math/log)
+        (/ LOG2)
+        (/ 63.0)
+        (bigdec)
+        (* two128)
+        (* 0.9999M) ;; hopefully ensure <=
+        (bigint))))
+
+(defn estimated-ub
+  "Returns an integer that is close to, but >= to, the real
+  upper bound."
+  [x]
+  (if (= Long/MAX_VALUE x)
+    (bigint (dec two128))
+    (-> x
+        (inc)
+        (Math/log)
+        (/ LOG2)
+        (/ 63.0)
+        (bigdec)
+        (* two128)
+        (* 1.0001M) ;; hopefully ensure >=
+        (bigint))))
+
+(def estimated-bounds (juxt estimated-lb estimated-ub))
 
 (defn bits128-rand
   []
@@ -1380,28 +1412,26 @@
 
         :else
         [;; lowest
-         (loop [low 0M
-                high (dec two128)]
+         (loop [low 0N
+                high (bigint (dec two128))]
            ;; invariant: high gives >= target, low gives < target
            (if (= high (inc low))
              high
              (core/let [mid (-> low
                                 (+ high)
-                                (/ 2M)
-                                (bigdec-floor))]
+                                (quot 2N))]
                (if (< (lib2-128 mid) target)
                  (recur mid high)
                  (recur low mid)))))
          ;; highest
-         (loop [low 0M
-                high (dec two128)]
+         (loop [low 0N
+                high (bigint (dec two128))]
            ;; invariant: high gives > target, low gives <= target
            (if (= high (inc low))
              low
              (core/let [mid (-> low
                                 (+ high)
-                                (/ 2M)
-                                (bigdec-floor))]
+                                (quot 2N))]
                (if (<= (lib2-128 mid) target)
                  (recur mid high)
                  (recur low mid)))))]))
@@ -1424,6 +1454,37 @@
                ;; that give the target
                ]
       (bounds target))))
+
+
+(defn log2-large-integer
+  "The real deal."
+  [min max]
+  {:pre [(<= 1 min max Long/MAX_VALUE)]}
+  (core/let [lb (estimated-lb min)
+             ub (estimated-ub max)]
+    (sized
+     (fn [size]
+       (core/let [ub (-> size
+                         (bigdec)
+                         (/ 128.0M)
+                         (* two128)
+                         (bigint)
+                         (+ lb)
+                         (core/min ub))
+                  range-size (inc (- ub lb))]
+         (gen-fmap (fn [rose]
+                     (core/let [[x1 x2] (rose/root rose)
+                                x (-> x1
+                                      (bigint)
+                                      (- (bigint Long/MIN_VALUE))
+                                      (* 0x10000000000000000)
+                                      (+ (-> x2 bigint (- (bigint Long/MIN_VALUE))))
+                                      (quot range-size)
+                                      (+ lb))]
+                       ;; (./break!)
+                       (int-rose-tree (lib2-128 x))))
+                   (tuple gen-raw-long gen-raw-long)))))))
+
 
 ;; Items to research:
 ;; - Is 128 bit rand really precise enough? (I think so)
