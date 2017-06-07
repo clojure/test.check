@@ -1113,55 +1113,57 @@
 
 (def ^:private smallest-big-integer (inc Integer/MAX_VALUE))
 
-(defn ^:private double-block
-  [x]
-  {:post [(<= (first %) x (second %))
-          (apply < %)]}
-  [(-> x doubles/parse-double (update 2 bit-and 0x7fffffffffffff00) doubles/unparse-double)
-   (-> x doubles/parse-double (update 2 bit-or  0xff) doubles/unparse-double)])
+(comment
+  (defn ^:private double-block
+    [x]
+    {:post [(<= (first %) x (second %))
+            (apply < %)]}
+    [(-> x doubles/parse-double (update 2 bit-and 0x7fffffffffffff00) doubles/unparse-double)
+     (-> x doubles/parse-double (update 2 bit-or  0xff) doubles/unparse-double)])
 
-(defn ^:private linear-approximation
-  [a b]
-  ;; what's it cost to do this in only bigints?
-  (core/let [a+b (+ a b)
-             a+b² (* a+b a+b)
-             ab2 (* a b 2)]
-    {:PDF
-     (fn [n] (+ (/ n a b -1) (/ a) (/ b)))
-     :CDF
-     (fn [n] (+ (/ (* n n) -2 a b) (* n (+ (/ a) (/ b)))))
-     :CDF¯¹
-     (fn [q]
-       (- a+b
-          (Math/round (Math/sqrt (- a+b² (* ab2 q))))))}))
+  (defn ^:private linear-approximation
+    [a b]
+    ;; what's it cost to do this in only bigints?
+    (core/let [a+b (+ a b)
+               a+b² (* a+b a+b)
+               ab2 (* a b 2)]
+      {:PDF
+       (fn [n] (+ (/ n a b -1) (/ a) (/ b)))
+       :CDF
+       (fn [n] (+ (/ (* n n) -2 a b) (* n (+ (/ a) (/ b)))))
+       :CDF¯¹
+       (fn [q]
+         (- a+b
+            (Math/round (Math/sqrt (- a+b² (* ab2 q))))))}))
 
-;; dev helper function
-(defn linearly-random-integer-fn
-  [min max]
-  (core/let [{:keys [CDF CDF¯¹]} (linear-approximation min max)
-             CDF-min (CDF (- min 1/2))
-             totes (core/double (- (CDF (+ max 1/2)) CDF-min))]
-    (fn []
-      (CDF¯¹ (+ CDF-min (rand totes))))))
+  ;; dev helper function
+  (defn linearly-random-integer-fn
+    [min max]
+    (core/let [{:keys [CDF CDF¯¹]} (linear-approximation min max)
+               CDF-min (CDF (- min 1/2))
+               totes (core/double (- (CDF (+ max 1/2)) CDF-min))]
+      (fn []
+        (CDF¯¹ (+ CDF-min (rand totes))))))
 
-(defn test-linearly-random-integer-fn
-  [min max]
-  (reduce (fn [freqs n]
-            (when-let [[x _] (first freqs)]
-              (when (< x min)
-                (throw (ex-info "Generated out of range!" {:x x :min min}))))
-            (when-let [[x _] (first (rseq freqs))]
-              (when (< max x)
-                (throw (ex-info "Generated out of range!" {:x x :max max}))))
-            (core/let [freqs (update freqs n (fnil inc 0))]
-              (if (and (= (inc (- max min)) (count freqs))
-                       (apply > (vals freqs)))
-                (reduced (vary-meta ["Converged after" (reduce + (vals freqs))]
-                                    assoc :freqs freqs))
-                freqs)))
-          (sorted-map)
-          (repeatedly (linearly-random-integer-fn min max))))
+  (defn test-linearly-random-integer-fn
+    [min max]
+    (reduce (fn [freqs n]
+              (when-let [[x _] (first freqs)]
+                (when (< x min)
+                  (throw (ex-info "Generated out of range!" {:x x :min min}))))
+              (when-let [[x _] (first (rseq freqs))]
+                (when (< max x)
+                  (throw (ex-info "Generated out of range!" {:x x :max max}))))
+              (core/let [freqs (update freqs n (fnil inc 0))]
+                (if (and (= (inc (- max min)) (count freqs))
+                         (apply > (vals freqs)))
+                  (reduced (vary-meta ["Converged after" (reduce + (vals freqs))]
+                                      assoc :freqs freqs))
+                  freqs)))
+            (sorted-map)
+            (repeatedly (linearly-random-integer-fn min max)))))
 
+#_
 (defn large-integer-2
   [{:keys [min max]}]
   (core/let [min (or min MIN_INTEGER)
@@ -1315,6 +1317,7 @@
 (defn exp2
   "Computes floor(2^exponent); arg is a bigdec, return is a long."
   [exponent]
+  #_
   (core/let [precision 200]
     (with-precision precision
       (core/let [exponent-int (bigdec-floor ^BigDecimal exponent)]
@@ -1503,6 +1506,102 @@
 ;; - oh! How do I expect to compute log_2(x) on the fly? are there any
 ;;   workarounds where we estimate and retry?
 
+(defn ^:private uniform-long->uniform-double
+  [x]
+  {:post [(<= 0.0 %)
+          (< % 1.0)]}
+  (-> x
+      (+' Long/MAX_VALUE 1)
+      (/ (apply * (repeat 64 2.0)))))
+
+(defn ^:private expy-rand
+  [min max a-uniform-double]
+  {:post [(<= min % max)]}
+  (core/let [log-min (Math/log min)]
+    (-> (- (Math/log (inc max))
+           log-min)
+        (* a-uniform-double)
+        (+ log-min)
+        (Math/exp)
+        (long))))
+
+(defn ^:private dynamic-upper-bound
+  [min max size]
+  (core/let [mult (Math/pow 2.0 (/ size 2))
+             χ (* mult min)]
+    (if (< χ max)
+      (long χ)
+      max)))
+
+(defn bisecting-large-integer
+  [min max]
+  {:pre [(<= 1 min max Long/MAX_VALUE)]}
+  (sized
+   (fn [size]
+     (core/let [max (dynamic-upper-bound min max size)]
+       (if (<= max Integer/MAX_VALUE)
+         (gen-fmap (fn [rose]
+                     (core/let [x (rose/root rose)]
+                       (int-rose-tree
+                        (expy-rand min max x))))
+                   gen-raw-double)
+         (gen-fmap (fn [rose]
+                     (core/let [[x1 x2] (rose/root rose)]
+                       (int-rose-tree
+                        (loop [min min
+                               log-min (Math/log min)
+                               max max
+                               log-max (Math/log max)
+                               x x1]
+                          (cond (< 0.9 #_0.9999 (/ min max))
+                                (-> x2
+                                    (mod (inc (- max min)))
+                                    (+ min))
+
+                                (<= max Integer/MAX_VALUE)
+                                (expy-rand min max (uniform-long->uniform-double x2))
+
+                                :else
+                                (core/let [log-mid (-> log-min
+                                                       (+ log-max)
+                                                       (/ 2))
+                                           mid (long (Math/exp log-mid))]
+                                  (case (bit-and 1 x)
+                                    0 (core/let [mid' (dec mid)]
+                                        (recur min log-min mid' (Math/log mid')
+                                               (bit-shift-right x 1)))
+                                    1 (recur mid log-mid max log-max
+                                             (bit-shift-right x 1)))))))))
+                   (tuple gen-raw-long gen-raw-long)))))))
+
+(defn large-integer-2
+  [{:keys [min max] :or {min Long/MIN_VALUE max Long/MAX_VALUE}}]
+  (cond (pos? min) (bisecting-large-integer min max)
+
+        ;; crap, this doesn't work because of long assymetry
+        (neg? max) (fmap - (bisecting-large-integer (- max) (- min)))
+
+        (= 0 min max) (return 0)
+        :else (core/let [pos-weight (if (pos? max)
+                                      (inc (Math/log max))
+                                      0)
+                         neg-weight (if (neg? min)
+                                      (inc (Math/log
+                                            (if (= min Long/MIN_VALUE)
+                                              Long/MAX_VALUE
+                                              (- min))))
+                                      0)
+                         zero-weight 1]
+                (prn neg-weight zero-weight pos-weight)
+                (frequency [[zero-weight (return 0)]
+                            [pos-weight (bisecting-large-integer (core/max 1 min) max)]
+                            [neg-weight (large-integer-2 {:min min :max (core/min -1 max)})]]))))
+
+;; I just looked at the hypothesis code and it makes me want to just
+;; write a bit-width version, though I'm not sure how to handle the
+;; min/max edge cases. But is there something dumb like bit-width that
+;; still fixes the problem in the old code?
+
 (comment
 
   (defn bit-length [x] (count (Long/toString x 2)))
@@ -1562,6 +1661,140 @@
      (f 2048 4096)
      ])
   )
+
+
+(def bigint
+  (gen-bind gen-raw-long
+            (fn f
+              ([x-rose] (f x-rose (core/biginteger 0)))
+              ([x-rose ret]
+               (loop [bits-left 64
+                      ^BigInteger x (rose/root x-rose)
+                      ret ret]
+
+                 (cond
+                   (zero? bits-left)
+                   (gen-bind gen-raw-long #(f % ret))
+
+                   (even? x)
+                   (gen-pure (int-rose-tree (core/bigint ret)))
+
+                   :else
+                   (recur (- bits-left 8)
+                          (bit-shift-right x 8)
+                          (-> ret
+                              (.shiftLeft 7)
+                              (.or (-> x
+                                       (bit-shift-right 1)
+                                       (bit-and 127)
+                                       (core/biginteger)))))))))))
+
+(def longs
+  "Generates an infinite lazy sequence of uniform random 64-bit longs
+  that does not shrink."
+  (make-gen
+   (fn [rnd size]
+     (rose/pure
+      ((fn f [rnd]
+         (lazy-seq
+          (core/let [[r1 r2] (random/split rnd)]
+            (cons (random/rand-long r1) (f r2)))))
+       rnd)))))
+
+(def ^:private bigint-width
+  (sized
+   (fn [size]
+     (core/let [thresh (inc size)]
+       (gen-fmap (fn [longs-rose]
+                   (int-rose-tree
+                    (core/let [xs (rose/root longs-rose)]
+                      (loop [xs xs
+                             width 0]
+                        (if (zero? (mod (first xs) thresh))
+                          ;; base case
+                          width
+                          ;; recur
+                          (recur (rest xs) (inc width)))))))
+                 longs)))))
+
+(comment
+  (defmethod print-method clojure.lang.BigInt
+    [bigint pw]
+    (core/let [s (str bigint)]
+      (if (<= (count s) 80)
+        (.write pw s)
+        (do
+          (.write pw (subs s 0 79))
+          (loop [s (subs s 79)]
+            (.write pw "\\\n  ")
+            (if (<= (count s) 78)
+              (.write pw s)
+              (do
+                (.write pw (subs s 0 77))
+                (recur (subs s 77))))))))))
+
+(defn print-bigints
+  [bigints]
+  (println "[")
+  (doseq [x bigints]
+    (print "  ⇰ ")
+    (core/let [s (str x)]
+      (if (< (count s) 77)
+        (print s)
+        (do
+          (println (subs s 0 72))
+          (loop [s (subs s 72)]
+            (print "    ")
+            (if (< (count s) 77)
+              (print s)
+              (do
+                (println (subs s 0 72))
+                (recur (subs s 72))))))))
+    (println))
+  (println "]"))
+
+;; it'll be tricky to adapt this to min/max constraints I'm thinking
+;; maybe for finite ranges we choose a bit-width uniformly; if there
+;; are truncated widths, we can handle them specially and choose them
+;; based on what proportion of them is included.
+;;
+;; Could extend that to large-integer as well.
+(def bigint-2
+  (sized
+   (fn [size]
+     (gen-fmap (fn [longs-longs-rose]
+                 (int-rose-tree
+                  (core/let [[xs ys] (rose/root longs-longs-rose)
+                             ;; want the width to be over 1024 about 0.1% of the
+                             ;; time; this seems to achieve that
+                             size+1 (inc size)
+                             width (->> xs
+                                        (take-while #(pos? (mod % size+1)))
+                                        (count))]
+                    (if (zero? width)
+                      0N
+                      (loop [ys ys
+                             n 0N
+                             width width]
+the                        (if (< width 63)
+                          ;; base case
+                          (-> n
+                              (* (bit-shift-left 1 width))
+                              (+ (unsigned-bit-shift-right (first ys)
+                                                           (- 64 width)))
+                              ;; negate half the time, using an otherwise-unused bit
+                              (* (case (bit-and (first ys) 1) 0 1 1 -1)))
+                          ;; recur
+                          (recur (rest ys)
+                                 (-> n
+                                     (* (bit-shift-left 1 30)
+                                        (bit-shift-left 1 33))
+                                     (+ (unsigned-bit-shift-right (first ys) 1)))
+                                 (- width 63))))))))
+               (tuple longs longs)))))
+
+
+
 
 ;; doubles
 ;; ---------------------------------------------------------------------------

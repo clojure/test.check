@@ -829,7 +829,9 @@
 
 (defspec bounded-large-integer-distribution-spec 5
   (prop/for-all [xs (gen/no-shrink
-                     (gen/vector (gen/resize 150 (gen/large-integer* {:min -60 :max 60}))
+                     (gen/vector (gen/resize 150
+                                             (gen/bisecting-large-integer -60 60)
+                                             #_(gen/large-integer* {:min -60 :max 60}))
                                  10000))]
     (letfn [(classify [x]
               (cond (<= -60 x -30) :big-neg
