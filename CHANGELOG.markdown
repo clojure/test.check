@@ -1,6 +1,31 @@
 # Changelog
 
-## 0.9.0
+## 0.10.0-alpha1 (2017-06-07)
+
+* Major changes
+  * Adds a `:reporter-fn` callback for the `quick-check` function,
+    fixing [TCHECK-33](http://dev.clojure.org/jira/browse/TCHECK-33)
+    (this item is the most subject to change before the final release)
+  * Rewrote `recursive-gen` to be more careful about sizing
+    ([TCHECK-83](http://dev.clojure.org/jira/browse/TCHECK-83))
+  * A new protocol clojure.test.check.results/Result that gives a standard
+    way for a test to return metadata to the test runner
+* Minor changes
+  * Generated keywords and symbols are now smaller, on average
+  * `gen/any` and `gen/any-printable` can generate sets now
+  * Collections shrink faster now
+  * Created `clojure.test.check.clojure-test/*default-opts*`
+  * `gen/frequency` can shrink to earlier generators
+    ([TCHECK-114](http://dev.clojure.org/jira/browse/TCHECK-114))
+  * `gen/such-that` can take an `ex-fn` option to customize exceptions
+  * `gen/let` supports map bindings to specify independence
+    ([TCHECK-98](http://dev.clojure.org/jira/browse/TCHECK-98))
+  * Internal tweaks for compatibility with self-hosted cljs
+    ([TCHECK-105](http://dev.clojure.org/jira/browse/TCHECK-105))
+  * `gen/sample` uses size up to `200` instead of `100`
+* An assortment of internal changes
+
+## 0.9.0 (2015-11-12)
 
 0.9.0 contains an assortment of new generators, and is the first
 release that requires Clojure 1.7.0 (due to using `cljc` files to unify
