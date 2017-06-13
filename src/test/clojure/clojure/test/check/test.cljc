@@ -908,6 +908,11 @@
   (is (string? (gen/generate gen/string)))
   (is (string? (gen/generate gen/string 42))))
 
+(defspec generate-with-seed-test
+  (prop/for-all [seed gen-seed
+                 size gen/nat]
+    (apply = (repeatedly 5 #(gen/generate gen/string size seed)))))
+
 ;; defspec macro
 ;; ---------------------------------------------------------------------------
 

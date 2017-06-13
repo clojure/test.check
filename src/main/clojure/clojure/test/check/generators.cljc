@@ -174,16 +174,23 @@
    (take num-samples (sample-seq generator))))
 
 (defn generate
-  "Returns a single sample value from the generator, using a default
-  size of 30.
+  "Returns a single sample value from the generator.
 
   Note that this function is a dev helper and is not meant to be used
-  to build other generators."
+  to build other generators.
+
+  Optional args:
+
+  - size: the abstract size parameter, defaults to 30
+  - seed: the seed for the random number generator, an integer"
   {:added "0.8.0"}
   ([generator]
    (generate generator 30))
   ([generator size]
    (core/let [rng (random/make-random)]
+     (rose/root (call-gen generator rng size))))
+  ([generator size seed]
+   (core/let [rng (random/make-random seed)]
      (rose/root (call-gen generator rng size)))))
 
 ;; Internal Helpers
