@@ -1109,6 +1109,27 @@
                           (= :gen2 (ffirst fail))
                           (= :gen1 (ffirst (:smallest shrunk))))))))))
 
+;; TCHECK-106 Regression
+;; ---------------------------------------------------------------------------
+
+(defspec collection-generators-can-be-composed-without-exponential-sizes 200
+  (prop/for-all [coll-gens (gen/not-empty
+                            (gen/vector (gen/elements [gen/vector
+                                                       gen/list
+                                                       gen/set
+                                                       gen/vector-distinct
+                                                       gen/list-distinct])))
+                 size gen/nat
+                 seed gen-seed]
+    (let [xs (gen/generate (reduce #(%2 %1) gen/nat coll-gens) size seed)]
+      ;; with larger compositions of generators this will likely
+      ;; always be empty
+      (> 500
+         (->> xs
+              (tree-seq coll? seq)
+              (filter number?)
+              (count))))))
+
 ;; prop/for-all
 ;; ---------------------------------------------------------------------------
 

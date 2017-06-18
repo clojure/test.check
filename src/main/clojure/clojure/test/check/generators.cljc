@@ -498,6 +498,10 @@
   "Generates one of `true` or `false`. Shrinks to `false`."
   (elements [false true]))
 
+(defn ^:private scale-collection
+  [expected-cardinality gen]
+  (cond->> gen (< 1 expected-cardinality) (scale #(long (/ % expected-cardinality)))))
+
 (defn tuple
   "Create a generator that returns a vector, whose elements are chosen
   from the generators in the same position. The individual elements shrink
@@ -551,29 +555,35 @@
    (gen-bind
     (sized #(choose 0 %))
     (fn [num-elements-rose]
-      (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
-                                   generator))
-                (fn [roses]
-                  (gen-pure (rose/shrink-vector core/vector
-                                                roses)))))))
+      (core/let [cardinality (rose/root num-elements-rose)]
+        (scale-collection
+         cardinality
+         (gen-bind (gen-tuple (repeat cardinality generator))
+                   (fn [roses]
+                     (gen-pure (rose/shrink-vector core/vector
+                                                   roses)))))))))
   ([generator num-elements]
    (assert (generator? generator) "First arg to vector must be a generator")
-   (apply tuple (repeat num-elements generator)))
+   (scale-collection
+    num-elements
+    (apply tuple (repeat num-elements generator))))
   ([generator min-elements max-elements]
    (assert (generator? generator) "First arg to vector must be a generator")
    (gen-bind
     (choose min-elements max-elements)
     (fn [num-elements-rose]
-      (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
-                                   generator))
-                (fn [roses]
-                  (gen-bind
-                   (gen-pure (rose/shrink-vector core/vector
-                                                 roses))
-                   (fn [rose]
-                     (gen-pure (rose/filter
-                                (fn [v] (and (>= (count v) min-elements)
-                                             (<= (count v) max-elements))) rose))))))))))
+      (core/let [cardinality (rose/root num-elements-rose)]
+        (scale-collection
+         cardinality
+         (gen-bind (gen-tuple (repeat cardinality generator))
+                   (fn [roses]
+                     (gen-bind
+                      (gen-pure (rose/shrink-vector core/vector
+                                                    roses))
+                      (fn [rose]
+                        (gen-pure (rose/filter
+                                   (fn [v] (and (>= (count v) min-elements)
+                                                (<= (count v) max-elements))) rose))))))))))))
 
 (defn list
   "Like `vector`, but generates lists."
@@ -581,11 +591,13 @@
   (assert (generator? generator) "First arg to list must be a generator")
   (gen-bind (sized #(choose 0 %))
             (fn [num-elements-rose]
-              (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
-                                           generator))
-                        (fn [roses]
-                          (gen-pure (rose/shrink-vector core/list
-                                                        roses)))))))
+              (core/let [cardinality (rose/root num-elements-rose)]
+                (scale-collection
+                 cardinality
+                 (gen-bind (gen-tuple (repeat cardinality generator))
+                           (fn [roses]
+                             (gen-pure (rose/shrink-vector core/list
+                                                           roses)))))))))
 
 (defn- swap
   [coll [i1 i2]]
@@ -664,7 +676,7 @@
   (loop [rose-trees (transient [])
          s (transient #{})
          rng rng
-         size size
+         size (cond-> size (pos? num-elements) (-> (/ num-elements) long))
          tries 0]
     (cond (and (= max-tries tries)
                (< (count rose-trees) min-elements))
@@ -1566,7 +1578,10 @@
                    (randomized
                     (fn [rng]
                       (core/let [sizes (random-pseudofactoring max-leaf-count rng)
-                                 sized-scalar-gen (resize size scalar-gen)]
+                                 size-for-scalars (if (< max-leaf-count 2)
+                                                    size
+                                                    (long (apply / size sizes)))
+                                 sized-scalar-gen (resize size-for-scalars scalar-gen)]
                         (reduce (fn [g size]
                                   (bind (choose 0 10)
                                         (fn [x]
