@@ -24,7 +24,7 @@ in the `0.8.*` releases.
 [org.clojure/test.check "0.10.0-alpha2"]
 ```
 
-### Maven
+#### Maven
 
 ```xml
 <dependency>
@@ -42,7 +42,7 @@ in the `0.8.*` releases.
 [org.clojure/test.check "0.9.0"]
 ```
 
-### Maven
+#### Maven
 
 ```xml
 <dependency>
