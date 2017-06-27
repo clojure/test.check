@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.0-alpha2 (2017-06-27)
+
+* Added a 3rd optional argument to `gen/generate`, the `seed`
+* Reverted behavioral change in `prop/for-all` so that returned
+  exceptions are treated as thrown exceptions
+  ([TCHECK-131](http://dev.clojure.org/jira/browse/TCHECK-131))
+
 ## 0.10.0-alpha1 (2017-06-07)
 
 * Major changes
