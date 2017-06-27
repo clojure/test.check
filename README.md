@@ -16,7 +16,27 @@ Please note a
 [breaking change for ClojureScript](https://github.com/clojure/test.check/blob/master/CHANGELOG.markdown#080)
 in the `0.8.*` releases.
 
-### Leiningen
+### Latest Version
+
+#### Leiningen
+
+```clojure
+[org.clojure/test.check "0.10.0-alpha2"]
+```
+
+### Maven
+
+```xml
+<dependency>
+  <groupId>org.clojure</groupId>
+  <artifactId>test.check</artifactId>
+  <version>0.10.0-alpha2</version>
+</dependency>
+```
+
+### Stable Version
+
+#### Leiningen
 
 ```clojure
 [org.clojure/test.check "0.9.0"]
@@ -34,11 +54,6 @@ in the `0.8.*` releases.
 
 If you'd like to try a SNAPSHOT version, [add the sonatype repository to your
 project](http://dev.clojure.org/display/community/Maven+Settings+and+Repositories).
-
-### Version numbers
-
-_test.check_ version numbers start where _simple-check_ left off: 0.5.7.
-
 
 ## Documentation
 
