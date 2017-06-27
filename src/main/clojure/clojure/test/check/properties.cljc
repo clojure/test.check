@@ -19,10 +19,21 @@
     ;; different in self-hosted cljs.
     {:clojure.test.check.properties/error error}))
 
-(defn- apply-gen
+(defn ^:private exception?
+  [x]
+  (instance? #?(:clj Throwable :cljs js/Error) x))
+
+(defn ^:private apply-gen
   [function]
   (fn [args]
-    (let [result (try (apply function args)
+    (let [result (try
+                   (let [ret (apply function args)]
+                     ;; TCHECK-131: for backwards compatibility (mainly
+                     ;; for spec), treat returned exceptions like thrown
+                     ;; exceptions
+                     (if (exception? ret)
+                       (throw ret)
+                       ret))
                    #?(:clj (catch java.lang.ThreadDeath t (throw t)))
                    (catch #?(:clj Throwable :cljs :default) ex
                      (->ErrorResult ex)))]

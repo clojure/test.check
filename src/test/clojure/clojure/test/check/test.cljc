@@ -132,6 +132,17 @@
                               (result-data [_]
                                 {:foo :bar :baz [42]}))))))))
 
+;; TCHECK-131
+(deftest exception-results-are-treated-as-failures-for-backwards-compatibility
+  (doseq [e [(#?(:clj Exception.
+                 :cljs js/Error.)
+              "Let's pretend this was thrown.")
+             #?(:clj (Error. "Not an Exception, technically"))]]
+    (is (false? (:result
+                 (tc/quick-check 100
+                                 (prop/for-all [x gen/nat]
+                                   e)))))))
+
 ;; Count and concat work as expected
 ;; ---------------------------------------------------------------------------
 
