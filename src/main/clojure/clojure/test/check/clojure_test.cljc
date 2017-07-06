@@ -11,6 +11,7 @@
   (:require #?(:clj  [clojure.test :as ct]
                :cljs [cljs.test :as ct :include-macros true])
             [clojure.test.check :as tc]
+            [clojure.test.check.clojure-test.assertions]
             [clojure.test.check.impl :refer [get-current-time-millis
                                              exception-like?]]
             [clojure.test.check.results :as results]))
@@ -21,7 +22,7 @@
   (if (and (not (results/passing? result))
            (exception-like? (:clojure.test.check.properties/error result-data)))
     (throw (:clojure.test.check.properties/error result-data))
-    (ct/is result)))
+    (ct/is (clojure.test.check.clojure-test/check? m))))
 
 (def ^:dynamic *default-test-count* 100)
 

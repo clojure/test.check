@@ -8,7 +8,9 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.clojure-test-test
-  (:require #?@(:cljs
+  (:require [clojure.set :as set]
+            [clojure.string :as str]
+            #?@(:cljs
                 [[cljs.test
                   :as test
                   :include-macros true
@@ -138,14 +140,34 @@
 
 (defspec this-is-supposed-to-fail 100 vector-elements-are-unique)
 
+(deftest can-report-failures
+  (let [{:keys [test-out]} (capture-test-var #'this-is-supposed-to-fail)
+        [result-line expected-line actual-line & more] (->> (str/split-lines test-out)
+                                                            ;; skip any ::shrunk messages
+                                                            (drop-while #(not (re-find #"^FAIL" %))))]
+    (is (re-find #"^FAIL in \(this-is-supposed-to-fail\) " result-line))
+    #?(:clj (is (re-find #"\(clojure_test_test\.cljc:\d+\)$" result-line)))
+    (is (= expected-line "expected: {:result true}"))
+    (let [actual (read-string (subs actual-line 10))]
+      (is (set/subset? #{:result :result-data :seed :failing-size :num-tests :fail :shrunk}
+                       (set (keys actual))))
+      (is (= false (:result actual))))
+    (is (nil? more))))
+
 (deftest can-report-shrinking
-  (binding [ct/*report-shrinking* true]
+  (testing "don't emit Shrinking messages by default"
     (let [{:keys [report-counters test-out]} (capture-test-var #'this-is-supposed-to-fail)]
       (is (== 1 (:fail report-counters)))
-      (is (re-seq #?(:clj (java.util.regex.Pattern/compile
-                            "(?s)Shrinking vector-elements-are-unique starting with parameters \\[\\[.+")
-                     :cljs #"Shrinking vector-elements-are-unique starting with parameters \[\[[\s\S]+")
-                  test-out)))))
+      (is (not (re-find #"Shrinking" test-out)))))
+
+  (testing "bind *report-shrinking* to true to emit Shrinking messages"
+    (binding [ct/*report-shrinking* true]
+      (let [{:keys [report-counters test-out]} (capture-test-var #'this-is-supposed-to-fail)]
+        (is (== 1 (:fail report-counters)))
+        (is (re-seq #?(:clj (java.util.regex.Pattern/compile
+                              "(?s)Shrinking vector-elements-are-unique starting with parameters \\[\\[.+")
+                       :cljs #"Shrinking vector-elements-are-unique starting with parameters \[\[[\s\S]+")
+                    test-out))))))
 
 (deftest tcheck-118-pass-shrunk-input-on-to-clojure-test
   (let [{trial ::ct/trial, shrinking ::ct/shrinking, shrunk ::ct/shrunk}
