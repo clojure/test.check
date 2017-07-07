@@ -23,3 +23,13 @@
   nil
   (passing? [this] false)
   (result-data [this] {}))
+
+(defprotocol AsyncResult
+  (go-the-thing [_ callback]))
+
+(extend-protocol AsyncResult
+  #?(:clj Object :cljs default)
+  (go-the-thing [this callback] (callback this))
+
+  nil
+  (go-the-thing [this callback] (callback this)))

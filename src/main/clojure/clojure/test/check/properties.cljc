@@ -79,3 +79,41 @@
   `(for-all* ~(vec (binding-gens bindings))
              (fn [~@(binding-vars bindings)]
                ~@body)))
+
+(defn for-all-async*
+  "Creates a property (properties are also generators). A property is
+  a generator that generates the result of applying the function under
+  test to a callback and the realized arguments. Once realized, the
+  arguments will be applied to `function` with `apply`.
+
+  Example:
+
+  (for-all* [gen/int gen/int] (fn [a b] (>= (+ a b) a)))
+  "
+  [args function]
+  (gen/fmap
+   (fn [args]
+     (reify results/AsyncResult
+       (go-the-thing [_ callback]
+         (let [callback (fn [result]
+                          (callback
+                           {:result result
+                            :args args}))]
+           (apply function callback args)))))
+   (apply gen/tuple args)))
+
+(defmacro for-all-async
+  "Macro sugar for `for-all-async*`. `for-all-async` lets you name the parameter
+  and use them in expression, without wrapping them in a lambda. Like
+  `for-all-async*`, it returns a property.
+
+  Examples
+
+  (for-all callback [a gen/int
+                     b gen/int]
+    (>= (+ a b) a))
+  "
+  [callback-binding bindings & body]
+  `(for-all-async* ~(vec (binding-gens bindings))
+                   (fn [~callback-binding ~@(binding-vars bindings)]
+                     ~@body)))
