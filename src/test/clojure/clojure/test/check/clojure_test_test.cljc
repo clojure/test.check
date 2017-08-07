@@ -141,12 +141,14 @@
 (defspec this-is-supposed-to-fail 100 vector-elements-are-unique)
 
 (deftest can-report-failures
-  (let [{:keys [test-out]} (capture-test-var #'this-is-supposed-to-fail)
+  (let [{:keys [out test-out]} (capture-test-var #'this-is-supposed-to-fail)
         [result-line expected-line actual-line & more] (->> (str/split-lines test-out)
                                                             ;; skip any ::shrunk messages
                                                             (drop-while #(not (re-find #"^FAIL" %))))]
     (is (re-find #"^FAIL in \(this-is-supposed-to-fail\) " result-line))
-    #?(:clj (is (re-find #"\(clojure_test_test\.cljc:\d+\)$" result-line)))
+    (is (re-find #?(:clj #"\(clojure_test_test\.cljc:\d+\)$"
+                    :cljs #"clojure_test_test.*:\d+\)$")
+                 result-line))
     (is (= expected-line "expected: {:result true}"))
     (let [actual (read-string (subs actual-line 10))]
       (is (set/subset? #{:result :result-data :seed :failing-size :num-tests :fail :shrunk}

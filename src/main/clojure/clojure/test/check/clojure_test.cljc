@@ -11,18 +11,20 @@
   (:require #?(:clj  [clojure.test :as ct]
                :cljs [cljs.test :as ct :include-macros true])
             [clojure.test.check :as tc]
-            [clojure.test.check.clojure-test.assertions]
+            [clojure.test.check.clojure-test.assertions :as assertions]
             [clojure.test.check.impl :refer [get-current-time-millis
                                              exception-like?]]
             [clojure.test.check.results :as results]))
 
 (defn assert-check
-  [{:keys [result result-data] :as m}]
+  [{:keys [result result-data] :as m} file-and-line]
   (prn m)
   (if (and (not (results/passing? result))
            (exception-like? (:clojure.test.check.properties/error result-data)))
     (throw (:clojure.test.check.properties/error result-data))
-    (ct/is (clojure.test.check.clojure-test/check? m))))
+    (ct/is (clojure.test.check.clojure-test/check?
+            m
+            file-and-line))))
 
 (def ^:dynamic *default-test-count* 100)
 
@@ -75,7 +77,8 @@
    `(defn ~(vary-meta name assoc
                       ::defspec true
                       :test `#(clojure.test.check.clojure-test/assert-check
-                               (assoc (~name) :test-var (str '~name))))
+                               (assoc (~name) :test-var (str '~name))
+                               (assertions/file-and-line)))
       {:arglists '([] ~'[num-tests & {:keys [seed max-size reporter-fn]}])}
       ([] (let [options# (process-options ~options)]
             (apply ~name (:num-tests options#) (apply concat options#))))

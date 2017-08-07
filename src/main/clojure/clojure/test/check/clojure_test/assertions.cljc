@@ -23,7 +23,28 @@
          {:file (.getFileName s) :line (.getLineNumber s)})
        {:file nil :line nil})))
 
-(defn check-results [{:keys [result] :as m}]
+#?(:cljs
+   (defn file-and-line**
+     [stack-string]
+
+     (if-let [[_ file line] (->> stack-string
+                                 (re-seq #"\bat\b[^\(\n]* \(([^\)]+):(\d+):(\d+)\)")
+                                 (second))]
+       {:file file :line line}
+       {:file nil :line nil})))
+
+(defn file-and-line
+  #?(:clj
+     "Only meant to be called from ClojureScript. In Clojure, does
+     nothing and returns nil."
+     :cljs
+     "Returns a delay of a :file and :line map representing the file
+  and line of the caller.")
+  []
+  #?(:cljs (let [e (js/Error.)] (delay (file-and-line** (.-stack e))))))
+
+(defn check-results
+  [{:keys [result] :as m} file-and-line]
   (if (results/passing? result)
     (t/do-report
       {:type :pass
@@ -34,12 +55,11 @@
               :actual m}
              #?(:clj (file-and-line*
                        (test-context-stacktrace (.getStackTrace (Thread/currentThread))))
-                :cljs (t/file-and-line (js/Error.) 4))))))
+                :cljs (deref file-and-line))))))
 
 (defn check?
   [_ form]
-  `(let [m# ~(nth form 1)]
-     (check-results m#)))
+  `(check-results ~@(rest form)))
 
 
 #?(:clj
