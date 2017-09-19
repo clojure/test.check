@@ -1,7 +1,6 @@
 (ns clojure.test.check.clojure-test.assertions
   #?(:cljs (:require-macros [clojure.test.check.clojure-test.assertions.cljs]))
-  (:require [clojure.string :as str]
-            #?(:clj [clojure.test :as t]
+  (:require #?(:clj [clojure.test :as t]
                :cljs [cljs.test :as t])
             [clojure.test.check.results :as results]))
 
@@ -9,10 +8,10 @@
    (defn test-context-stacktrace [st]
      (drop-while
        #(let [class-name (.getClassName ^StackTraceElement %)]
-          (or (clojure.string/starts-with? class-name "java.lang")
-              (clojure.string/starts-with? class-name "clojure.test$")
-              (clojure.string/starts-with? class-name "clojure.test.check.clojure_test$")
-              (clojure.string/starts-with? class-name "clojure.test.check.clojure_test.assertions")))
+          (or (.startsWith class-name "java.lang")
+              (.startsWith class-name "clojure.test$")
+              (.startsWith class-name "clojure.test.check.clojure_test$")
+              (.startsWith class-name "clojure.test.check.clojure_test.assertions")))
        st)))
 
 #?(:clj
