@@ -361,10 +361,11 @@
   (assert (every? (fn [[x g]] (and (number? x) (generator? g)))
                   pairs)
           "Arg to frequency must be a list of [num generator] pairs")
-  (assert (seq pairs)
-          "frequency cannot be called with an empty collection")
-  (core/let [total (apply + (core/map first pairs))]
-    ;; low-level impl so that shrinking is optimal
+  (core/let [pairs (filter (comp pos? first) pairs)
+             total (apply + (core/map first pairs))]
+    (assert (seq pairs)
+            "frequency must be called with at least one non-zero weight")
+    ;; low-level impl for shrinking control
     (make-gen
      (fn [rnd size]
        (call-gen
