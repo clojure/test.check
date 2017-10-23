@@ -21,6 +21,7 @@
             [clojure.test.check.random :as random]
             [clojure.test.check.results :as results]
             [clojure.test.check.clojure-test :as ct #?(:clj :refer :cljs :refer-macros) (defspec)]
+            #?(:cljs [clojure.test.check.random.longs :as rl])
             #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn])))
 
@@ -142,7 +143,18 @@
                  (tc/quick-check 100
                                  (prop/for-all [x gen/nat]
                                    e)))))))
-
+;; TCHECK-134
+#?(:cljs
+   (defn multiply-check [x y]
+     (let [goog-math-long (.multiply x y)
+           test-check (rl/* x y)]
+       (and (== (.-high_ goog-math-long) (.-high_ test-check))
+            (== (.-low_ goog-math-long) (.-low_ test-check))))))
+#?(:cljs
+    (deftest multiply-test-check-and-goog
+      (testing "For goog.math.Long's test.check multiply is the same as goog.math.Long.multiply"
+        (is (:result
+              (tc/quick-check 1000 (prop/for-all* [gen/gen-raw-long gen/gen-raw-long] multiply-check)))))))
 ;; Count and concat work as expected
 ;; ---------------------------------------------------------------------------
 
