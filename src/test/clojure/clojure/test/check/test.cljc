@@ -92,7 +92,7 @@
 
 (defn first-is-gone
   [l]
-  (not (some #{(first l)} (vec (rest l)))))
+  (not (some #{(first l)} (rest l))))
 
 (deftest bad-remove
   (testing "For all vectors L, if we remove the first element E, E should not
