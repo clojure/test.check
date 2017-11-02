@@ -25,7 +25,7 @@
    [{:id "node-dev"
      :source-paths ["src/main/clojure" "src/test/clojure"
                     "src/target/cljs/node"]
-     :notify-command ["node" "resources/run.js"]
+     :notify-command ["node" "test-runners/run.js"]
      :compiler {:optimizations :none
                 :static-fns true
                 :target :nodejs
