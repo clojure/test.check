@@ -5,10 +5,18 @@ The core idea of _test.check_ is that instead of enumerating expected input
 and output for unit tests, you write properties about your function that should
 hold true for all inputs. This lets you write concise, powerful tests.
 
-_test.check_ used to be called
-[_simple-check_](https://github.com/reiddraper/simple-check).
+* [Releases and Dependency Information](#releases-and-dependency-information)
+* [Documentation](#documentation)
+* [Developer Information](#developer-information)
+* [See also](#see-also)
+* [YourKit](#yourkit)
+* [License](#license)
 
 ## Releases and Dependency Information
+
+Release notes for each version are available in
+[`CHANGELOG.markdown`](CHANGELOG.markdown). Remember that prior to version
+0.5.7, _test.check_ was called _simple-check_.
 
 As of version `0.9.0`, test.check requires Clojure >= `1.7.0`.
 
@@ -71,10 +79,6 @@ project](http://dev.clojure.org/display/community/Maven+Settings+and+Repositorie
     * [Writing simple-check - Reid Draper](http://reiddraper.com/writing-simple-check/)
     * [Generative testing in Clojure - Youtube](https://www.youtube.com/watch?v=u0TkAw8QqrQ)
     * [Using simple-check with Expectations - Curtis Gagliardi](http://curtis.io/using-simple-check-with-expectations)
-
-## Migrating from simple-check
-
-See [migrating from simple-check](doc/migrating-from-simple-check.md).
 
 ## Useful libraries
 
@@ -190,13 +194,30 @@ The remaining examples need no further changes. Integrating with
 macro, in the same fashion as integration with `clojure.test` on the
 jvm.
 
-## Release Notes
+## Developer Information
 
-Release notes for each version are available in
-[`CHANGELOG.markdown`](CHANGELOG.markdown). Remember that prior to version
-0.5.7, _test.check_ was called _simple-check_.
+We can not accept pull requests. Please see
+[CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-## See also...
+### Links
+
+* [GitHub project](https://github.com/clojure/test.check)
+* [Bug Tracker](http://dev.clojure.org/jira/browse/TCHECK)
+* [Continuous Integration](http://build.clojure.org/job/test.check/)
+* [Compatibility Test Matrix](http://build.clojure.org/job/test.check-test-matrix/)
+
+### Tests
+
+test.check runs in both jvm-clojure and clojurescript, so testing
+comprehensively requires several steps:
+
+* Run `lein test` to run the JVM tests (requires [Leiningen](https://leiningen.org))
+* Run `lein cljsbuild once` to run the ClojureScript tests (also requires [node.js](https://nodejs.org))
+* To run the same tests in a web browser, open (after running the above command)
+  `test-runners/run_tests_dev.html` and `test-runners/run_tests_adv.html` and watch the
+  javascript console for output
+
+## See also
 
 ### Other implementations
 
@@ -209,10 +230,15 @@ Release notes for each version are available in
 - [QuickCheck: A Lightweight Tool for Random Testing of Haskell
   Programs](http://www.eecs.northwestern.edu/~robby/courses/395-495-2009-fall/quick.pdf)
 
+### simple-check
+
+_test.check_ used to be called
+[_simple-check_](https://github.com/reiddraper/simple-check).
+
+See [migrating from simple-check](doc/migrating-from-simple-check.md).
+
 ## Contributing
 
-We can not accept pull requests. Please see [CONTRIBUTING.md](CONTRIBUTING.md)
-for details.
 
 ## YourKit
 
