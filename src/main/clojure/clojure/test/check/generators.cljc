@@ -575,6 +575,29 @@
                      (gen-pure (rose/filter
                                 (fn [v] (and (>= (count v) min-elements)
                                              (<= (count v) max-elements))) rose))))))))))
+(defn vector-with-pow-length-reduction
+  [pow generator]
+  (assert (generator? generator) "Arg to vector must be a generator")
+  (sized
+   (fn [size]
+     (gen-bind
+      (choose 0 size)
+      (fn [num-elements-rose]
+        (core/let [num-elements (rose/root num-elements-rose)
+                   smaller-size (cond-> size
+                                  (pos? num-elements)
+                                  (/ (Math/pow num-elements pow)))
+                   generator (resize smaller-size generator)]
+          (gen-bind (gen-tuple (repeat num-elements generator))
+                    (fn [roses]
+                      (gen-pure (rose/shrink-vector core/vector
+                                                    roses))))))))))
+
+(def vector-with-length-reduction
+  (partial vector-with-pow-length-reduction 1.0))
+
+(def vector-with-sqrt-length-reduction
+  (partial vector-with-pow-length-reduction 0.5))
 
 (defn list
   "Like `vector`, but generates lists."
