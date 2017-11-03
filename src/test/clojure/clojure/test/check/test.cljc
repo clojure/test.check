@@ -420,8 +420,8 @@
                  seed gen-seed
                  size (gen/choose 1 20)
                  [pred opts] gen-size-bounds-and-pred]
-    (let [rose-tree (gen/call-gen (g (gen/choose 0 1000) opts)
-                                  (random/make-random seed) size)
+    (let [rose-tree (:rose (gen/call-gen (g (gen/choose 0 1000) opts)
+                                         (random/make-random seed) size))
           ;; inevitably some of these will be way too long to actually
           ;; test, so this is the easiest thing to do :/
           vals (take 1000 (rose/seq rose-tree))]
@@ -435,8 +435,8 @@
   (prop/for-all [g gen-distinct-generator
                  seed gen-seed
                  size (gen/choose 1 20)]
-    (let [rose-tree (gen/call-gen (g (gen/choose 1 1000))
-                                  (random/make-random seed) size)
+    (let [rose-tree (:rose (gen/call-gen (g (gen/choose 1 1000))
+                                         (random/make-random seed) size))
           a-shrink (->> rose-tree
                         (iterate #(first (rose/children %)))
                         (take-while identity)
@@ -451,7 +451,7 @@
       (every?
        (->> (gen/lazy-random-states rng)
             (take 1000)
-            (map #(rose/root (gen/call-gen (g gen/nat {:num-elements 3, :max-tries 100}) % 0)))
+            (map #(rose/root (:rose (gen/call-gen (g gen/nat {:num-elements 3, :max-tries 100}) % 0))))
             (set))
        [[0 1 2] [0 2 1] [1 0 2] [1 2 0] [2 0 1] [2 1 0]]))))
 
@@ -711,10 +711,10 @@
   (prop/for-all [[mini maxi] range-gen
                  random-seed gen/nat
                  size gen/nat]
-    (let [tree (gen/call-gen
-                (gen/choose mini maxi)
-                (random/make-random random-seed)
-                size)]
+    (let [tree (:rose (gen/call-gen
+                       (gen/choose mini maxi)
+                       (random/make-random random-seed)
+                       size))]
       (every?
        #(and (<= mini %) (>= maxi %))
        (rose/seq tree)))))
@@ -1085,6 +1085,14 @@
       (is (= test-runs-during-shrinking
              (get-in res [:shrunk :total-nodes-visited]))))))
 
+(comment
+
+  (let [state (atom 2)
+        prop (prop/for-all [xs gen/nat]
+               (pos? (swap! state dec)))]
+    (tc/quick-check 100 prop :seed 42))
+  )
+
 ;; TCHECK-32 Regression
 ;; ---------------------------------------------------------------------------
 
@@ -1153,3 +1161,6 @@
     (is (:result (tc/quick-check 1000 p)))
     (is (= 1000 (count @a)))
     (is (every? integer? @a))))
+
+
+(defn expand-rose [arg] (clojure.walk/prewalk (fn [rose] (if (instance? clojure.test.check.rose_tree.RoseTree rose) [(rose/root rose) (rose/children rose)] rose)) arg))

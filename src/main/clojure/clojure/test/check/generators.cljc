@@ -25,6 +25,7 @@
 ;; ---------------------------------------------------------------------------
 
 (defrecord Generator [gen])
+(defrecord GenReturn [rose entropy-used])
 
 (defn generator?
   "Test if `x` is a generator. Generators should be treated as opaque values."
@@ -44,10 +45,10 @@
 (defn gen-pure
   "Internal function."
   {:no-doc true}
-  [value]
+  [gen-return]
   (make-gen
    (fn [rnd size]
-     value)))
+     gen-return)))
 
 (defn gen-fmap
   "Internal function."
@@ -64,8 +65,8 @@
   (make-gen
    (fn [rnd size]
      (core/let [[r1 r2] (random/split rnd)
-                inner (h r1 size)
-                {result :gen} (k inner)]
+                ret (h r1 size)
+                {result :gen} (k ret)]
        (result r2 size)))))
 
 (defn lazy-random-states
@@ -99,7 +100,7 @@
   Also see gen/let for a macro with similar functionality."
   [f gen]
   (assert (generator? gen) "Second arg to fmap must be a generator")
-  (gen-fmap #(rose/fmap f %) gen))
+  (gen-fmap #(update % :rose (partial rose/fmap f)) gen))
 
 (defn return
   "Create a generator that always returns `value`,
@@ -109,16 +110,22 @@
       (gen/sample (gen/return 42))
       => (42 42 42 42 42 42 42 42 42 42)"
   [value]
-  (gen-pure (rose/pure value)))
+  (gen-pure (->GenReturn (rose/pure value) 0.0)))
 
 (defn- bind-helper
   [f]
-  (fn [rose]
-    (gen-fmap rose/join
-              (make-gen
-               (fn [rnd size]
-                 (rose/fmap #(call-gen (f %) rnd size)
-                            rose))))))
+  (fn [{:keys [rose entropy-used]}]
+    (make-gen
+     (fn [rnd size]
+       (->GenReturn
+        (rose/join
+         (rose/fmap #(:rose (call-gen (f %) rnd size))
+                    rose))
+        ;; TODO: refactor so we don't have to call this
+        ;; twice
+        (+ entropy-used
+           (:entropy-used
+            (call-gen (f (rose/root rose)) rnd size))))))))
 
 (defn bind
   "Create a new generator that passes the result of `gen` into function
@@ -154,7 +161,7 @@
   ([generator max-size]
    (core/let [r (random/make-random)
               size-seq (make-size-range-seq max-size)]
-     (core/map #(rose/root (call-gen generator %1 %2))
+     (core/map #(rose/root (:rose (call-gen generator %1 %2)))
                (lazy-random-states r)
                size-seq))))
 
@@ -189,10 +196,10 @@
    (generate generator 30))
   ([generator size]
    (core/let [rng (random/make-random)]
-     (rose/root (call-gen generator rng size))))
+     (rose/root (:rose (call-gen generator rng size)))))
   ([generator size seed]
    (core/let [rng (random/make-random seed)]
-     (rose/root (call-gen generator rng size)))))
+     (rose/root (:rose (call-gen generator rng size))))))
 
 ;; Internal Helpers
 ;; ---------------------------------------------------------------------------
@@ -319,9 +326,11 @@
     (make-gen
      (fn [rnd _size]
        (core/let [value (rand-range rnd lower upper)]
-         (rose/filter
-          #(and (>= % lower) (<= % upper))
-          (int-rose-tree value)))))))
+         (->GenReturn
+          (rose/filter
+           #(and (>= % lower) (<= % upper))
+           (int-rose-tree value))
+          (Math/log (inc (- (core/double upper) (core/double lower))))))))))
 
 (defn one-of
   "Create a generator that randomly chooses a value from the list of
@@ -371,20 +380,24 @@
      (fn [rnd size]
        (call-gen
         (gen-bind (choose 0 (dec total))
-                  (fn [x]
-                    (core/let [idx (pick (core/map first pairs) (rose/root x))]
-                      (gen-fmap (fn [rose]
-                                  (rose/make-rose (rose/root rose)
-                                                  (lazy-seq
-                                                   (concat
-                                                    ;; try to shrink to earlier generators first
-                                                    (for [idx (range idx)]
-                                                      (call-gen (second (nth pairs idx))
-                                                                rnd
-                                                                size))
-                                                    (rose/children rose)))))
+                  (fn [{:keys [rose entropy-used]}]
+                    (core/let [idx (pick (core/map first pairs) (rose/root rose))]
+                      (gen-fmap (fn [ret]
+                                  (->GenReturn
+                                   (rose/make-rose (rose/root (:rose ret))
+                                                   (lazy-seq
+                                                    (concat
+                                                     ;; try to shrink to earlier generators first
+                                                     (for [idx (range idx)]
+                                                       (:rose
+                                                        (call-gen (second (nth pairs idx))
+                                                                  rnd
+                                                                  size)))
+                                                     (rose/children (:rose ret)))))
+                                   (+ entropy-used (:entropy-used ret))))
                                 (second (nth pairs idx))))))
-        rnd size)))))
+        rnd
+        size)))))
 
 (defn elements
   "Create a generator that randomly chooses an element from `coll`.
@@ -394,8 +407,7 @@
   [coll]
   (assert (seq coll) "elements cannot be called with an empty collection")
   (core/let [v (vec coll)]
-    (gen-fmap #(rose/fmap v %)
-              (choose 0 (dec (count v))))))
+    (fmap v (choose 0 (dec (count v))))))
 
 (defn- such-that-helper
   [pred gen {:keys [ex-fn max-tries]} rng size]
@@ -406,8 +418,8 @@
       (throw (ex-fn {:pred pred, :gen, gen :max-tries max-tries}))
       (core/let [[r1 r2] (random/split rng)
                  value (call-gen gen r1 size)]
-        (if (pred (rose/root value))
-          (rose/filter pred value)
+        (if (pred (rose/root (:rose value)))
+          (update value :rose #(rose/filter pred %))
           (recur (dec tries-left) r2 (inc size)))))))
 
 (def ^:private
@@ -485,8 +497,8 @@
   applicable to the domain."
   [gen]
   (assert (generator? gen) "Arg to no-shrink must be a generator")
-  (gen-fmap (fn [rose]
-              (rose/make-rose (rose/root rose) []))
+  (gen-fmap (fn [ret]
+              (update ret :rose #(rose/make-rose (rose/root %) [])))
             gen))
 
 (defn shrink-2
@@ -494,7 +506,7 @@
   even if their parent passes the test (up to one additional level)."
   [gen]
   (assert (generator? gen) "Arg to shrink-2 must be a generator")
-  (gen-fmap rose/collapse gen))
+  (gen-fmap #(update % :rose rose/collapse) gen))
 
 (def boolean
   "Generates one of `true` or `false`. Shrinks to `false`."
@@ -514,8 +526,10 @@
   [& generators]
   (assert (every? generator? generators)
           "Args to tuple must be generators")
-  (gen-fmap (fn [roses]
-              (rose/zip core/vector roses))
+  (gen-fmap (fn [rets]
+              (->GenReturn
+               (rose/zip core/vector (core/mapv :rose rets))
+               (reduce ((core/map :entropy-used) +) 0.0 rets)))
             (gen-tuple generators)))
 
 (def int
@@ -552,11 +566,13 @@
    (assert (generator? generator) "Arg to vector must be a generator")
    (gen-bind
     (sized #(choose 0 %))
-    (fn [num-elements-rose]
-      (gen-fmap (fn [roses]
-                  (rose/shrink-vector core/vector
-                                      roses))
-                (gen-tuple (repeat (rose/root num-elements-rose)
+    (fn [num-elements-ret]
+      (gen-fmap (fn [rets]
+                  (->GenReturn
+                   (rose/shrink-vector core/vector
+                                       (core/mapv :rose rets))
+                   (reduce ((core/map :entropy-used) +) 0.0 rets)))
+                (gen-tuple (repeat (rose/root (:rose num-elements-ret))
                                    generator))))))
   ([generator num-elements]
    (assert (generator? generator) "First arg to vector must be a generator")
@@ -565,25 +581,28 @@
    (assert (generator? generator) "First arg to vector must be a generator")
    (gen-bind
     (choose min-elements max-elements)
-    (fn [num-elements-rose]
-      (gen-fmap (fn [roses]
-                  (rose/filter
-                   (fn [v] (and (>= (count v) min-elements)
-                                (<= (count v) max-elements)))
-                   (rose/shrink-vector core/vector
-                                       roses)))
-                (gen-tuple (repeat (rose/root num-elements-rose)
-                                   generator)))))))
+    (fn [num-elements-ret]
+      (gen-fmap
+       (fn [rets]
+         (->GenReturn
+          (->> rets
+               (core/mapv :rose)
+               (rose/shrink-vector core/vector)
+               (rose/filter (fn [v] (and (>= (count v) min-elements)
+                                         (<= (count v) max-elements)))))
+          (reduce ((core/map :entropy-used) +) 0.0 rets)))
+       (gen-tuple (repeat (rose/root (:rose num-elements-ret))
+                          generator)))))))
 
 (defn list
   "Like `vector`, but generates lists."
   [generator]
   (assert (generator? generator) "First arg to list must be a generator")
   (gen-bind (sized #(choose 0 %))
-            (fn [num-elements-rose]
-              (gen-fmap (fn [roses]
-                          (rose/shrink-vector core/list
-                                              roses))
+              (gen-fmap (fn [rets]
+                          (->GenReturn
+                           (rose/shrink-vector core/list (core/mapv :rose rets))
+                           (reduce ((core/map :entropy-used) +) 0.0 rets)))
                         (gen-tuple (repeat (rose/root num-elements-rose)
                                            generator))))))
 
@@ -658,14 +677,15 @@
       (some? (-lookup s k))))
 
 (defn ^:private coll-distinct-by*
-  "Returns a rose tree."
+  "Returns a GenReturn."
   [empty-coll key-fn shuffle-fn gen rng size num-elements min-elements max-tries ex-fn]
   {:pre [gen (:gen gen)]}
-  (loop [rose-trees (transient [])
-         s (transient #{})
-         rng rng
-         size size
-         tries 0]
+  (loop [rose-trees         (transient [])
+         s                  (transient #{})
+         rng                rng
+         size               size
+         tries              0
+         total-entropy-used 0.0]
     (cond (and (= max-tries tries)
                (< (count rose-trees) min-elements))
           (throw (ex-fn {:gen gen
@@ -674,30 +694,33 @@
 
           (or (= max-tries tries)
               (= (count rose-trees) num-elements))
-          (->> (persistent! rose-trees)
-               ;; we shuffle the rose trees so that we aren't biased
-               ;; toward generating "smaller" elements earlier in the
-               ;; collection (only applies to ordered collections)
-               ;;
-               ;; shuffling the rose trees is more efficient than
-               ;; (bind ... shuffle) because we only perform the
-               ;; shuffling once and we have no need to shrink the
-               ;; shufling.
-               (shuffle-fn rng)
-               (rose/shrink-vector #(into empty-coll %&)))
+          (->GenReturn
+           (->> (persistent! rose-trees)
+                ;; we shuffle the rose trees so that we aren't biased
+                ;; toward generating "smaller" elements earlier in the
+                ;; collection (only applies to ordered collections)
+                ;;
+                ;; shuffling the rose trees is more efficient than
+                ;; (bind ... shuffle) because we only perform the
+                ;; shuffling once and we have no need to shrink the
+                ;; shuffling.
+                (shuffle-fn rng)
+                (rose/shrink-vector #(into empty-coll %&)))
+           total-entropy-used)
 
           :else
           (core/let [[rng1 rng2] (random/split rng)
-                     rose (call-gen gen rng1 size)
+                     {:keys [rose entropy-used]} (call-gen gen rng1 size)
                      root (rose/root rose)
                      k (key-fn root)]
             (if (transient-set-contains? s k)
-              (recur rose-trees s rng2 (inc size) (inc tries))
+              (recur rose-trees s rng2 (inc size) (inc tries) total-entropy-used)
               (recur (conj! rose-trees rose)
                      (conj! s k)
                      rng2
                      size
-                     0))))))
+                     0
+                     (+ total-entropy-used entropy-used)))))))
 
 (defn ^:private distinct-by?
   "Like clojure.core/distinct? but takes a collection instead of varargs,
@@ -738,15 +761,19 @@
         (assert (and (nil? min-elements) (nil? max-elements)))
         (make-gen
          (fn [rng gen-size]
-           (rose/filter
-            (if allows-dupes?
-              ;; is there a smarter way to do the shrinking than checking
-              ;; the distinctness of the entire collection at each
-              ;; step?
-              (every-pred size-pred #(distinct-by? key-fn %))
-              size-pred)
+           (update
             (coll-distinct-by* empty-coll key-fn shuffle-fn gen rng gen-size
-                               num-elements hard-min-elements max-tries ex-fn)))))
+                               num-elements hard-min-elements max-tries ex-fn)
+            :rose
+            (fn [rose]
+              (rose/filter
+               (if allows-dupes?
+                 ;; is there a smarter way to do the shrinking than checking
+                 ;; the distinctness of the entire collection at each
+                 ;; step?
+                 (every-pred size-pred #(distinct-by? key-fn %))
+                 size-pred)
+               rose))))))
       (core/let [min-elements (or min-elements 0)
                  size-pred (if max-elements
                              #(<= min-elements (count %) max-elements)
@@ -756,16 +783,20 @@
            (choose min-elements max-elements)
            (sized #(choose min-elements (+ min-elements %))))
          (fn [num-elements-rose]
-           (core/let [num-elements (rose/root num-elements-rose)]
+           (core/let [num-elements (rose/root (:rose num-elements-rose))]
              (make-gen
               (fn [rng gen-size]
-                (rose/filter
-                 (if allows-dupes?
-                   ;; same comment as above
-                   (every-pred size-pred #(distinct-by? key-fn %))
-                   size-pred)
+                (update
                  (coll-distinct-by* empty-coll key-fn shuffle-fn gen rng gen-size
-                                    num-elements hard-min-elements max-tries ex-fn)))))))))))
+                                    num-elements hard-min-elements max-tries ex-fn)
+                 :rose
+                 (fn [rose]
+                   (rose/filter
+                    (if allows-dupes?
+                      ;; same comment as above
+                      (every-pred size-pred #(distinct-by? key-fn %))
+                      size-pred)
+                    rose))))))))))))
 
 ;; I tried to reduce the duplication in these docstrings with a macro,
 ;; but couldn't make it work in cljs.
@@ -950,7 +981,9 @@
 (def ^:private gen-raw-long
   "Generates a single uniformly random long, does not shrink."
   (make-gen (fn [rnd _size]
-              (rose/pure (random/rand-long rnd)))))
+              (->GenReturn
+               (rose/pure (random/rand-long rnd))
+               64.0))))
 
 (def ^:private MAX_INTEGER
   #?(:clj Long/MAX_VALUE :cljs (dec (apply * (repeat 53 2)))))
@@ -988,9 +1021,11 @@
   (sized (fn [size]
            (core/let [size (core/max size 1) ;; no need to worry about size=0
                       max-bit-count (core/min size #?(:clj 64 :cljs 54))]
-             (gen-fmap (fn [rose]
-                         (core/let [[bit-count x] (rose/root rose)]
-                           (int-rose-tree (long->large-integer bit-count x min max))))
+             (gen-fmap (fn [{:keys [rose]}]
+                         (->GenReturn
+                          (core/let [[bit-count x] (rose/root rose)]
+                            (int-rose-tree (long->large-integer bit-count x min max)))
+                          (Math/log (- (core/double max) (core/double min) -1.0))))
                        (tuple (choose 1 max-bit-count)
                               gen-raw-long))))))
 
@@ -1099,7 +1134,7 @@
   (fmap fifty-two-bit-reverse
         (sized (fn [size]
                  (gen-bind (choose 0 (min size 52))
-                           (fn [rose]
+                           (fn [{:keys [rose]}]
                              (uniform-integer (rose/root rose))))))))
 
 (defn ^:private get-exponent
@@ -1408,25 +1443,30 @@
                     x2 (-> (random/rand-long r2)
                            (bit-or -9223372036854775808)
                            (bit-and -4611686018427387905))]
-           (rose/make-rose
-            (java.util.UUID. x1 x2)
-            []))))
+           (->GenReturn
+            (rose/make-rose
+             (java.util.UUID. x1 x2)
+             [])
+            ;; Since 6 bits are fixed, 128 - 6 = 122
+            122.0))))
 
       :cljs
       ;; this could definitely be optimized so that it doesn't require
       ;; generating 31 numbers
-      (fmap (fn [nibbles]
-              (letfn [(hex [idx] (.toString (nibbles idx) 16))]
-                (core/let [rhex (-> (nibbles 15) (bit-and 3) (+ 8) (.toString 16))]
-                  (core/uuid (str (hex 0)  (hex 1)  (hex 2)  (hex 3)
-                                  (hex 4)  (hex 5)  (hex 6)  (hex 7)  "-"
-                                  (hex 8)  (hex 9)  (hex 10) (hex 11) "-"
-                                  "4"      (hex 12) (hex 13) (hex 14) "-"
-                                  rhex     (hex 16) (hex 17) (hex 18) "-"
-                                  (hex 19) (hex 20) (hex 21) (hex 22)
-                                  (hex 23) (hex 24) (hex 25) (hex 26)
-                                  (hex 27) (hex 28) (hex 29) (hex 30))))))
-            (vector (choose 0 15) 31)))))
+      (gen-fmap
+       #(assoc % :entropy-used 122.0)
+       (fmap (fn [nibbles]
+               (letfn [(hex [idx] (.toString (nibbles idx) 16))]
+                 (core/let [rhex (-> (nibbles 15) (bit-and 3) (+ 8) (.toString 16))]
+                   (core/uuid (str (hex 0)  (hex 1)  (hex 2)  (hex 3)
+                                   (hex 4)  (hex 5)  (hex 6)  (hex 7)  "-"
+                                   (hex 8)  (hex 9)  (hex 10) (hex 11) "-"
+                                   "4"      (hex 12) (hex 13) (hex 14) "-"
+                                   rhex     (hex 16) (hex 17) (hex 18) "-"
+                                   (hex 19) (hex 20) (hex 21) (hex 22)
+                                   (hex 23) (hex 24) (hex 25) (hex 26)
+                                   (hex 27) (hex 28) (hex 29) (hex 30))))))
+             (vector (choose 0 15) 31))))))
 
 (def simple-type
   (one-of [int large-integer double char string ratio boolean keyword

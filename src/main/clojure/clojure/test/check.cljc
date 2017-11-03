@@ -91,7 +91,7 @@
         (complete property num-tests created-seed reporter-fn)
         (let [[size & rest-size-seq] size-seq
               [r1 r2] (random/split rstate)
-              result-map-rose (gen/call-gen property r1 size)
+              result-map-rose (:rose (gen/call-gen property r1 size))
               result-map (rose/root result-map-rose)
               result (:result result-map)
               args (:args result-map)
@@ -129,6 +129,7 @@
 
   Calls reporter-fn on every shrink step."
   [rose-tree reporter-fn]
+  (def WTF [rose-tree reporter-fn])
   (let [shrinks-this-depth (rose/children rose-tree)]
     (loop [nodes shrinks-this-depth
            current-smallest (rose/root rose-tree)

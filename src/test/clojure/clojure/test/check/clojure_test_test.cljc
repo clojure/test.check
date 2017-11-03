@@ -174,7 +174,7 @@
     (is (re-find #"^FAIL in \(this-is-supposed-to-fail\) " result-line))
     #?(:clj (is (re-find #"\(clojure_test_test\.cljc:\d+\)$" result-line)))
     (is (= expected-line "expected: {:result true}"))
-    (let [actual (read-string (subs actual-line 10))]
+    (let [actual (some-> actual-line (subs 10) read-string)]
       (is (set/subset? #{:result :result-data :seed :failing-size :num-tests :fail :shrunk}
                        (set (keys actual))))
       (is (= false (:result actual))))
