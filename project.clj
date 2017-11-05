@@ -12,7 +12,16 @@
              :self-host {:dependencies [[org.clojure/clojure "1.8.0"]
                                         [org.clojure/clojurescript "1.9.227"]]
                          :main clojure.main
-                         :global-vars {*warn-on-reflection* false}}}
+                         :global-vars {*warn-on-reflection* false}}
+             :perf-comparison {:dependencies [[incanter "1.5.7"]]
+                               :global-vars {*warn-on-reflection* false}}}
+  :aliases {"perf-comparison"
+            ["with-profile"
+             "+perf-comparison"
+             "run"
+             "-m"
+             "clojure.main"
+             "script/perf-comparison.clj"]}
   :global-vars {*warn-on-reflection* true}
   :plugins [[lein-codox "0.9.1"]
             [lein-cljsbuild "1.1.4"]]
