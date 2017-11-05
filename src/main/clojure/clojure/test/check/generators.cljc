@@ -393,8 +393,8 @@
   [coll]
   (assert (seq coll) "elements cannot be called with an empty collection")
   (core/let [v (vec coll)]
-    (gen-bind (choose 0 (dec (count v)))
-              #(gen-pure (rose/fmap v %)))))
+    (gen-fmap #(rose/fmap v %)
+              (choose 0 (dec (count v))))))
 
 (defn- such-that-helper
   [pred gen {:keys [ex-fn max-tries]} rng size]
@@ -484,16 +484,16 @@
   applicable to the domain."
   [gen]
   (assert (generator? gen) "Arg to no-shrink must be a generator")
-  (gen-bind gen
-            (fn [rose]
-              (gen-pure (rose/make-rose (rose/root rose) [])))))
+  (gen-fmap (fn [rose]
+              (rose/make-rose (rose/root rose) []))
+            gen))
 
 (defn shrink-2
   "Create a new generator like `gen`, but will consider nodes for shrinking
   even if their parent passes the test (up to one additional level)."
   [gen]
   (assert (generator? gen) "Arg to shrink-2 must be a generator")
-  (gen-bind gen (comp gen-pure rose/collapse)))
+  (gen-fmap rose/collapse gen))
 
 (def boolean
   "Generates one of `true` or `false`. Shrinks to `false`."
@@ -513,9 +513,9 @@
   [& generators]
   (assert (every? generator? generators)
           "Args to tuple must be generators")
-  (gen-bind (gen-tuple generators)
-            (fn [roses]
-              (gen-pure (rose/zip core/vector roses)))))
+  (gen-fmap (fn [roses]
+              (rose/zip core/vector roses))
+            (gen-tuple generators)))
 
 (def int
   "Generates a positive or negative integer bounded by the generator's
@@ -552,11 +552,11 @@
    (gen-bind
     (sized #(choose 0 %))
     (fn [num-elements-rose]
-      (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
-                                   generator))
-                (fn [roses]
-                  (gen-pure (rose/shrink-vector core/vector
-                                                roses)))))))
+      (gen-fmap (fn [roses]
+                  (rose/shrink-vector core/vector
+                                      roses))
+                (gen-tuple (repeat (rose/root num-elements-rose)
+                                   generator))))))
   ([generator num-elements]
    (assert (generator? generator) "First arg to vector must be a generator")
    (apply tuple (repeat num-elements generator)))
@@ -565,16 +565,14 @@
    (gen-bind
     (choose min-elements max-elements)
     (fn [num-elements-rose]
-      (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
-                                   generator))
-                (fn [roses]
-                  (gen-bind
-                   (gen-pure (rose/shrink-vector core/vector
-                                                 roses))
-                   (fn [rose]
-                     (gen-pure (rose/filter
-                                (fn [v] (and (>= (count v) min-elements)
-                                             (<= (count v) max-elements))) rose))))))))))
+      (gen-fmap (fn [roses]
+                  (rose/filter
+                   (fn [v] (and (>= (count v) min-elements)
+                                (<= (count v) max-elements)))
+                   (rose/shrink-vector core/vector
+                                       roses)))
+                (gen-tuple (repeat (rose/root num-elements-rose)
+                                   generator)))))))
 
 (defn list
   "Like `vector`, but generates lists."
@@ -582,11 +580,11 @@
   (assert (generator? generator) "First arg to list must be a generator")
   (gen-bind (sized #(choose 0 %))
             (fn [num-elements-rose]
-              (gen-bind (gen-tuple (repeat (rose/root num-elements-rose)
-                                           generator))
-                        (fn [roses]
-                          (gen-pure (rose/shrink-vector core/list
-                                                        roses)))))))
+              (gen-fmap (fn [roses]
+                          (rose/shrink-vector core/list
+                                              roses))
+                        (gen-tuple (repeat (rose/root num-elements-rose)
+                                           generator))))))
 
 (defn- swap
   [coll [i1 i2]]
