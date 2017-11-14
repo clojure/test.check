@@ -14,6 +14,7 @@
                             set sorted-set uuid double let])
   (:require [#?(:clj clojure.core :cljs cljs.core) :as core
              #?@(:cljs [:include-macros true])]
+            [clojure.string :as string]
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]
             #?@(:cljs [[goog.string :as gstring]
@@ -1287,15 +1288,16 @@
 
 (def ^:private char-symbol-special
   "Generate non-alphanumeric characters that can be in a symbol."
-  (elements [\* \+ \! \- \_ \?]))
+  (elements [\* \+ \! \- \_ \? \.]))
 
-(def ^:private char-keyword-rest
-  "Generate characters that can be the char following first of a keyword."
-  (frequency [[2 char-alphanumeric]
-              [1 char-symbol-special]]))
+(def ^:private char-symbol-noninitial
+  "Generate characters that can be the char following first of a keyword or symbol."
+  (frequency [[14 char-alphanumeric]
+              [7 char-symbol-special]
+              [1 (return \:)]]))
 
-(def ^:private char-keyword-first
-  "Generate characters that can be the first char of a keyword."
+(def ^:private char-symbol-initial
+  "Generate characters that can be the first char of a keyword or symbol."
   (frequency [[2 char-alpha]
               [1 char-symbol-special]]))
 
@@ -1334,78 +1336,54 @@
                          (#?(:clj = :cljs identical?) \- c))
                      (digit? d))))
 
-(def ^:private namespace-segment
-  "Generate the segment of a namespace."
-  (->> (tuple char-keyword-first (vector char-keyword-rest))
+(def ^:private symbol-name-or-namespace
+  "Generates a namespace string for a symbol/keyword."
+  (->> (tuple char-symbol-initial (vector char-symbol-noninitial))
        (such-that (fn [[c [d]]] (not (+-or---digit? c d))))
-       (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
-
-(def ^:private namespace
-  "Generate a namespace (or nil for no namespace)."
-  (->> (vector namespace-segment)
-       (fmap (fn [v] (when (seq v)
-                       (clojure.string/join "." v))))))
-
-(def ^:private keyword-segment-rest
-  "Generate segments of a keyword (between \\:)"
-  (->> (tuple char-keyword-rest (vector char-keyword-rest))
-       (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
-
-(def ^:private keyword-segment-first
-  "Generate segments of a keyword that can be first (between \\:)"
-  (->> (tuple char-keyword-first (vector char-keyword-rest))
-       (fmap (fn [[c cs]] (clojure.string/join (cons c cs))))))
+       (fmap (fn [[c cs]]
+               (core/let [s (clojure.string/join (cons c cs))]
+                 (-> s
+                     (string/replace #":{2,}" ":")
+                     (string/replace #":$" "")))))))
 
 (defn ^:private resize-symbolish-generator
   "Scales the sizing down on a keyword or symbol generator so as to
   make it reasonable."
   [g]
   ;; function chosen by ad-hoc experimentation
-  (scale #(long (Math/pow % 0.46)) g))
+  (scale #(long (Math/pow % 0.60)) g))
 
 (def keyword
   "Generate keywords without namespaces."
-  (->> (tuple keyword-segment-first (vector keyword-segment-rest))
-       (fmap (fn [[c cs]]
-               (core/keyword (clojure.string/join ":" (cons c cs)))))
-       (resize-symbolish-generator)))
+  (frequency [[100
+               (->> symbol-name-or-namespace
+                    (fmap core/keyword)
+                    (resize-symbolish-generator))]
+              [1 (return :/)]]))
 
 (def
   ^{:added "0.5.9"}
   keyword-ns
-  "Generate keywords with optional namespaces."
-  (->> (tuple namespace char-keyword-first (vector char-keyword-rest))
-       (fmap (fn [[ns c cs]]
-               (core/keyword ns (clojure.string/join (cons c cs)))))
+  "Generate keywords with namespaces."
+  (->> (tuple symbol-name-or-namespace symbol-name-or-namespace)
+       (fmap (fn [[ns name]] (core/keyword ns name)))
        (resize-symbolish-generator)))
-
-(def ^:private char-symbol-first
-  (frequency [[10 char-alpha]
-              [5 char-symbol-special]
-              [1 (return \.)]]))
-
-(def ^:private char-symbol-rest
-  (frequency [[10 char-alphanumeric]
-              [5 char-symbol-special]
-              [1 (return \.)]]))
 
 (def symbol
   "Generate symbols without namespaces."
-  (frequency [[100 (->> (tuple char-symbol-first (vector char-symbol-rest))
-                        (such-that (fn [[c [d]]] (not (+-or---digit? c d))))
-                        (fmap (fn [[c cs]] (core/symbol (clojure.string/join (cons c cs)))))
-                        (resize-symbolish-generator))]
+  (frequency [[100
+               (->> symbol-name-or-namespace
+                    (fmap core/symbol)
+                    (resize-symbolish-generator))]
               [1 (return '/)]]))
 
 (def
   ^{:added "0.5.9"}
   symbol-ns
-  "Generate symbols with optional namespaces."
-  (frequency [[100 (->> (tuple namespace char-symbol-first (vector char-symbol-rest))
-                        (such-that (fn [[_ c [d]]] (not (+-or---digit? c d))))
-                        (fmap (fn [[ns c cs]] (core/symbol ns (clojure.string/join (cons c cs)))))
-                        (resize-symbolish-generator))]
-              [1 (return '/)]]))
+  "Generate symbols with namespaces."
+  (->> (tuple symbol-name-or-namespace symbol-name-or-namespace)
+       (fmap (fn [[ns name]] (core/symbol ns name)))
+       (resize-symbolish-generator)))
 
 (def ratio
   "Generates a `clojure.lang.Ratio`. Shrinks toward 0. Not all values generated

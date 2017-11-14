@@ -23,7 +23,7 @@
             [clojure.test.check.clojure-test :as ct #?(:clj :refer :cljs :refer-macros) (defspec)]
             #?(:cljs [clojure.test.check.random.longs :as rl])
             #?(:clj  [clojure.edn :as edn]
-               :cljs [cljs.reader :as edn])))
+               :cljs [cljs.reader :as edn :refer [read-string]])))
 
 (def gen-seed
   (let [gen-int (gen/choose 0 0x100000000)]
@@ -207,23 +207,24 @@
 ;; keyword->string->keyword roundtrip
 ;; ---------------------------------------------------------------------------
 
-(def keyword->string->keyword
-  (comp keyword name))
-
-(defn keyword-string-roundtrip-equiv
-  [k]
-  (= k (keyword->string->keyword k)))
-
 ;; NOTE cljs: this is one of the slowest due to how keywords are constructed
 ;; drop N to 100 - David
-(deftest keyword-string-roundtrip
-  (testing "For all keywords, turning them into a string and back is equivalent
-           to the original string (save for the `:` bit)"
+(deftest keyword-symbol-serialization-roundtrip
+  (testing "For all keywords and symbol, (comp read-string pr-str) is identity."
     (is (:result
-         (let [n #?(:clj 1000 :cljs 100)]
-           (tc/quick-check n (prop/for-all*
-                              [gen/keyword] keyword-string-roundtrip-equiv)
-                           :max-size 25))))))
+         (tc/quick-check #?(:clj 1000 :cljs 100)
+                         (prop/for-all [x (gen/one-of [gen/keyword
+                                                       gen/keyword-ns
+                                                       gen/symbol
+                                                       gen/symbol-ns])]
+                           ;; TODO: Remove the cljs special case once
+                           ;; clojurescript has been upgraded to
+                           ;; latest version
+                           #?(:clj
+                              (= x (read-string (pr-str x)))
+                              :cljs
+                              (or (= :/ x )
+                                  (= x (read-string (pr-str x)))))))))))
 
 ;; Boolean and/or
 ;; ---------------------------------------------------------------------------
@@ -668,7 +669,14 @@
 
 (defspec edn-roundtrips 200
   (prop/for-all [a any-edn]
-    (edn-roundtrip? a)))
+    ;; TODO: Remove the cljs special case once
+    ;; clojurescript has been upgraded to
+    ;; latest version
+    #?(:clj
+       (edn-roundtrip? a)
+       :cljs
+       (or (some #{:/} (tree-seq coll? seq a))
+           (edn-roundtrip? a)))))
 
 ;; not-empty works
 ;; ---------------------------------------------------------------------------
