@@ -80,12 +80,93 @@
      (cons r1
            (lazy-random-states r2)))))
 
+(defn ^:private size->max-entropy [size] (* size size 5))
+
+;; calc-long is factored out to support testing the surprisingly tricky double math.  Note:
+;; An extreme long value does not have a precision-preserving representation as a double.
+;; Be careful about changing this code unless you understand what's happening in these
+;; examples:
+;;
+;; (= (long (- Integer/MAX_VALUE (double (- Integer/MAX_VALUE 10)))) 10)
+;; (= (long (- Long/MAX_VALUE (double (- Long/MAX_VALUE 10)))) 0)
+
+(defn- calc-long
+  [factor lower upper]
+  ;; these pre- and post-conditions are disabled for deployment
+  #_ {:pre [(float? factor) (>= factor 0.0) (< factor 1.0)
+            (integer? lower) (integer? upper) (<= lower upper)]
+      :post [(integer? %)]}
+  ;; Use -' on width to maintain accuracy with overflow protection.
+  #?(:clj
+     (core/let [width (-' upper lower -1)]
+       ;; Preserve long precision if the width is in the long range.  Otherwise, we must accept
+       ;; less precision because doubles don't have enough bits to preserve long equivalence at
+       ;; extreme values.
+       (if (< width Long/MAX_VALUE)
+         (+ lower (long (Math/floor (* factor width))))
+         ;; Clamp down to upper because double math.
+         (min upper (long (Math/floor (+ lower (* factor width)))))))
+
+     :cljs
+     (long (Math/floor (+ lower (- (* factor (+ 1.0 upper))
+                                   (* factor lower)))))))
+
+(defn ^:private rand-range
+  [rnd lower upper]
+  {:pre [(<= lower upper)]}
+  (calc-long (random/rand-double rnd) lower upper))
+
+(defn- swap
+  [coll [i1 i2]]
+  (assoc coll i2 (coll i1) i1 (coll i2)))
+
+(defn ^:private the-shuffle-fn
+  "Returns a shuffled version of coll according to the rng.
+
+  Note that this is not a generator, it is just a utility function."
+  [rng coll]
+  (core/let [empty-coll (empty coll)
+             v (vec coll)
+             card (count coll)
+             dec-card (dec card)]
+    (into empty-coll
+          (first
+           (reduce (fn [[v rng] idx]
+                     (core/let [[rng1 rng2] (random/split rng)
+                                swap-idx (rand-range rng1 idx dec-card)]
+                       [(swap v [idx swap-idx]) rng2]))
+                   [v rng]
+                   (range card))))))
+
 (defn- gen-tuple
   "Takes a collection of generators and returns a generator of vectors."
   [gens]
   (make-gen
    (fn [rnd size]
      (mapv #(call-gen % %2 size) gens (random/split-n rnd (count gens))))))
+
+;; is it okay to only consider entropy as a return, instead of passing
+;; a :remaining-entropy arg to each generator?
+(defn- gen-coll-with-entropy-cap
+  [n gen]
+  ;; could even do something clever where we gradually decrease
+  ;; the `size` being used
+  (make-gen
+   (fn [rnd size]
+     (core/let [rnds (random/split-n rnd (inc n))
+                [rets remaining-entropy]
+                (reduce (fn [[res remaining-entropy] rnd]
+                          (core/let [{:keys [entropy-used] :as ret}
+                                     (call-gen gen rnd (if (pos? remaining-entropy) size 0))]
+                            [(conj! res ret)
+                             (- remaining-entropy entropy-used)]))
+                        [(transient []) (size->max-entropy size)]
+                        ;; first is for shuffling
+                        (rest rnds))]
+       (cond->> (persistent! rets)
+         (<= remaining-entropy 0.0)
+         (the-shuffle-fn (first rnds)))))))
+
 
 ;; Exported generator functions
 ;; ---------------------------------------------------------------------------
@@ -215,40 +296,6 @@
 (defn- int-rose-tree
   [value]
   (rose/make-rose value (core/map int-rose-tree (shrink-int value))))
-
-;; calc-long is factored out to support testing the surprisingly tricky double math.  Note:
-;; An extreme long value does not have a precision-preserving representation as a double.
-;; Be careful about changing this code unless you understand what's happening in these
-;; examples:
-;;
-;; (= (long (- Integer/MAX_VALUE (double (- Integer/MAX_VALUE 10)))) 10)
-;; (= (long (- Long/MAX_VALUE (double (- Long/MAX_VALUE 10)))) 0)
-
-(defn- calc-long
-  [factor lower upper]
-  ;; these pre- and post-conditions are disabled for deployment
-  #_ {:pre [(float? factor) (>= factor 0.0) (< factor 1.0)
-            (integer? lower) (integer? upper) (<= lower upper)]
-      :post [(integer? %)]}
-  ;; Use -' on width to maintain accuracy with overflow protection.
-  #?(:clj
-     (core/let [width (-' upper lower -1)]
-       ;; Preserve long precision if the width is in the long range.  Otherwise, we must accept
-       ;; less precision because doubles don't have enough bits to preserve long equivalence at
-       ;; extreme values.
-       (if (< width Long/MAX_VALUE)
-         (+ lower (long (Math/floor (* factor width))))
-         ;; Clamp down to upper because double math.
-         (min upper (long (Math/floor (+ lower (* factor width)))))))
-
-     :cljs
-     (long (Math/floor (+ lower (- (* factor (+ 1.0 upper))
-                                   (* factor lower)))))))
-
-(defn- rand-range
-  [rnd lower upper]
-  {:pre [(<= lower upper)]}
-  (calc-long (random/rand-double rnd) lower upper))
 
 (defn sized
   "Create a generator that depends on the size parameter.
@@ -572,8 +619,8 @@
                    (rose/shrink-vector core/vector
                                        (core/mapv :rose rets))
                    (reduce ((core/map :entropy-used) +) 0.0 rets)))
-                (gen-tuple (repeat (rose/root (:rose num-elements-ret))
-                                   generator))))))
+                (gen-coll-with-entropy-cap (rose/root (:rose num-elements-ret))
+                                           generator)))))
   ([generator num-elements]
    (assert (generator? generator) "First arg to vector must be a generator")
    (apply tuple (repeat num-elements generator)))
@@ -605,10 +652,6 @@
                            (reduce ((core/map :entropy-used) +) 0.0 rets)))
                         (gen-tuple (repeat (rose/root num-elements-rose)
                                            generator))))))
-
-(defn- swap
-  [coll [i1 i2]]
-  (assoc coll i2 (coll i1) i1 (coll i2)))
 
 (defn
   ^{:added "0.6.0"}
@@ -680,47 +723,52 @@
   "Returns a GenReturn."
   [empty-coll key-fn shuffle-fn gen rng size num-elements min-elements max-tries ex-fn]
   {:pre [gen (:gen gen)]}
-  (loop [rose-trees         (transient [])
-         s                  (transient #{})
-         rng                rng
-         size               size
-         tries              0
-         total-entropy-used 0.0]
-    (cond (and (= max-tries tries)
-               (< (count rose-trees) min-elements))
-          (throw (ex-fn {:gen gen
-                         :max-tries max-tries
-                         :num-elements num-elements}))
+  (core/let [orig-size size
+             max-entropy (size->max-entropy size)]
+    (loop [rose-trees         (transient [])
+           s                  (transient #{})
+           rng                rng
+           size               size
+           tries              0
+           total-entropy-used 0.0]
+      (cond (and (= max-tries tries)
+                 (< (count rose-trees) min-elements))
+            (throw (ex-fn {:gen gen
+                           :max-tries max-tries
+                           :num-elements num-elements}))
 
-          (or (= max-tries tries)
-              (= (count rose-trees) num-elements))
-          (->GenReturn
-           (->> (persistent! rose-trees)
-                ;; we shuffle the rose trees so that we aren't biased
-                ;; toward generating "smaller" elements earlier in the
-                ;; collection (only applies to ordered collections)
-                ;;
-                ;; shuffling the rose trees is more efficient than
-                ;; (bind ... shuffle) because we only perform the
-                ;; shuffling once and we have no need to shrink the
-                ;; shuffling.
-                (shuffle-fn rng)
-                (rose/shrink-vector #(into empty-coll %&)))
-           total-entropy-used)
+            (or (= max-tries tries)
+                (= (count rose-trees) num-elements))
+            (->GenReturn
+             (->> (persistent! rose-trees)
+                  ;; we shuffle the rose trees so that we aren't biased
+                  ;; toward generating "smaller" elements earlier in the
+                  ;; collection (only applies to ordered collections)
+                  ;;
+                  ;; shuffling the rose trees is more efficient than
+                  ;; (bind ... shuffle) because we only perform the
+                  ;; shuffling once and we have no need to shrink the
+                  ;; shuffling.
+                  (shuffle-fn rng)
+                  (rose/shrink-vector #(into empty-coll %&)))
+             total-entropy-used)
 
-          :else
-          (core/let [[rng1 rng2] (random/split rng)
-                     {:keys [rose entropy-used]} (call-gen gen rng1 size)
-                     root (rose/root rose)
-                     k (key-fn root)]
-            (if (transient-set-contains? s k)
-              (recur rose-trees s rng2 (inc size) (inc tries) total-entropy-used)
-              (recur (conj! rose-trees rose)
-                     (conj! s k)
-                     rng2
-                     size
-                     0
-                     (+ total-entropy-used entropy-used)))))))
+            :else
+            (core/let [[rng1 rng2] (random/split rng)
+                       size-to-use (cond (< total-entropy-used max-entropy) size
+                                         (< orig-size size)                 size
+                                         :else                              0)
+                       {:keys [rose entropy-used]} (call-gen gen rng1 size-to-use)
+                       root (rose/root rose)
+                       k (key-fn root)]
+              (if (transient-set-contains? s k)
+                (recur rose-trees s rng2 (inc size) (inc tries) total-entropy-used)
+                (recur (conj! rose-trees rose)
+                       (conj! s k)
+                       rng2
+                       size
+                       0
+                       (+ total-entropy-used entropy-used))))))))
 
 (defn ^:private distinct-by?
   "Like clojure.core/distinct? but takes a collection instead of varargs,
@@ -728,24 +776,6 @@
   [f coll]
   (or (empty? coll)
       (apply distinct? (core/map f coll))))
-
-(defn ^:private the-shuffle-fn
-  "Returns a shuffled version of coll according to the rng.
-
-  Note that this is not a generator, it is just a utility function."
-  [rng coll]
-  (core/let [empty-coll (empty coll)
-             v (vec coll)
-             card (count coll)
-             dec-card (dec card)]
-    (into empty-coll
-          (first
-           (reduce (fn [[v rng] idx]
-                     (core/let [[rng1 rng2] (random/split rng)
-                                swap-idx (rand-range rng1 idx dec-card)]
-                       [(swap v [idx swap-idx]) rng2]))
-                   [v rng]
-                   (range card))))))
 
 (defn ^:private coll-distinct-by
   [empty-coll key-fn allows-dupes? ordered? gen
