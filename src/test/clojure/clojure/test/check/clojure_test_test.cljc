@@ -59,19 +59,45 @@
   (prop/for-all* [gen/int] (constantly true)))
 
 (deftest can-use-num-tests-default-value
-  (let [{:keys [out]} (capture-test-var #'default-trial-counts)
-        num-tests (:num-tests (read-string out))]
+  (let [{:keys [reports]} (capture-test-var #'default-trial-counts)
+        num-tests (->> reports
+                       (filter #(= ::ct/complete (:type %)))
+                       first
+                       ::ct/complete
+                       :num-tests)]
     (is (= num-tests ct/*default-test-count*))))
+
+(deftest tcheck-116-debug-prn-should-be-optional
+  (testing "bind ct/*report-completion* to false to supress completion report"
+    (binding [ct/*report-completion* false]
+      (let [{:keys [out]} (capture-test-var #'default-trial-counts)]
+        (is (= out "")))))
+
+  (testing "report completions by default"
+    (let [{:keys [out]} (capture-test-var #'default-trial-counts)
+          completion    (-> out read-string (select-keys [:test-var :result :num-tests]))]
+      (is (= completion {:test-var  "default-trial-counts"
+                         :result    true
+                         :num-tests ct/*default-test-count*})))))
 
 (def trial-counts-num-tests 5000)
 (defspec trial-counts trial-counts-num-tests
   (prop/for-all* [gen/int] (constantly true)))
 
 (deftest can-specify-num-tests
+  (let [{:keys [reports]} (capture-test-var #'trial-counts)
+        num-tests (->> reports
+                       (filter #(= ::ct/complete (:type %)))
+                       first
+                       ::ct/complete
+                       :num-tests)]
+    (is (= num-tests trial-counts-num-tests))))
+
+(deftest can-report-completion-with-specified-num-tests
   (let [{:keys [out]} (capture-test-var #'trial-counts)
         completion (-> out read-string (select-keys [:test-var :result :num-tests]))]
-    (is (= completion {:test-var "trial-counts"
-                       :result true
+    (is (= completion {:test-var  "trial-counts"
+                       :result    true
                        :num-tests trial-counts-num-tests}))))
 
 (deftest can-report-trials-with-dots
@@ -183,6 +209,16 @@
     (let [[a b & more] (-> shrunk first ::ct/params first)]
       (is (empty? more))
       (is (and a b (= a b))))))
+
+(deftest can-report-shrunk
+  (testing "supress shrunk report when ct/*report-completion* is bound to false"
+    (binding [ct/*report-completion* false]
+      (let [{:keys [test-out]} (capture-test-var #'this-is-supposed-to-fail)]
+        (is (not (re-find #":type :clojure.test.check.clojure-test/shrunk" test-out))))))
+
+  (testing "report shrunk by default"
+    (let [{:keys [test-out]} (capture-test-var #'this-is-supposed-to-fail)]
+      (is (re-find #":type :clojure.test.check.clojure-test/shrunk" test-out)))))
 
 (defspec this-throws-an-exception
   (prop/for-all [x gen/nat]

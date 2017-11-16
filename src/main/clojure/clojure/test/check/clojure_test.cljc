@@ -18,7 +18,6 @@
 
 (defn assert-check
   [{:keys [result result-data] :as m}]
-  (prn m)
   (if (and (not (results/passing? result))
            (exception-like? (:clojure.test.check.properties/error result-data)))
     (throw (:clojure.test.check.properties/error result-data))
@@ -31,6 +30,15 @@
   Delegates to clojure.test/report."
   [{:keys [type] :as args}]
   (case type
+    :complete
+    (let [params (assoc (select-keys args [:result :num-tests :seed])
+                        :test-var (-> #?(:clj ct/*testing-vars*
+                                         :cljs (:testing-vars ct/*current-env*))
+                                      first meta :name name))]
+      (ct/report {:type :clojure.test.check.clojure-test/complete
+                  :clojure.test.check.clojure-test/property (:property args)
+                  :clojure.test.check.clojure-test/complete params}))
+
     :trial
     (ct/report {:type :clojure.test.check.clojure-test/trial
                 :clojure.test.check.clojure-test/property (:property args)
@@ -170,3 +178,17 @@
       (fn []
         (println "Shrinking" (get-property-name m)
                  "starting with parameters" (pr-str (::params m)))))))
+
+(def ^:dynamic *report-completion*
+  "If true, completed tests report test-var, num-tests and seed. Failed tests
+  report shrunk results. Defaults to true."
+  true)
+
+(defmethod ct/report #?(:clj ::complete :cljs [::ct/default ::complete]) [m]
+  (when clojure.test.check.clojure-test/*report-completion*
+    (prn (::complete m))))
+
+(defmethod ct/report #?(:clj ::shrunk :cljs [::ct/default ::shrunk]) [m]
+  (when clojure.test.check.clojure-test/*report-completion*
+    (with-test-out*
+      (fn [] (prn m)))))
