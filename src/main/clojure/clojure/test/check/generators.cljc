@@ -117,8 +117,8 @@
     (gen-fmap rose/join
               (make-gen
                (fn [rnd size]
-                 (rose/fmap #(call-gen % rnd size)
-                            (rose/fmap f rose)))))))
+                 (rose/fmap #(call-gen (f %) rnd size)
+                            rose))))))
 
 (defn bind
   "Create a new generator that passes the result of `gen` into function
