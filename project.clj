@@ -8,14 +8,14 @@
   :test-paths ["src/test/clojure"]
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
-                                  [org.clojure/clojurescript "1.9.293"]]}
+                                  [org.clojure/clojurescript "1.9.854"]]}
              :self-host {:dependencies [[org.clojure/clojure "1.8.0"]
-                                        [org.clojure/clojurescript "1.9.227"]]
+                                        [org.clojure/clojurescript "1.9.854"]]
                          :main clojure.main
                          :global-vars {*warn-on-reflection* false}}}
   :global-vars {*warn-on-reflection* true}
   :plugins [[lein-codox "0.9.1"]
-            [lein-cljsbuild "1.1.4"]]
+            [lein-cljsbuild "1.1.5"]]
   :codox {:namespaces [clojure.test.check
                        clojure.test.check.clojure-test
                        clojure.test.check.generators
@@ -27,6 +27,7 @@
                     "src/target/cljs/node"]
      :notify-command ["node" "test-runners/run.js"]
      :compiler {:optimizations :none
+                :main clojure.test.check.test.runner
                 :static-fns true
                 :target :nodejs
                 :output-to "target/cljs/node_dev/tests.js"
@@ -45,6 +46,7 @@
                     "src/target/cljs/node"]
      :notify-command ["node" "target/cljs/node_adv/tests.js"]
      :compiler {:optimizations :advanced
+                :main clojure.test.check.test.runner
                 :target :nodejs
                 :pretty-print false
                 :output-to "target/cljs/node_adv/tests.js"

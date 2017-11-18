@@ -217,14 +217,7 @@
                                                        gen/keyword-ns
                                                        gen/symbol
                                                        gen/symbol-ns])]
-                           ;; TODO: Remove the cljs special case once
-                           ;; clojurescript has been upgraded to
-                           ;; latest version
-                           #?(:clj
-                              (= x (read-string (pr-str x)))
-                              :cljs
-                              (or (= :/ x )
-                                  (= x (read-string (pr-str x)))))))))))
+                           (= x (read-string (pr-str x)))))))))
 
 ;; Boolean and/or
 ;; ---------------------------------------------------------------------------
@@ -669,14 +662,7 @@
 
 (defspec edn-roundtrips 200
   (prop/for-all [a any-edn]
-    ;; TODO: Remove the cljs special case once
-    ;; clojurescript has been upgraded to
-    ;; latest version
-    #?(:clj
-       (edn-roundtrip? a)
-       :cljs
-       (or (some #{:/} (tree-seq coll? seq a))
-           (edn-roundtrip? a)))))
+    (edn-roundtrip? a)))
 
 ;; not-empty works
 ;; ---------------------------------------------------------------------------
