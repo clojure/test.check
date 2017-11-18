@@ -101,6 +101,10 @@
     (finally
       (sh/sh "git" "checkout" "-"))))
 
+;;
+;; TODO: Resolve refs to hashes, use those, and print them in the table
+;;
+
 (defn summarize-measurements
   [base candidate]
   (print-table [:thing :p-value :x-mean :y-mean :x-var :y-var :n1 :n2]
