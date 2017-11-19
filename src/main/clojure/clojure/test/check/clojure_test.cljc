@@ -125,13 +125,6 @@
 
 (def ^:private last-trial-report (atom 0))
 
-(let [begin-test-var-method (get-method ct/report #?(:clj  :begin-test-var
-                                                     :cljs [::ct/default :begin-test-var]))]
-  (defmethod ct/report #?(:clj  :begin-test-var
-                          :cljs [::ct/default :begin-test-var]) [m]
-    (reset! last-trial-report (get-current-time-millis))
-    (when begin-test-var-method (begin-test-var-method m))))
-
 (defn- get-property-name
   [{property-fun ::property :as report-map}]
   (or (-> property-fun meta :name) (ct/testing-vars-str report-map)))
@@ -165,30 +158,40 @@
       (flush))
     (when (== so-far total) (println))))
 
-(defmethod ct/report #?(:clj ::trial :cljs [::ct/default ::trial]) [m]
-  (when-let [trial-report-fn (and clojure.test.check.clojure-test/*report-trials*
-                                  (if (true? clojure.test.check.clojure-test/*report-trials*)
-                                    trial-report-dots
-                                    clojure.test.check.clojure-test/*report-trials*))]
-    (trial-report-fn m)))
-
-(defmethod ct/report #?(:clj ::shrinking :cljs [::ct/default ::shrinking]) [m]
-  (when clojure.test.check.clojure-test/*report-shrinking*
-    (with-test-out*
-      (fn []
-        (println "Shrinking" (get-property-name m)
-                 "starting with parameters" (pr-str (::params m)))))))
-
 (def ^:dynamic *report-completion*
   "If true, completed tests report test-var, num-tests and seed. Failed tests
   report shrunk results. Defaults to true."
   true)
 
-(defmethod ct/report #?(:clj ::complete :cljs [::ct/default ::complete]) [m]
-  (when clojure.test.check.clojure-test/*report-completion*
-    (prn (::complete m))))
+(if-not (instance? clojure.lang.MultiFn ct/report)
+  (binding [*out* *err*]
+    (println "clojure.test.report is not a multimethod, some reporting functions have been disabled."))
+  (let [begin-test-var-method (get-method ct/report #?(:clj  :begin-test-var
+                                                       :cljs [::ct/default :begin-test-var]))]
+    (defmethod ct/report #?(:clj  :begin-test-var
+                            :cljs [::ct/default :begin-test-var]) [m]
+      (reset! last-trial-report (get-current-time-millis))
+      (when begin-test-var-method (begin-test-var-method m)))
 
-(defmethod ct/report #?(:clj ::shrunk :cljs [::ct/default ::shrunk]) [m]
-  (when clojure.test.check.clojure-test/*report-completion*
-    (with-test-out*
-      (fn [] (prn m)))))
+    (defmethod ct/report #?(:clj ::trial :cljs [::ct/default ::trial]) [m]
+      (when-let [trial-report-fn (and clojure.test.check.clojure-test/*report-trials*
+                                      (if (true? clojure.test.check.clojure-test/*report-trials*)
+                                        trial-report-dots
+                                        clojure.test.check.clojure-test/*report-trials*))]
+        (trial-report-fn m)))
+
+    (defmethod ct/report #?(:clj ::shrinking :cljs [::ct/default ::shrinking]) [m]
+      (when clojure.test.check.clojure-test/*report-shrinking*
+        (with-test-out*
+          (fn []
+            (println "Shrinking" (get-property-name m)
+                     "starting with parameters" (pr-str (::params m)))))))
+
+    (defmethod ct/report #?(:clj ::complete :cljs [::ct/default ::complete]) [m]
+      (when clojure.test.check.clojure-test/*report-completion*
+        (prn (::complete m))))
+
+    (defmethod ct/report #?(:clj ::shrunk :cljs [::ct/default ::shrunk]) [m]
+      (when clojure.test.check.clojure-test/*report-completion*
+        (with-test-out*
+          (fn [] (prn m)))))))
