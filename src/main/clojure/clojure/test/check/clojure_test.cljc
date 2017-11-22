@@ -163,7 +163,7 @@
   report shrunk results. Defaults to true."
   true)
 
-(if-not (instance? clojure.lang.MultiFn ct/report)
+(if-not (instance? #?(:clj clojure.lang.MultiFn :cljs MultiFn) ct/report)
   (binding [*out* *err*]
     (println "clojure.test.report is not a multimethod, some reporting functions have been disabled."))
   (let [begin-test-var-method (get-method ct/report #?(:clj  :begin-test-var
