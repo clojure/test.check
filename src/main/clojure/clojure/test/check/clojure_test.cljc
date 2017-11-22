@@ -165,7 +165,7 @@
 
 (if-not (instance? #?(:clj clojure.lang.MultiFn :cljs MultiFn) ct/report)
   (binding [*out* *err*]
-    (println "clojure.test.report is not a multimethod, some reporting functions have been disabled."))
+    (println "clojure.test/report is not a multimethod, some reporting functions have been disabled."))
   (let [begin-test-var-method (get-method ct/report #?(:clj  :begin-test-var
                                                        :cljs [::ct/default :begin-test-var]))]
     (defmethod ct/report #?(:clj  :begin-test-var
