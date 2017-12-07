@@ -3,6 +3,30 @@
             [clojure.test.check.random :as random]
             [criterium.core :as crit]))
 
+;;
+;; This is suffering from a lack of success criteria.
+;;
+;; Questions:
+;;
+;; - What distribution should these generators have?
+;;   - (nth (iterate gen/vector gen/nat) 10)
+;;   - (nth (iterate gen/vector gen/nat) 100)
+;;   - (nth (iterate gen/vector gen/nat) 1000000000)
+;;     - hopefully this one doesn't matter since it would
+;;       take prohibitively long to construct in the first
+;;       place, but it might still be an interesting question
+;; - How should the recursive generator relate to explicit
+;;   fixed nesting?
+;; - um
+;; - Should users be in control of this at all?
+;; - Should we somehow aim to maintain the old distributions
+;;   but provide opt-in to the new ones?
+;;
+;; Ideas
+;; - Can combine entropy-tracking with size reduction
+;;   - Though why shouldn't size reduction be sufficient?
+
+
 #_
 (def simple-type
   (one-of [int large-integer double char string ratio boolean keyword
