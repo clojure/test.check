@@ -14,4 +14,5 @@
 
 (copy-source "cljs/test.cljc")
 (copy-source "cljs/analyzer/api.cljc")
+(copy-source "cljs/reader.clj")
 (copy-source "clojure/template.clj")

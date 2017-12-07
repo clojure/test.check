@@ -81,7 +81,6 @@
     goog.iter.Iterator
     goog.json
     goog.json.EvalJsonProcessor
-    goog.json.HybridJsonProcessor
     goog.json.NativeJsonProcessor
     goog.json.Replacer
     goog.json.Reviver
