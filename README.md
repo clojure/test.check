@@ -216,6 +216,7 @@ comprehensively requires several steps:
 * To run the same tests in a web browser, open (after running the above command)
   `test-runners/run_tests_dev.html` and `test-runners/run_tests_adv.html` and watch the
   javascript console for output
+* Run `script/test-self-host` to run the self-hosted ClojureScript tests (also requires [node.js](https://nodejs.org))
 
 ## See also
 
