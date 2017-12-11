@@ -842,7 +842,7 @@
   {:added "0.9.0"}
   ([key-fn gen] (vector-distinct-by key-fn gen {}))
   ([key-fn gen opts]
-   (assert (generator? gen) "First arg to vector-distinct-by must be a generator!")
+   (assert (generator? gen) "Second arg to vector-distinct-by must be a generator!")
    (coll-distinct-by [] key-fn true true gen opts)))
 
 (defn list-distinct-by
@@ -867,7 +867,7 @@
   {:added "0.9.0"}
   ([key-fn gen] (list-distinct-by key-fn gen {}))
   ([key-fn gen opts]
-   (assert (generator? gen) "First arg to list-distinct-by must be a generator!")
+   (assert (generator? gen) "Second arg to list-distinct-by must be a generator!")
    (coll-distinct-by () key-fn true true gen opts)))
 
 (defn set
