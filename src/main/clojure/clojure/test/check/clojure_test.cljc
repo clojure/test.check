@@ -168,7 +168,7 @@
   ;; to be a regular function instead of a multimethod, and may do
   ;; so before this code is loaded (see TCHECK-125)
   (if-not (instance? #?(:clj clojure.lang.MultiFn :cljs MultiFn) ct/report)
-    (binding [*out* *err*]
+    (binding [*out* #?(:clj *err* :cljs *out*)]
       (println "clojure.test/report is not a multimethod, some reporting functions have been disabled."))
     (let [begin-test-var-method (get-method ct/report #?(:clj  :begin-test-var
                                                          :cljs [::ct/default :begin-test-var]))]
