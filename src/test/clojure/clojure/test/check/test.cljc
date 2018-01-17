@@ -993,13 +993,6 @@
                           [xs x])]
     (some #{x} xs)))
 
-(defspec let-with-map-bindings
-  (prop/for-all [[x y] (gen/let {x gen/large-integer
-                                 y gen/large-integer}
-                         [x y])]
-    (and (number? x)
-         (number? y))))
-
 ;; A test to maintain the behavior assumed by TCHECK-133
 (defspec independent-let-clauses-shrink-correctly 10
   (let [gen-let-with-independent-clauses
