@@ -1000,6 +1000,34 @@
     (and (number? x)
          (number? y))))
 
+;; A test to maintain the behavior assumed by TCHECK-133
+(defspec independent-let-clauses-shrink-correctly 10
+  (let [gen-let-with-independent-clauses
+        ;; gen/let unnecessarily ties these three generators together
+        ;; with gen/bind rather than gen/tuple (because it can't
+        ;; reliably detect independence), which theoretically could
+        ;; lead to poor shrinking, but because the immutable random
+        ;; number generator gets reused during gen/bind shrinking, it
+        ;; turns out okay (the y and z generators get re-run, but with
+        ;; the same parameters, so they generate the same value)
+        (gen/let [x gen/large-integer
+                  y gen/large-integer
+                  z gen/large-integer]
+          [x y z])
+
+        failing-prop
+        (prop/for-all [nums gen-let-with-independent-clauses]
+          (not (every? #(< 100 % 1000) nums)))]
+    (prop/for-all [seed gen-seed
+                   size gen/nat]
+      ;; I suspect that this property is likely enough to fail
+      ;; that 1000000 trials will virtually always trigger it,
+      ;; but I haven't done the math on that.
+      (let [res (tc/quick-check 1000000 failing-prop)]
+        (and (false? (:result res))
+             (= [101 101 101]
+                (-> res :shrunk :smallest first)))))))
+
 ;; reporter-fn
 ;; ---------------------------------------------------------------------------
 
