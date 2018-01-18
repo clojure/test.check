@@ -31,10 +31,11 @@
   [{:keys [type] :as args}]
   (case type
     :complete
-    (let [params (assoc (select-keys args [:result :num-tests :seed])
-                        :test-var (-> #?(:clj ct/*testing-vars*
-                                         :cljs (:testing-vars ct/*current-env*))
-                                      first meta :name name))]
+    (let [testing-vars #?(:clj ct/*testing-vars*
+                          :cljs (:testing-vars ct/*current-env*))
+          params       (merge (select-keys args [:result :num-tests :seed])
+                              (when (seq testing-vars)
+                                {:test-var (-> testing-vars first meta :name name)}))]
       (ct/report {:type :clojure.test.check.clojure-test/complete
                   :clojure.test.check.clojure-test/property (:property args)
                   :clojure.test.check.clojure-test/complete params}))
