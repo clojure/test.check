@@ -1011,12 +1011,11 @@
         failing-prop
         (prop/for-all [nums gen-let-with-independent-clauses]
           (not (every? #(< 100 % 1000) nums)))]
-    (prop/for-all [seed gen-seed
-                   size gen/nat]
+    (prop/for-all [seed gen-seed]
       ;; I suspect that this property is likely enough to fail
       ;; that 1000000 trials will virtually always trigger it,
       ;; but I haven't done the math on that.
-      (let [res (tc/quick-check 1000000 failing-prop)]
+      (let [res (tc/quick-check 1000000 failing-prop :seed seed)]
         (and (false? (:result res))
              (= [101 101 101]
                 (-> res :shrunk :smallest first)))))))
