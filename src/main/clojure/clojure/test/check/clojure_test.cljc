@@ -43,12 +43,13 @@
     :trial
     (ct/report {:type :clojure.test.check.clojure-test/trial
                 :clojure.test.check.clojure-test/property (:property args)
-                :clojure.test.check.clojure-test/trial [(:so-far args) (:num-tests args)]})
+                :clojure.test.check.clojure-test/trial [(:num-tests args)
+                                                        (:num-tests-total args)]})
 
     :failure
     (ct/report {:type :clojure.test.check.clojure-test/shrinking
                 :clojure.test.check.clojure-test/property (:property args)
-                :clojure.test.check.clojure-test/params (vec (:failing-args args))})
+                :clojure.test.check.clojure-test/params (vec (:fail args))})
 
     :shrunk
     (ct/report {:type :clojure.test.check.clojure-test/shrunk

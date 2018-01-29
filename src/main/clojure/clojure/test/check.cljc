@@ -55,17 +55,24 @@
     run, with a map like:
 
       ;; called after a passing trial
-      {:type      :trial
-       :property  #<...>
-       :so-far    <number of tests run so far>
-       :num-tests <total number of tests>}
+      {:type            :trial
+       :args            [...]
+       :num-tests       <number of tests run so far>
+       :num-tests-total <total number of tests to be run>
+       :seed            42
+       :property        #<...>
+       :result          true
+       :result-data     {...}}
 
-      ;; called after each failing trial
+      ;; called after the first failing trial
       {:type         :failure
+       :fail         [...failing args...]
+       :failing-size 13
+       :num-tests    <tests ran before failure found>
        :property     #<...>
-       :result       ...
-       :trial-number <tests ran before failure found>
-       :failing-args [...]}
+       :result       false/exception
+       :result-data  {...}
+       :seed         42}
 
     It will also be called on :complete, :shrink-step and :shrunk.
 
@@ -98,10 +105,14 @@
               so-far (inc so-far)]
           (if (results/passing? result)
             (do
-              (reporter-fn {:type :trial
-                            :property property
-                            :so-far so-far
-                            :num-tests num-tests})
+              (reporter-fn {:type            :trial
+                            :args            args
+                            :num-tests       so-far
+                            :num-tests-total num-tests
+                            :property        property
+                            :result          result
+                            :result-data     (results/result-data result)
+                            :seed            seed})
               (recur so-far rest-size-seq r2))
             (failure property result-map-rose so-far size created-seed reporter-fn)))))))
 
@@ -142,22 +153,26 @@
               tail (rest nodes)
               result (:result (rose/root head))
               args (:args (rose/root head))
-              shrink-step-map {:type :shrink-step
-                               :result result
-                               :args args}]
+              reporter-fn-arg {:type :shrink-step
+                               :shrinking {:args                args
+                                           :depth               depth
+                                           :result              result
+                                           :result-data         (results/result-data result)
+                                           :smallest            (:args current-smallest)
+                                           :total-nodes-visited total-nodes-visited}}]
           (if (results/passing? result)
             ;; this node passed the test, so now try testing its right-siblings
             (do
-              (reporter-fn (merge shrink-step-map {:pass? true
-                                                   :current-smallest current-smallest}))
+              (reporter-fn reporter-fn-arg)
               (recur tail current-smallest (inc total-nodes-visited) depth))
             ;; this node failed the test, so check if it has children,
             ;; if so, traverse down them. If not, save this as the best example
             ;; seen now and then look at the right-siblings
             ;; children
             (let [new-smallest (rose/root head)]
-              (reporter-fn (merge shrink-step-map {:pass? false
-                                                   :current-smallest new-smallest}))
+              (reporter-fn (assoc-in reporter-fn-arg
+                                     [:shrinking :smallest]
+                                     (:args new-smallest)))
               (if-let [children (seq (rose/children head))]
                 (recur children new-smallest (inc total-nodes-visited) (inc depth))
                 (recur tail new-smallest (inc total-nodes-visited) depth)))))))))
@@ -166,26 +181,21 @@
   [property failing-rose-tree trial-number size seed reporter-fn]
   (let [root (rose/root failing-rose-tree)
         result (:result root)
-        failing-args (:args root)]
+        failure-data {:fail         (:args root)
+                      :failing-size size
+                      :num-tests    trial-number
+                      :property     property
+                      :result       (results/passing? result)
+                      :result-data  (results/result-data result)
+                      :seed         seed}]
 
-    (reporter-fn {:type :failure
-                  :property property
-                  :result (results/passing? result)
-                  :result-data (results/result-data result)
-                  :trial-number trial-number
-                  :failing-args failing-args})
+    (reporter-fn (assoc failure-data :type :failure))
 
     (let [shrunk (shrink-loop failing-rose-tree
-                              #(reporter-fn (assoc % :property property)))]
-      (reporter-fn {:type :shrunk
-                    :property property
-                    :trial-number trial-number
-                    :failing-args failing-args
-                    :shrunk shrunk})
-      {:result (results/passing? result)
-       :result-data (results/result-data result)
-       :seed seed
-       :failing-size size
-       :num-tests trial-number
-       :fail (vec failing-args)
-       :shrunk shrunk})))
+                              #(reporter-fn (merge failure-data %)))]
+      (reporter-fn (assoc failure-data
+                          :type :shrunk
+                          :shrunk shrunk))
+      (-> failure-data
+          (dissoc :property)
+          (assoc :shrunk shrunk)))))

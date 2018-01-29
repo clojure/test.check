@@ -21,6 +21,7 @@
             [clojure.test.check.random :as random]
             [clojure.test.check.results :as results]
             [clojure.test.check.clojure-test :as ct #?(:clj :refer :cljs :refer-macros) (defspec)]
+            #?(:clj [clojure.test.check.test-specs :as specs])
             #?(:cljs [clojure.test.check.random.longs :as rl])
             #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn :refer [read-string]])))
@@ -1026,7 +1027,9 @@
 (deftest reporter-fn-calls-test
   (testing "a failing prop"
     (let [calls (atom [])
-          reporter-fn (partial swap! calls conj)
+          reporter-fn (fn [arg]
+                        #?(:clj (is (specs/valid-reporter-fn-call? arg)))
+                        (swap! calls conj arg))
           prop (prop/for-all [n gen/nat]
                  (> 5 n))]
       (tc/quick-check 1000 prop :reporter-fn reporter-fn)
@@ -1035,7 +1038,9 @@
 
   (testing "a successful prop"
     (let [calls (atom [])
-          reporter-fn (partial swap! calls conj)
+          reporter-fn (fn [arg]
+                        #?(:clj (is (specs/valid-reporter-fn-call? arg)))
+                        (swap! calls conj arg))
           prop (prop/for-all [n gen/nat]
                  (<= 0 n))]
       (tc/quick-check 5 prop :reporter-fn reporter-fn)
@@ -1050,12 +1055,14 @@
                (pred n))]
     (tc/quick-check 100 prop :reporter-fn reporter-fn)
     (let [shrink-steps (filter #(= :shrink-step (:type %)) @events)
-          failing-steps (filter (complement :pass?) shrink-steps)
-          passing-steps (filter :pass? shrink-steps)
-          get-args-and-smallest-args (juxt (comp first :args) (comp first :args :current-smallest))]
-      (is (every? #(not (pred (-> % :args first))) failing-steps)
+          [passing-steps failing-steps] ((juxt filter remove)
+                                         #(-> % :shrinking :result results/passing?)
+                                         shrink-steps)
+          get-args-and-smallest-args (juxt (comp first :args :shrinking)
+                                           (comp first :smallest :shrinking))]
+      (is (every? #(not (pred (-> % :shrinking :args first))) failing-steps)
           "pred on args is falsey in all failing steps")
-      (is (every? #(pred (-> % :args first)) passing-steps)
+      (is (every? #(pred (-> % :shrinking :args first)) passing-steps)
           "pred on args is truthy in all passing steps")
       (is (->> failing-steps
                (map get-args-and-smallest-args)
