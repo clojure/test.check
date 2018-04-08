@@ -42,15 +42,15 @@
        :args args})))
 
 (defn for-all*
-  "Creates a property (properties are also generators). A property
-  is a generator that generates the result of applying the function
-  under test with the realized arguments. Once realized, the arguments
-  will be applied to `function` with `apply`.
+  "A function version of `for-all`. Takes a sequence of N generators
+  and a function of N args, and returns a property that calls the
+  function with generated values and tests the return value for
+  truthiness, like with `for-all`.
 
   Example:
 
-  (for-all* [gen/int gen/int] (fn [a b] (>= (+ a b) a)))
-  "
+  (for-all* [gen/large-integer gen/large-integer]
+            (fn [a b] (>= (+ a b) a)))"
   [args function]
   (gen/fmap
    (apply-gen function)
@@ -65,16 +65,27 @@
   (map second (partition 2 bindings)))
 
 (defmacro for-all
-  "Macro sugar for `for-all*`. `for-all` uses `let`-style bindings
-  for the generated values. Note that when using multiple bindings,
-  the earlier bindings are not visible to the later bindings.
+  "Returns a property, which is the combination of some generators and
+  an assertion that should be true for all generated values. Properties
+  can be used with `quick-check` or `defspec`.
 
-  Returns a property.
+  `for-all` takes a `let`-style bindings vector, where the right-hand
+  side of each binding is a generator.
 
-  Examples
+  The body should be an expression of the generated values that will
+  be tested for truthiness. Exceptions in the body will be caught and
+  treated as failures.
 
-  (for-all [a gen/int
-            b gen/int]
+  When there are multiple binding pairs, the earlier pairs are not
+  visible to the later pairs.
+
+  If there are multiple body expressions, all but the last one are
+  executed for side effects, as with `do`.
+
+  Example:
+
+  (for-all [a gen/large-integer
+            b gen/large-integer]
     (>= (+ a b) a))"
   [bindings & body]
   `(for-all* ~(vec (binding-gens bindings))
