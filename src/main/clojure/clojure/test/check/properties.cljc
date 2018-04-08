@@ -65,16 +65,17 @@
   (map second (partition 2 bindings)))
 
 (defmacro for-all
-  "Macro sugar for `for-all*`. `for-all` lets you name the parameter
-  and use them in expression, without wrapping them in a lambda. Like
-  `for-all*`, it returns a property.
+  "Macro sugar for `for-all*`. `for-all` uses `let`-style bindings
+  for the generated values. Note that when using multiple bindings,
+  the earlier bindings are not visible to the later bindings.
+
+  Returns a property.
 
   Examples
 
   (for-all [a gen/int
             b gen/int]
-    (>= (+ a b) a))
-  "
+    (>= (+ a b) a))"
   [bindings & body]
   `(for-all* ~(vec (binding-gens bindings))
              (fn [~@(binding-vars bindings)]
