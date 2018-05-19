@@ -1,8 +1,7 @@
 (ns clojure.test.check.clojure-test.assertions
   #?(:cljs (:require-macros [clojure.test.check.clojure-test.assertions.cljs]))
   (:require #?(:clj [clojure.test :as t]
-               :cljs [cljs.test :as t])
-            [clojure.test.check.results :as results]))
+               :cljs [cljs.test :as t])))
 
 #?(:clj
    (defn test-context-stacktrace [st]
@@ -22,8 +21,8 @@
          {:file (.getFileName s) :line (.getLineNumber s)})
        {:file nil :line nil})))
 
-(defn check-results [{:keys [result] :as m}]
-  (if (results/passing? result)
+(defn check-results [m]
+  (if (:pass? m)
     (t/do-report
       {:type :pass
        :message (dissoc m :result)})

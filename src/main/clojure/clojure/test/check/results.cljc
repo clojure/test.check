@@ -12,14 +12,14 @@
     clojure.test.check.results)
 
 (defprotocol Result
-  (passing? [result])
+  (pass? [result] "A boolean indicating if the result passed.")
   (result-data [result] "A map of data about the trial."))
 
 (extend-protocol Result
   #?(:clj Object :cljs default)
-  (passing? [this] (boolean this))
-  (result-data [this] {})
+  (pass? [this] (boolean this))
+  (result-data [this] nil)
 
   nil
-  (passing? [this] false)
-  (result-data [this] {}))
+  (pass? [this] false)
+  (result-data [this] nil))

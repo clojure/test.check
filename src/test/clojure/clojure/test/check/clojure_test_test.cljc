@@ -225,7 +225,11 @@
 (deftest can-re-throw-exceptions-to-clojure-test
   (let [{:keys [report-counters test-out]} (capture-test-var #'this-throws-an-exception)]
     (is (= report-counters {:test 1, :pass 0, :fail 0, :error 1}))
-    (is (re-find #"ERROR in \(this-throws-an-exception\)" test-out))))
+    (is (re-find #"ERROR in \(this-throws-an-exception\)" test-out))
+    ;; TCHECK-151
+    (is (= 1 (count (re-seq #"this property is terrible" test-out)))
+        "Only prints exceptions twice")))
+
 
 (defn test-ns-hook
   "Run only tests defined by deftest, ignoring those defined by defspec."

@@ -13,7 +13,7 @@
 
 (defrecord ErrorResult [error]
   results/Result
-  (passing? [_] false)
+  (pass? [_] false)
   (result-data [_]
     ;; spelling out the whole keyword here since `::error` is
     ;; different in self-hosted cljs.

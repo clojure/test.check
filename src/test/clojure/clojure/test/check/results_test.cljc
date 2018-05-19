@@ -14,9 +14,9 @@
             [clojure.test.check.results :as results]))
 
 (deftest default-passing-values
-  (is (not (results/passing? nil)))
-  (is (not (results/passing? false)))
-  (are [x] (results/passing? x)
+  (is (not (results/pass? nil)))
+  (is (not (results/pass? false)))
+  (are [x] (results/pass? x)
     :keyword
     'symbol
     "string"

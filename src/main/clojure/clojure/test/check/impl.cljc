@@ -9,9 +9,6 @@
 
 (ns clojure.test.check.impl)
 
-(defn exception-like? [v]
-  (instance? #?(:clj Throwable :cljs js/Error) v))
-
 (defn get-current-time-millis []
   #?(:clj  (System/currentTimeMillis)
      :cljs (.valueOf (js/Date.))))
