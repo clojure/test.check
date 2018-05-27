@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.10.0-alpha3 (2018-05-27)
+
+* Improve failure reporting
+  ([TCHECK-34](http://dev.clojure.org/jira/browse/TCHECK-34))
+* `gen/frequency` doesn't shrink to zero-weighted entries
+  ([TCHECK-129](http://dev.clojure.org/jira/browse/TCHECK-129))
+* Faster PRNG in clojurescript
+* General symbol/keyword generator improvements (shorter on average,
+  keyword generator includes colons and can generate `:/`)
+* passing test reporting is optional
+  ([TCHECK-116](http://dev.clojure.org/jira/browse/TCHECK-116))
+* Doesn't crash when some other plugin redefines `clojure.test/report`
+  ([TCHECK-125](http://dev.clojure.org/jira/browse/TCHECK-125))
+* test names used more reliably in certain reportings
+  ([TCHECK-124](http://dev.clojure.org/jira/browse/TCHECK-124))
+* Removed the map-style bindings in `gen/let` introduced in `alpha1`
+  ([TCHECK-133](http://dev.clojure.org/jira/browse/TCHECK-133))
+* Changed some of the key names in the `reporter-fn` calls to more
+  closely match the data returned from `quick-check`, to minimize
+  confusion
+* Clarified meaning of bindings in the `for-all` docstring
+  ([TCHECK-121](http://dev.clojure.org/jira/browse/TCHECK-121))
+* Updated the `:result` key to be more backwards compatible, added a
+  `:pass?` key, renamed `results/passing?` to `results/pass?`
+  ([TCHECK-142](http://dev.clojure.org/jira/browse/TCHECK-142))
+* Added timing keys to the `quick-check` return data
+  ([TCHECK-95](http://dev.clojure.org/jira/browse/TCHECK-95))
+
 ## 0.10.0-alpha2 (2017-06-27)
 
 * Added a 3rd optional argument to `gen/generate`, the `seed`
