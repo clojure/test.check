@@ -24,18 +24,20 @@
       [non-nil-seed (random/make-random non-nil-seed)])))
 
 (defn- complete
-  [property num-trials seed reporter-fn]
-  (reporter-fn {:type :complete
-                :property property
-                :result true
-                :pass? true
-                :num-tests num-trials
-                :seed seed})
-
-  {:result true
-   :pass? true
-   :num-tests num-trials
-   :seed seed})
+  [property num-trials seed start-time reporter-fn]
+  (let [time-elapsed-ms (- (get-current-time-millis) start-time)]
+    (reporter-fn {:type :complete
+                  :property property
+                  :result true
+                  :pass? true
+                  :num-tests num-trials
+                  :time-elapsed-ms time-elapsed-ms
+                  :seed seed})
+    {:result true
+     :pass? true
+     :num-tests num-trials
+     :time-elapsed-ms time-elapsed-ms
+     :seed seed}))
 
 
 (defn ^:private legacy-result
@@ -112,12 +114,13 @@
   [num-tests property & {:keys [seed max-size reporter-fn]
                          :or {max-size 200, reporter-fn (constantly nil)}}]
   (let [[created-seed rng] (make-rng seed)
-        size-seq (gen/make-size-range-seq max-size)]
+        size-seq (gen/make-size-range-seq max-size)
+        start-time (get-current-time-millis)]
     (loop [so-far 0
            size-seq size-seq
            rstate rng]
       (if (== so-far num-tests)
-        (complete property num-tests created-seed reporter-fn)
+        (complete property num-tests created-seed start-time reporter-fn)
         (let [[size & rest-size-seq] size-seq
               [r1 r2] (random/split rstate)
               result-map-rose (gen/call-gen property r1 size)
@@ -137,16 +140,18 @@
                             :result-data     (results/result-data result)
                             :seed            seed})
               (recur so-far rest-size-seq r2))
-            (failure property result-map-rose so-far size created-seed reporter-fn)))))))
+            (failure property result-map-rose so-far size
+                     created-seed start-time reporter-fn)))))))
 
 (defn- smallest-shrink
-  [total-nodes-visited depth smallest]
+  [total-nodes-visited depth smallest start-time]
   (let [{:keys [result]} smallest]
     {:total-nodes-visited total-nodes-visited
      :depth depth
      :pass? false
      :result (legacy-result result)
      :result-data (results/result-data result)
+     :time-shrinking-ms (- (get-current-time-millis) start-time)
      :smallest (:args smallest)}))
 
 (defn- shrink-loop
@@ -164,13 +169,14 @@
 
   Calls reporter-fn on every shrink step."
   [rose-tree reporter-fn]
-  (let [shrinks-this-depth (rose/children rose-tree)]
+  (let [start-time (get-current-time-millis)
+        shrinks-this-depth (rose/children rose-tree)]
     (loop [nodes shrinks-this-depth
            current-smallest (rose/root rose-tree)
            total-nodes-visited 0
            depth 0]
       (if (empty? nodes)
-        (smallest-shrink total-nodes-visited depth current-smallest)
+        (smallest-shrink total-nodes-visited depth current-smallest start-time)
         (let [;; can't destructure here because that could force
               ;; evaluation of (second nodes)
               head (first nodes)
@@ -204,17 +210,19 @@
                 (recur tail new-smallest (inc total-nodes-visited) depth)))))))))
 
 (defn- failure
-  [property failing-rose-tree trial-number size seed reporter-fn]
-  (let [root (rose/root failing-rose-tree)
+  [property failing-rose-tree trial-number size seed start-time reporter-fn]
+  (let [failed-after-ms (- (get-current-time-millis) start-time)
+        root (rose/root failing-rose-tree)
         result (:result root)
-        failure-data {:fail         (:args root)
-                      :failing-size size
-                      :num-tests    trial-number
-                      :pass?        false
-                      :property     property
-                      :result       (legacy-result result)
-                      :result-data  (results/result-data result)
-                      :seed         seed}]
+        failure-data {:fail            (:args root)
+                      :failing-size    size
+                      :num-tests       trial-number
+                      :pass?           false
+                      :property        property
+                      :result          (legacy-result result)
+                      :result-data     (results/result-data result)
+                      :failed-after-ms failed-after-ms
+                      :seed            seed}]
 
     (reporter-fn (assoc failure-data :type :failure))
 

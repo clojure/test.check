@@ -30,7 +30,8 @@
     :complete
     (let [testing-vars #?(:clj ct/*testing-vars*
                           :cljs (:testing-vars ct/*current-env*))
-          params       (merge (select-keys args [:result :num-tests :seed])
+          params       (merge (select-keys args [:result :num-tests :seed
+                                                 :time-elapsed-ms])
                               (when (seq testing-vars)
                                 {:test-var (-> testing-vars first meta :name name)}))]
       (ct/report {:type :clojure.test.check.clojure-test/complete

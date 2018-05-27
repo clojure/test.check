@@ -274,6 +274,12 @@
   [v]
   (== (count v) (count (distinct v))))
 
+(defn dissoc-timing-keys
+  [m]
+  (-> m
+      (dissoc :failed-after-ms)
+      (update :shrunk dissoc :time-shrinking-ms)))
+
 (defn unique-test
   [seed]
   (tc/quick-check 1000
@@ -283,7 +289,8 @@
 
 (defn equiv-runs
   [seed]
-  (= (unique-test seed) (unique-test seed)))
+  (= (dissoc-timing-keys (unique-test seed))
+     (dissoc-timing-keys (unique-test seed))))
 
 (deftest tests-are-deterministic
   (testing "If two runs are started with the same seed, they should
@@ -1230,3 +1237,19 @@
        (is (:shrunk res) "evidenced by the fact that it shrunk")
        (is (instance? js/Error (:result res))
            "The legacy :result key has an Error object so nobody gets confused"))))
+
+;; TCHECK-95
+;; ---------------------------------------------------------------------------
+
+(deftest timing-keys
+  (let [{:keys [time-elapsed-ms]}
+        (tc/quick-check 10 (prop/for-all [x gen/nat] (= x x x x)))]
+    (is (integer? time-elapsed-ms))
+    (is (<= 0 time-elapsed-ms)))
+  (let [{:keys [failed-after-ms]
+         {:keys [time-shrinking-ms]} :shrunk}
+        (tc/quick-check 1000 (prop/for-all [x gen/nat] (not (<= 47 x 55))))]
+    (is (integer? failed-after-ms))
+    (is (<= 0 failed-after-ms))
+    (is (integer? time-shrinking-ms))
+    (is (<= 0 time-shrinking-ms))))
