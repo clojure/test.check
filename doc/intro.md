@@ -16,26 +16,24 @@ the output should be in ascending order. We also might want to make sure that
 the count of the input is preserved. Our test might look like:
 
 ```clojure
-(require '[clojure.test.check :as tc])
-(require '[clojure.test.check.generators :as gen])
-(require '[clojure.test.check.properties :as prop])
-
-(defn ascending?
-  "clojure.core/sorted? doesn't do what we might expect, so we write our
-  own function"
-  [coll]
-  (every? (fn [[a b]] (<= a b))
-          (partition 2 1 coll)))
+(require '[clojure.test.check :as tc]
+         '[clojure.test.check.generators :as gen]
+         '[clojure.test.check.properties :as prop])
 
 (def property
   (prop/for-all [v (gen/vector gen/int)]
     (let [s (sort v)]
       (and (= (count v) (count s))
-           (ascending? s)))))
+           (or (empty? s)
+               (apply <= s))))))
 
 ;; test our property
 (tc/quick-check 100 property)
-;; => {:result true, :num-tests 100, :seed 1381894143051}
+;; => {:result true,
+;; =>  :pass? true,
+;; =>  :num-tests 100,
+;; =>  :time-elapsed-ms 90,
+;; =>  :seed 1528578896309}
 ```
 
 What if we were to forget to actually sort our vector? The test will fail, and
@@ -46,12 +44,25 @@ to fail. For example, the function might originally fail with input:
 ```clojure
 (def bad-property
   (prop/for-all [v (gen/vector gen/int)]
-    (ascending? v)))
+    (or (empty? v) (apply <= v))))
 
 (tc/quick-check 100 bad-property)
-;; => {:result false, :failing-size 7, :num-tests 8, :fail [[-2 4 -7 5 -2 7 -4]],
-;; =>  :shrunk {:total-nodes-visited 19, :depth 8, :result false,
-;; =>           :smallest [[0 -1]]}}
+;; => {:num-tests 6,
+;; =>  :seed 1528579035247,
+;; =>  :fail [[-2 -4 -4 -3]],
+;; =>  :failed-after-ms 1,
+;; =>  :result false,
+;; =>  :result-data nil,
+;; =>  :failing-size 5,
+;; =>  :pass? false,
+;; =>  :shrunk
+;; =>  {:total-nodes-visited 16,
+;; =>   :depth 4,
+;; =>   :pass? false,
+;; =>   :result false,
+;; =>   :result-data nil,
+;; =>   :time-shrinking-ms 1,
+;; =>   :smallest [[0 -1]]}}
 ```
 
 This process of shrinking is done automatically, even for our more complex
@@ -85,7 +96,7 @@ or get a lazy-seq of values:
 
 ```clojure
 (take 1 (gen/sample-seq gen/int))
-;; => 0
+;; => (0)
 ```
 
 You may notice that as you ask for more values, the 'size' of the generated
@@ -111,7 +122,7 @@ and `list` generator:
 ```
 
 Sometimes we'll want to create heterogeneous collections. The `tuple` generator
-allows us to to do this:
+allows us to do this:
 
 ```clojure
 (gen/sample (gen/tuple gen/nat gen/boolean gen/ratio))
@@ -243,7 +254,7 @@ generator will be `gen/vector` and our scalar will be `gen/boolean`:
 ```clojure
 (def nested-vector-of-boolean (gen/recursive-gen gen/vector gen/boolean))
 (last (gen/sample nested-vector-of-boolean 20))
-;; => [[true] [false true true] [false]]
+;; => [[[true] true] [[] []]]
 ```
 
 Now, let's make our own, JSON-like generator. We'll allow `gen/list` and

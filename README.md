@@ -74,7 +74,8 @@ project](http://dev.clojure.org/display/community/Maven+Settings+and+Repositorie
     * [byte-transforms](https://github.com/ztellman/byte-transforms/blob/c5b9613eebac722447593530531b9aa7976a0592/test/byte_transforms_simple_check.clj)
     * [collection-check](https://github.com/ztellman/collection-check)
   * Blog posts and videos (some of these may refer to simple-check):
-    * [Powerful Testing with test.check - Clojure/West](https://www.youtube.com/watch?v=JMhNINPo__g) -- [Slides](https://speakerdeck.com/reiddraper/powerful-testing-with-test-dot-check)
+    * [Powerful Testing with test.check - Clojure/West 2014](https://www.youtube.com/watch?v=JMhNINPo__g) -- [Slides](https://speakerdeck.com/reiddraper/powerful-testing-with-test-dot-check)
+    * [Building test.check Generators - Clojure/Conj 2017](https://www.youtube.com/watch?v=F4VZPxLZUdA) - [Slides](https://gfredericks.com/speaking/2017-10-12-generators.pdf)
     * [Check your work - 8th Light](http://blog.8thlight.com/connor-mendenhall/2013/10/31/check-your-work.html)
     * [Writing simple-check - Reid Draper](http://reiddraper.com/writing-simple-check/)
     * [Generative testing in Clojure - Youtube](https://www.youtube.com/watch?v=u0TkAw8QqrQ)
@@ -103,7 +104,11 @@ make sure this is the case:
     (= (sort v) (sort (sort v)))))
 
 (tc/quick-check 100 sort-idempotent-prop)
-;; => {:result true, :num-tests 100, :seed 1382488326530}
+;; => {:result true,
+;; =>  :pass? true,
+;; =>  :num-tests 100,
+;; =>  :time-elapsed-ms 28,
+;; =>  :seed 1528580707376}
 ```
 
 In prose, this test reads: for all vectors of integers, `v`, sorting `v` is
@@ -120,13 +125,26 @@ action:
       (< (first s) (last s)))))
 
 (tc/quick-check 100 prop-sorted-first-less-than-last)
-;; => {:result false, :failing-size 0, :num-tests 1, :fail [[3]],
-       :shrunk {:total-nodes-visited 5, :depth 2, :result false,
-                :smallest [[0]]}}
+;; => {:num-tests 5,
+;; =>  :seed 1528580863556,
+;; =>  :fail [[-3]],
+;; =>  :failed-after-ms 1,
+;; =>  :result false,
+;; =>  :result-data nil,
+;; =>  :failing-size 4,
+;; =>  :pass? false,
+;; =>  :shrunk
+;; =>  {:total-nodes-visited 5,
+;; =>   :depth 2,
+;; =>   :pass? false,
+;; =>   :result false,
+;; =>   :result-data nil,
+;; =>   :time-shrinking-ms 1,
+;; =>   :smallest [[0]]}}
 ```
 
 This test claims that the first element of a sorted vector should be less-than
-the last. Of course, this isn't true: the test fails with input `[3]`, which
+the last. Of course, this isn't true: the test fails with input `[-3]`, which
 gets shrunk down to `[0]`, as seen in the output above. As your test functions
 require more sophisticated input, shrinking becomes critical to being able
 to understand exactly why a random test failed. To see how powerful shrinking
@@ -139,14 +157,23 @@ passed a sequence that contains the number 42:
     (not (some #{42} v))))
 
 (tc/quick-check 100 prop-no-42)
-;; => {:result false,
-       :failing-size 45,
-       :num-tests 46,
-       :fail [[10 1 28 40 11 -33 42 -42 39 -13 13 -44 -36 11 27 -42 4 21 -39]],
-       :shrunk {:total-nodes-visited 38,
-                :depth 18,
-                :result false,
-                :smallest [[42]]}}
+;; => {:num-tests 45,
+;; =>  :seed 1528580964834,
+;; =>  :fail
+;; =>  [[-35 -9 -31 12 -30 -40 36 36 25 -2 -31 42 8 31 17 -19 3 -15 44 -1 -8 27 16]],
+;; =>  :failed-after-ms 11,
+;; =>  :result false,
+;; =>  :result-data nil,
+;; =>  :failing-size 44,
+;; =>  :pass? false,
+;; =>  :shrunk
+;; =>  {:total-nodes-visited 16,
+;; =>   :depth 5,
+;; =>   :pass? false,
+;; =>   :result false,
+;; =>   :result-data nil,
+;; =>   :time-shrinking-ms 1,
+;; =>   :smallest [[42]]}}
 ```
 
 We see that the test failed on a rather large vector, as seen in the `:fail`
@@ -162,10 +189,10 @@ write properties that run under the `clojure.test` runner, for example:
 
 ```clojure
 (defspec first-element-is-min-after-sorting ;; the name of the test
-         100 ;; the number of iterations for test.check to test
-         (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
-           (= (apply min v)
-              (first (sort v)))))
+  100 ;; the number of iterations for test.check to test
+  (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
+    (= (apply min v)
+       (first (sort v)))))
 ```
 
 ### ClojureScript
@@ -186,7 +213,11 @@ ClojureScript:
     (= (sort v) (sort (sort v)))))
 
 (tc/quick-check 100 sort-idempotent-prop)
-;; => {:result true, :num-tests 100, :seed 1382488326530}
+;; => {:result true,
+;; =>  :pass? true,
+;; =>  :num-tests 100,
+;; =>  :time-elapsed-ms 39,
+;; =>  :seed 1528581117430}
 ```
 
 The remaining examples need no further changes. Integrating with
@@ -237,9 +268,6 @@ _test.check_ used to be called
 [_simple-check_](https://github.com/reiddraper/simple-check).
 
 See [migrating from simple-check](doc/migrating-from-simple-check.md).
-
-## Contributing
-
 
 ## YourKit
 

@@ -54,7 +54,7 @@ skip over some of the built-in, basic generators.
 
 ```clojure
 ;; generate exponents with gen/s-pos-int (strictly positive integers),
-;; and then apply the lambda to them
+;; and then apply the function to them
 (def powers-of-two (gen/fmap #(int (Math/pow 2 %)) gen/s-pos-int))
 (gen/sample powers-of-two)
 ;; => (2 2 8 16 16 64 16 2 4 4)
