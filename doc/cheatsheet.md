@@ -34,6 +34,7 @@ So far this only documents functions in the generators namespace.
   - variant with options: `(gen/double* {:min x, :max y, :infinite? true, :NaN? true})`
 - `gen/ratio` — generates ratios (sometimes integers)
 - `gen/byte` — generates a `Byte`
+- `gen/choose` — generates *uniformly distributed* integers between two (inclusive) values
 
 ### Characters & Strings & Things
 
