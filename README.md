@@ -97,7 +97,10 @@ make sure this is the case:
 ```clojure
 (require '[clojure.test.check :as tc])
 (require '[clojure.test.check.generators :as gen])
-(require '[clojure.test.check.properties :as prop])
+
+;;  in Clojurescript do this instead:
+;; (require '[clojure.test.check.properties :as prop :include-macros true])
+ 
 
 (def sort-idempotent-prop
   (prop/for-all [v (gen/vector gen/int)]
