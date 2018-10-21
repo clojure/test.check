@@ -97,7 +97,7 @@ make sure this is the case:
 ```clojure
 (require '[clojure.test.check :as tc])
 (require '[clojure.test.check.generators :as gen])
-(require '[clojure.test.check.properties :as prop])
+(require '[clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])])
 
 (def sort-idempotent-prop
   (prop/for-all [v (gen/vector gen/int)]
@@ -199,31 +199,9 @@ write properties that run under the `clojure.test` runner, for example:
 
 ClojureScript support was added in version `0.7.0`.
 
-The first _test.check_ example needs only minor modifications for
-ClojureScript:
-
-```clojure
-(ns cljs.user
-  (:require [clojure.test.check :as tc]
-            [clojure.test.check.generators :as gen]
-            [clojure.test.check.properties :as prop :include-macros true]))
-
-(def sort-idempotent-prop
-  (prop/for-all [v (gen/vector gen/int)]
-    (= (sort v) (sort (sort v)))))
-
-(tc/quick-check 100 sort-idempotent-prop)
-;; => {:result true,
-;; =>  :pass? true,
-;; =>  :num-tests 100,
-;; =>  :time-elapsed-ms 39,
-;; =>  :seed 1528581117430}
-```
-
-The remaining examples need no further changes. Integrating with
-`cljs.test` is via the `clojure.test.check.clojure-test/defspec`
-macro, in the same fashion as integration with `clojure.test` on the
-jvm.
+Integrating with `cljs.test` is via the
+`clojure.test.check.clojure-test/defspec` macro, in the same fashion
+as integration with `clojure.test` on the jvm.
 
 ## Developer Information
 

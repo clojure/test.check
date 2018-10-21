@@ -18,7 +18,7 @@ the count of the input is preserved. Our test might look like:
 ```clojure
 (require '[clojure.test.check :as tc]
          '[clojure.test.check.generators :as gen]
-         '[clojure.test.check.properties :as prop])
+         '[clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])])
 
 (def property
   (prop/for-all [v (gen/vector gen/int)]
