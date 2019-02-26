@@ -18,7 +18,8 @@
             [clojure.test.check.random :as random]
             [clojure.test.check.rose-tree :as rose]
             #?@(:cljs [[goog.string :as gstring]
-                       [clojure.string]])))
+                       [clojure.string]]))
+  #?(:cljs (:require-macros [clojure.test.check.generators :refer [let]])))
 
 ;; Gen
 ;; (internal functions)

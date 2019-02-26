@@ -9,7 +9,8 @@
 
 (ns clojure.test.check.properties
   (:require [clojure.test.check.generators :as gen]
-            [clojure.test.check.results :as results]))
+            [clojure.test.check.results :as results])
+  #?(:cljs (:require-macros [clojure.test.check.properties :refer [for-all]])))
 
 (defrecord ErrorResult [error]
   results/Result

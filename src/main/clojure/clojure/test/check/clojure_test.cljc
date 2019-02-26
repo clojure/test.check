@@ -12,7 +12,8 @@
                :cljs [cljs.test :as ct :include-macros true])
             [clojure.test.check :as tc]
             [clojure.test.check.clojure-test.assertions]
-            [clojure.test.check.impl :refer [get-current-time-millis]]))
+            [clojure.test.check.impl :refer [get-current-time-millis]])
+  #?(:cljs (:require-macros [clojure.test.check.clojure-test :refer [defspec]])))
 
 (defn assert-check
   [{:keys [result result-data] :as m}]
