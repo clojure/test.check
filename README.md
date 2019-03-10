@@ -29,7 +29,7 @@ in the `0.8.*` releases.
 #### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.10.0-alpha3"]
+[org.clojure/test.check "0.10.0-alpha4"]
 ```
 
 #### Maven
@@ -38,7 +38,7 @@ in the `0.8.*` releases.
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.10.0-alpha3</version>
+  <version>0.10.0-alpha4</version>
 </dependency>
 ```
 

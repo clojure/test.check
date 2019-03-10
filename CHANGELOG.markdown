@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.0-alpha4 (2019-03-10)
+
+* Automatically require cljs macros so users don't have to
+  ([TCHECK-154](http://dev.clojure.org/jira/browse/TCHECK-154))
+
 ## 0.10.0-alpha3 (2018-05-27)
 
 * Improve failure reporting
