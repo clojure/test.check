@@ -4,12 +4,12 @@ __We cannot accept pull requests.__
 
 * Issues can be filed in [JIRA]. No [Clojure CA] is required for this.
 * Patches/contributions can be attached to issues in [Jira]. You can [read more
-  about that process](http://dev.clojure.org/display/community/Contributing).
+  about that process](https://clojure.org/community/contributing).
   Contributions need a [signed CA (Contributor
-  Agreement)](http://clojure.org/contributing).
+  Agreement)](http://clojure.org/community/contributing).
 
 Don't hesitate to ask if you have questions about this.
 
-[JIRA]: http://dev.clojure.org/jira/browse/TCHECK
-[Clojure CA]: http://dev.clojure.org/display/community/Contributing
-[Clojure contrib]: http://dev.clojure.org/display/doc/Clojure+Contrib
+[JIRA]: https://dev.clojure.org/jira/browse/TCHECK
+[Clojure CA]: https://clojure.org/community/contributing
+[Clojure contrib]: https://clojure.org/community/contrib_libs
