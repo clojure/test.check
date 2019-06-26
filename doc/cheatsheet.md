@@ -21,8 +21,12 @@ So far this only documents functions in the generators namespace.
   in random orders
 - `gen/any` — generates any clojure value
 - `gen/any-printable` — generates any printable clojure value
+- `gen/any-equatable` — generates any clojure value that can be equal to another
+- `gen/any-printable-equatable` — generates any printable clojure value that can be equal to another
 - `gen/simple-type` — like `gen/any` but does not generate collections
 - `gen/simple-type-printable` — like `gen/any-printable` but does not
+- `gen/simple-type-equatable` — like `gen/any-equatable` but does not generate collections
+- `gen/simple-type-printable-equatable` — like `gen/any-printable-equatable` but does not
   generate collections
 
 ### Numbers

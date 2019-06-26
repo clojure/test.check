@@ -658,19 +658,12 @@
 ;; edn rountrips
 ;; ---------------------------------------------------------------------------
 
-(def simple-type
-  "Like gen/simple-type but excludes Infinity and NaN."
-  (gen/one-of [gen/small-integer gen/large-integer (gen/double* {:infinite? false, :NaN? false}) gen/char gen/string
-               gen/ratio gen/boolean gen/keyword gen/keyword-ns gen/symbol gen/symbol-ns gen/uuid]))
-
-(def any-edn (gen/recursive-gen gen/container-type simple-type))
-
 (defn edn-roundtrip?
   [value]
   (= value (-> value prn-str edn/read-string)))
 
 (defspec edn-roundtrips 200
-  (prop/for-all [a any-edn]
+  (prop/for-all [a gen/any-equatable]
     (edn-roundtrip? a)))
 
 ;; not-empty works
@@ -1193,14 +1186,7 @@
 ;; strings/etc. cranked up to size=200 than it has to do with
 ;; gen/any in particular.
 (defspec merge-is-idempotent-and-this-spec-doesn't-OOM 50
-  ;; using any-edn instead of gen/any here because:
-  ;;
-  ;; - NaN is problematic as a map key in general
-  ;; - NaN/infinity are a problem as a map key and set element on CLJS
-  ;;   because of CLJS-1594
-  ;; - NaN can be equal to itself in clj when identical? checks
-  ;;   short-circuit equality, but this doesn't seem to happen in CLJS
-  (prop/for-all [m (gen/map any-edn any-edn)]
+  (prop/for-all [m (gen/map gen/any-equatable gen/any-equatable)]
     (= m (merge m m))))
 
 (defn frequency-shrinking-prop
@@ -1315,3 +1301,16 @@
     (is (<= 0 failed-after-ms))
     (is (integer? time-shrinking-ms))
     (is (<= 0 time-shrinking-ms))))
+
+;; equatable generators
+;; ---------------------------------------------------------------------------
+
+(defspec equatable-generators-generate-equatable-things 100
+  (prop/for-all [g    (gen/elements
+                       [gen/simple-type-equatable gen/simple-type-printable-equatable
+                        gen/any-equatable gen/any-printable-equatable])
+                 seed gen-seed
+                 size (gen/sized gen/return)]
+    (let [x (gen/generate g size seed)
+          y (gen/generate g size seed)]
+      (= x y))))

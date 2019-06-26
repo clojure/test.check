@@ -1554,17 +1554,28 @@
                                   (hex 27) (hex 28) (hex 29) (hex 30))))))
             (vector (choose 0 15) 31)))))
 
-(def ^:private ratio-type #?(:clj big-ratio :cljs ratio))
+(defn ^:private base-simple-type
+  [double-gen char-gen string-gen]
+(one-of [int #?(:clj size-bounded-bigint :cljs large-integer) double-gen char-gen
+         string-gen ratio boolean keyword keyword-ns symbol symbol-ns uuid]))
 
 (def simple-type
   "Generates a variety of scalar types."
-  (one-of [int #?(:clj size-bounded-bigint :cljs large-integer) double char string
-           ratio-type boolean keyword keyword-ns symbol symbol-ns uuid]))
+  (base-simple-type double char string))
 
 (def simple-type-printable
   "Generates a variety of scalar types, with printable strings."
-  (one-of [int #?(:clj size-bounded-bigint :cljs large-integer) double char-ascii
-           string-ascii ratio-type boolean keyword keyword-ns symbol symbol-ns uuid]))
+  (base-simple-type double char-ascii string-ascii))
+
+(def ^{:added "0.10.0"} simple-type-equatable
+  "Like gen/simple-type, but only generates objects that can be
+  equal to other objects (e.g., not a NaN)."
+  (base-simple-type (double* {:NaN? false}) char string))
+
+(def ^{:added "0.10.0"} simple-type-printable-equatable
+  "Like gen/simple-type-printable, but only generates objects that
+  can be equal to other objects (e.g., not a NaN)."
+  (base-simple-type (double* {:NaN? false}) char-ascii string-ascii))
 
 #?(:cljs
 ;; http://dev.clojure.org/jira/browse/CLJS-1594
@@ -1692,6 +1703,19 @@
   "Like any, but avoids characters that the shell will interpret as actions,
   like 7 and 14 (bell and alternate character set command)"
   (recursive-gen container-type simple-type-printable))
+
+(def ^{:added "0.10.0"} any-equatable
+  "Like any, but only generates objects that can be equal to other objects (e.g., do
+  not contain a NaN)"
+  (recursive-gen container-type simple-type-equatable))
+
+(def ^{:added "0.10.0"} any-printable-equatable
+  "Like any, but avoids characters that the shell will interpret as actions,
+  like 7 and 14 (bell and alternate character set command), and only generates
+  objects that can be equal to other objects (e.g., do not contain a NaN)"
+  (recursive-gen container-type simple-type-printable-equatable))
+
+
 
 ;; Macros
 ;; ---------------------------------------------------------------------------
