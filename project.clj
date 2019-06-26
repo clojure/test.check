@@ -14,7 +14,7 @@
                          :main clojure.main
                          :global-vars {*warn-on-reflection* false}}}
   :global-vars {*warn-on-reflection* true}
-  :plugins [[lein-codox "0.9.1"]
+  :plugins [[lein-codox "0.10.7"]
             [lein-cljsbuild "1.1.5"]]
   :codox {:namespaces [clojure.test.check
                        clojure.test.check.clojure-test
