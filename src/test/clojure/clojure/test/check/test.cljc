@@ -155,7 +155,8 @@
     (deftest multiply-test-check-and-goog
       (testing "For goog.math.Long's test.check multiply is the same as goog.math.Long.multiply"
         (is (:result
-              (tc/quick-check 1000 (prop/for-all* [gen/gen-raw-long gen/gen-raw-long] multiply-check)))))))
+             (let [grl @#'gen/gen-raw-long]
+               (tc/quick-check 1000 (prop/for-all* [grl grl] multiply-check))))))))
 ;; Count and concat work as expected
 ;; ---------------------------------------------------------------------------
 
