@@ -31,9 +31,11 @@ So far this only documents functions in the generators namespace.
 - `gen/small-integer` — generates small integers, like `gen/nat` but also negative
 - `gen/large-integer` — generates a large range of integers
   - variant with options: `(gen/large-integer* {:min x, :max y})`
+- `gen/size-bounded-bigint` — generates bigints, up to `2^(6*size)`
 - `gen/double` — generates a large range of doubles (w/ infinities & `NaN`)
   - variant with options: `(gen/double* {:min x, :max y, :infinite? true, :NaN? true})`
-- `gen/ratio` — generates ratios (sometimes integers)
+- `gen/ratio` — generates ratios (sometimes integers) using gen/small-integer
+- `gen/big-ratio` — generates ratios (sometimes integers) using gen/size-bounded-bigint
 - `gen/byte` — generates a `Byte`
 - `gen/choose` — generates *uniformly distributed* integers between two (inclusive) values
 

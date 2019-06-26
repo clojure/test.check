@@ -909,6 +909,67 @@
                                                            :NaN? false)))))]
     (pred x)))
 
+;; bigints
+;; ---------------------------------------------------------------------------
+#?(:clj
+   (defspec size-bounded-bigint-generates-integers 1000
+     (prop/for-all [x gen/size-bounded-bigint]
+       (integer? x))))
+
+#?(:clj
+   (defspec size-bounded-bigint-distribution-test 6
+     (prop/for-all [[xs size]
+                    ;; the 200 restriction (a NOOP with only 6 trials)
+                    ;; relates to the probability assertions below,
+                    ;; and also keeps the test from using too much
+                    ;; memory
+                    (gen/scale #(min 200 (* 40 %))
+                               (gen/tuple
+                                ;; no-shrink because it would screw up
+                                ;; the distribution, so most of the
+                                ;; shrink would be meaningless
+                                (gen/no-shrink
+                                 (gen/vector gen/size-bounded-bigint 10000))
+                                (gen/sized gen/return)))]
+       (let [ex-ub (apply * (repeat (* 6 size) 2N))
+             ex-lb (- ex-ub)]
+         ;; TODO: Would be nice to rewrite this so we also get
+         ;; assertions about other ranges, like smaller numbers
+         (and
+          ;; everything's in the defined range
+          (every? #(< ex-lb % ex-ub) xs)
+          ;; testing that the numbers get reasonably close to the
+          ;; bounds
+          ;;
+          ;; chose 32 here so that the probability of false-positive
+          ;; failure is roughly 10^-17; I wish we could test a tighter
+          ;; bound, like (quot ex-ub 2), but there's only a 1/1200
+          ;; chance of a given integer falling in that range at
+          ;; size=200, so this test would fail some 10^-5 of the time,
+          ;; which is too often IMO
+          (let [ub* (quot ex-ub 32)]
+            (->> xs
+                 (apply max)
+                 (<= ub*)))
+          (let [lb* (quot ex-lb 32)]
+            (->> xs
+                 (apply min)
+                 (>= lb*))))))))
+
+#?(:clj
+   (defspec size-bounded-bigint-shrinks-effectively 50
+     (prop/for-all [bound (gen/scale #(min % 150) gen/size-bounded-bigint)
+                    seed  gen-seed]
+       (let [prop (if (neg? bound)
+                    (prop/for-all [n gen/size-bounded-bigint]
+                      (not (<= n bound)))
+                    (prop/for-all [n gen/size-bounded-bigint]
+                      (not (>= n bound))))
+             res (tc/quick-check 10000 prop :seed seed)]
+         (and
+          (not (:pass? res))
+          (-> res :shrunk :smallest first (= bound)))))))
+
 ;; vector can generate large vectors; regression for TCHECK-49
 ;; ---------------------------------------------------------------------------
 

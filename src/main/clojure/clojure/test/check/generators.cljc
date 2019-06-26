@@ -1297,6 +1297,82 @@
   including +/- infinity and NaN. Use double* for more control."
   (double* {}))
 
+;; bigints
+;; ---------------------------------------------------------------------------
+
+#?(:clj
+   (defn ^:private two-pow
+     [exp]
+     (bigint (.shiftLeft (biginteger 1) exp))))
+#?(:clj (def ^:private dec-2-32 0xFFFFFFFF))
+#?(:clj (def ^:private just-2-32 0x100000000))
+
+;; could potentially make this public
+#?(:clj
+   (defn ^:private bounded-bigint
+     "Generates bigints having the given max-bit-length, i.e. exclusively
+  between -(2^(max-bit-length)) and 2^(max-bit-length)."
+     [max-bit-length]
+     (fmap
+      (fn [xs]
+        ;; is there a better way to avoid the auto-boxing warnings
+        ;; than these Long constructor calls? I'd rather not start out
+        ;; with bigints since that seems unnecessarily wasteful
+        (loop [multiple  (Long. 1)
+               bits-left max-bit-length
+               xs        xs
+               res       (Long. 0)]
+          (cond (<= 32 bits-left)
+                (recur (*' just-2-32 multiple)
+                       (- bits-left 32)
+                       (rest xs)
+                       (+' res (*' multiple (first xs))))
+
+                (pos? bits-left)
+                (core/let [x (-> xs
+                                 first
+                                 (bit-shift-right (- 32 bits-left)))]
+                  (+' res (*' multiple x)))
+
+                :else
+                res)))
+      (vector (choose 0 dec-2-32)
+              (Math/ceil (/ (core/double max-bit-length) 32))))))
+
+#?(:clj
+   (def ^:private size-bounded-bignat
+     (core/let [poor-shrinking-gen
+                (sized
+                 (fn [size]
+                   (bind (choose 0 (max 0 (* size 6)))
+                         (fn [bit-count]
+                           (if (zero? bit-count)
+                             (return 0)
+                             (fmap #(+' % (two-pow (dec bit-count)))
+                                   (bounded-bigint (dec bit-count))))))))]
+       (gen-fmap (fn [rose] (int-rose-tree (rose/root rose)))
+                 poor-shrinking-gen))))
+
+;; I avoided supporting min/max parameters because they could
+;; contradict the size-boundedness
+;;
+;; I suppose a size-bounded-bigint* could be added with min/max that
+;; throws if the resulting intersection is empty, but maybe that's
+;; weird.
+#?(:clj
+   (def ^{:added "0.10.0"} size-bounded-bigint
+     ;; 2^(6*size) was chosen so that with size=200 the generator could
+     ;; generate values larger than Double/MAX_VALUE
+     "Generates an integer (long or bigint) bounded exclusively by ±2^(6*size)."
+     (fmap (fn [[n negate? force-bigint?]]
+             (cond-> n
+               negate? -'
+               ;; adds some exciting variety
+               force-bigint? bigint))
+           (tuple size-bounded-bignat
+                  boolean
+                  boolean))))
+
 ;; Characters & Strings
 ;; ---------------------------------------------------------------------------
 
@@ -1428,12 +1504,20 @@
        (resize-symbolish-generator)))
 
 (def ratio
-  "Generates a `clojure.lang.Ratio`. Shrinks toward 0. Not all values generated
-  will be ratios, as many values returned by `/` are not ratios."
+  "Generates a small ratio (or integer) using gen/small-integer. Shrinks
+  toward simpler ratios, which may be larger or smaller."
   (fmap
    (fn [[a b]] (/ a b))
-   (tuple int
-          (such-that (complement zero?) int))))
+   (tuple small-integer (fmap inc nat))))
+
+#?(:clj
+   (def big-ratio
+     "Generates a ratio (or integer) using gen/size-bounded-bigint. Shrinks
+  toward simpler ratios, which may be larger or smaller."
+     (fmap
+      (fn [[a b]] (/ a b))
+      (tuple size-bounded-bignat
+             (such-that (complement zero?) size-bounded-bignat)))))
 
 (def ^{:added "0.9.0"} uuid
   "Generates a random type-4 UUID. Does not shrink."
@@ -1470,15 +1554,17 @@
                                   (hex 27) (hex 28) (hex 29) (hex 30))))))
             (vector (choose 0 15) 31)))))
 
+(def ^:private ratio-type #?(:clj big-ratio :cljs ratio))
+
 (def simple-type
   "Generates a variety of scalar types."
-  (one-of [int large-integer double char string ratio boolean keyword
-           keyword-ns symbol symbol-ns uuid]))
+  (one-of [int #?(:clj size-bounded-bigint :cljs large-integer) double char string
+           ratio-type boolean keyword keyword-ns symbol symbol-ns uuid]))
 
 (def simple-type-printable
   "Generates a variety of scalar types, with printable strings."
-  (one-of [int large-integer double char-ascii string-ascii ratio boolean
-           keyword keyword-ns symbol symbol-ns uuid]))
+  (one-of [int #?(:clj size-bounded-bigint :cljs large-integer) double char-ascii
+           string-ascii ratio-type boolean keyword keyword-ns symbol symbol-ns uuid]))
 
 #?(:cljs
 ;; http://dev.clojure.org/jira/browse/CLJS-1594
