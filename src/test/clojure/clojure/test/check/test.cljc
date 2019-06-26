@@ -34,8 +34,8 @@
 
 (deftest generators-are-generators
   (testing "generator? returns true when called with a generator"
-    (is (gen/generator? gen/int))
-    (is (gen/generator? (gen/vector gen/int)))
+    (is (gen/generator? gen/small-integer))
+    (is (gen/generator? (gen/vector gen/small-integer)))
     (is (gen/generator? (gen/return 5)))))
 
 (deftest values-are-not-generators
@@ -55,7 +55,7 @@
 
 (deftest plus-and-0-are-a-monoid
   (testing "+ and 0 form a monoid"
-    (is (let [p (prop/for-all* [gen/int gen/int gen/int] passes-monoid-properties)]
+    (is (let [p (prop/for-all* [gen/small-integer gen/small-integer gen/small-integer] passes-monoid-properties)]
           (:result
            (tc/quick-check 1000 p)))))
   ;; NOTE: no ratios in ClojureScript - David
@@ -76,7 +76,7 @@
 
 (deftest reverse-equal?
   (testing "For all vectors L, reverse(reverse(L)) == L"
-    (is (let [p (prop/for-all* [(gen/vector gen/int)] reverse-equal?-helper)]
+    (is (let [p (prop/for-all* [(gen/vector gen/small-integer)] reverse-equal?-helper)]
           (:result (tc/quick-check 1000 p))))))
 
 ;; failing reverse
@@ -85,7 +85,7 @@
 (deftest bad-reverse-test
   (testing "For all vectors L, L == reverse(L). Not true"
     (is (false?
-         (let [p (prop/for-all* [(gen/vector gen/int)] #(= (reverse %) %))]
+         (let [p (prop/for-all* [(gen/vector gen/small-integer)] #(= (reverse %) %))]
            (:result (tc/quick-check 1000 p)))))))
 
 ;; failing element remove
@@ -99,7 +99,7 @@
   (testing "For all vectors L, if we remove the first element E, E should not
            longer be in the list. (This is a false assumption)"
     (is (false?
-         (let [p (prop/for-all* [(gen/vector gen/int)] first-is-gone)]
+         (let [p (prop/for-all* [(gen/vector gen/small-integer)] first-is-gone)]
            (:result (tc/quick-check 1000 p)))))))
 
 ;; exceptions shrink and return as result
@@ -117,7 +117,7 @@
     (is (= [exception [0]]
            (let [result
                  (tc/quick-check
-                  1000 (prop/for-all* [gen/int] exception-thrower))]
+                  1000 (prop/for-all* [gen/small-integer] exception-thrower))]
              [(::prop/error (:result-data result))
               (get-in result [:shrunk :smallest])])))))
 
@@ -169,8 +169,8 @@
   (testing "For all vectors A and B:
            length(A + B) == length(A) + length(B)"
     (is (:result
-         (let [p (prop/for-all* [(gen/vector gen/int)
-                                 (gen/vector gen/int)] concat-counts-correct)]
+         (let [p (prop/for-all* [(gen/vector gen/small-integer)
+                                 (gen/vector gen/small-integer)] concat-counts-correct)]
            (tc/quick-check 1000 p))))))
 
 ;; Interpose (Count)
@@ -188,7 +188,7 @@
   (testing "Interposing a collection with a value makes its count
            twice the original collection, or ones less."
     (is (:result
-         (tc/quick-check 1000 (prop/for-all [v (gen/vector gen/int)] (interpose-twice-the-length v)))))))
+         (tc/quick-check 1000 (prop/for-all [v (gen/vector gen/small-integer)] (interpose-twice-the-length v)))))))
 
 ;; Lists and vectors are equivalent with seq abstraction
 ;; ---------------------------------------------------------------------------
@@ -204,7 +204,7 @@
   (is (:result
        (tc/quick-check
         1000 (prop/for-all*
-              [(gen/list gen/int)] list-vector-round-trip-equiv)))))
+              [(gen/list gen/small-integer)] list-vector-round-trip-equiv)))))
 
 ;; keyword->string->keyword roundtrip
 ;; ---------------------------------------------------------------------------
@@ -249,7 +249,7 @@
          (tc/quick-check
           1000
           (prop/for-all*
-           [(gen/vector gen/int)] elements-are-in-order-after-sorting))))))
+           [(gen/vector gen/small-integer)] elements-are-in-order-after-sorting))))))
 
 ;; Constant generators
 ;; ---------------------------------------------------------------------------
@@ -285,7 +285,7 @@
   [seed]
   (tc/quick-check 1000
                   (prop/for-all*
-                   [(gen/vector gen/int)] vector-elements-are-unique)
+                   [(gen/vector gen/small-integer)] vector-elements-are-unique)
                   :seed seed))
 
 (defn equiv-runs
@@ -297,7 +297,7 @@
   (testing "If two runs are started with the same seed, they should
            return the same results."
     (is (:result
-         (tc/quick-check 1000 (prop/for-all* [gen/int] equiv-runs))))))
+         (tc/quick-check 1000 (prop/for-all* [gen/small-integer] equiv-runs))))))
 
 ;; Generating basic generators
 ;; --------------------------------------------------------------------------
@@ -320,9 +320,9 @@
     (testing "string-ascii"         (t gen/string-ascii         string?))
     (testing "string-alphanumeric"  (t gen/string-alphanumeric  string?))
 
-    (testing "vector" (t (gen/vector gen/int) vector?))
-    (testing "list"   (t (gen/list gen/int)   list?))
-    (testing "map"    (t (gen/map gen/int gen/int) map?))))
+    (testing "vector" (t (gen/vector gen/small-integer) vector?))
+    (testing "list"   (t (gen/list gen/small-integer)   list?))
+    (testing "map"    (t (gen/map gen/small-integer gen/small-integer) map?))))
 
 ;; such-that
 ;; --------------------------------------------------------------------------
@@ -492,7 +492,7 @@
   (testing "can generate proper matrices"
     (is (:result (tc/quick-check
                   100 (prop/for-all
-                       [mtx (gen/vector (gen/vector gen/int 3) 3)]
+                       [mtx (gen/vector (gen/vector gen/small-integer 3) 3)]
                         (proper-matrix? mtx)))))))
 
 (def bounds-and-vector
@@ -501,7 +501,7 @@
               (let [minimum (min a b)
                     maximum (max a b)]
                 (gen/tuple (gen/return [minimum maximum])
-                           (gen/vector gen/int minimum maximum))))))
+                           (gen/vector gen/small-integer minimum maximum))))))
 
 (deftest proper-vector-test
   (testing "can generate vectors with sizes in a provided range"
@@ -518,7 +518,7 @@
 
 (defn n-int-generators
   [n]
-  (vec (repeat n gen/int)))
+  (vec (repeat n gen/small-integer)))
 
 (def tuples
   [(apply gen/tuple (n-int-generators 1))
@@ -611,23 +611,23 @@
            ;; room
            (< total-nodes-visited (+ 5 (* 3 (Math/log failing-size))))))))
 
-;; gen/int returns an integer when size is a double; regression for TCHECK-73
+;; gen/small-integer returns an integer when size is a double; regression for TCHECK-73
 ;; ---------------------------------------------------------------------------
 
 (def gen-double
   (gen/fmap (fn [[x y]] (double (+ x (/ y 10))))
-            (gen/tuple gen/pos-int (gen/choose 0 9))))
+            (gen/tuple gen/nat (gen/choose 0 9))))
 
 (defspec gen-int-with-double-size 1000
   (prop/for-all [size gen-double]
-    (integer? (gen/generate gen/int size))))
+    (integer? (gen/generate gen/small-integer size))))
 
 ;; recursive-gen doesn't change ints to doubles; regression for TCHECK-73
 ;; ---------------------------------------------------------------------------
 
 (defspec recursive-generator-test 100
   (let [btree* (fn [g] (gen/hash-map
-                        :value gen/int
+                        :value gen/small-integer
                         :left g
                         :right g))
         btree (gen/recursive-gen btree* (gen/return nil))
@@ -660,7 +660,7 @@
 
 (def simple-type
   "Like gen/simple-type but excludes Infinity and NaN."
-  (gen/one-of [gen/int gen/large-integer (gen/double* {:infinite? false, :NaN? false}) gen/char gen/string
+  (gen/one-of [gen/small-integer gen/large-integer (gen/double* {:infinite? false, :NaN? false}) gen/char gen/string
                gen/ratio gen/boolean gen/keyword gen/keyword-ns gen/symbol gen/symbol-ns gen/uuid]))
 
 (def any-edn (gen/recursive-gen gen/container-type simple-type))
@@ -714,7 +714,7 @@
 (def range-gen
   (gen/fmap (fn [[a b]]
               [(min a b) (max a b)])
-            (gen/tuple gen/int gen/int)))
+            (gen/tuple gen/small-integer gen/small-integer)))
 
 (defspec choose-respects-bounds-during-shrinking 100
   (prop/for-all [[mini maxi] range-gen
@@ -785,7 +785,7 @@
 ;; ---------------------------------------------------------------------------
 
 (def original-vector-and-permutation
-  (gen/bind (gen/vector gen/int)
+  (gen/bind (gen/vector gen/small-integer)
             #(gen/tuple (gen/return %) (gen/shuffle %))))
 
 (defspec shuffled-vector-is-a-permutation-of-original 100
@@ -922,7 +922,7 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest scale-test
-  (let [g (gen/scale (partial min 10) gen/pos-int) ;; should limit size to 10
+  (let [g (gen/scale (partial min 10) gen/nat) ;; should limit size to 10
         samples (gen/sample g 1000)]
     (is (every? (partial >= 11) samples))
     (is (some (partial = 10) samples))))
@@ -942,17 +942,17 @@
 ;; defspec macro
 ;; ---------------------------------------------------------------------------
 
-(defspec run-only-once 1 (prop/for-all* [gen/int] (constantly true)))
+(defspec run-only-once 1 (prop/for-all* [gen/small-integer] (constantly true)))
 
-(defspec run-default-times (prop/for-all* [gen/int] (constantly true)))
+(defspec run-default-times (prop/for-all* [gen/small-integer] (constantly true)))
 
-(defspec run-with-map1 {:num-tests 1} (prop/for-all* [gen/int] (constantly true)))
+(defspec run-with-map1 {:num-tests 1} (prop/for-all* [gen/small-integer] (constantly true)))
 
-;; run-with-map succeeds only because gen/int returns 0 for its first result.  If it runs
+;; run-with-map succeeds only because gen/small-integer returns 0 for its first result.  If it runs
 ;; multiple trials, we expect a failure.  This test verifies that the num-tests works.
 (defspec run-with-map {:num-tests 1
                        :seed 1}
-  (prop/for-all [a gen/int]
+  (prop/for-all [a gen/small-integer]
     (= a 0)))
 
 (def my-defspec-options {:num-tests 1 :seed 1})
@@ -963,15 +963,15 @@
 (def seed 0)
 
 (defspec run-with-symbolic-options my-defspec-options
-  (prop/for-all [a gen/int]
+  (prop/for-all [a gen/small-integer]
     (= a seed)))
 
 (defspec run-with-no-options
-  (prop/for-all [a gen/int]
+  (prop/for-all [a gen/small-integer]
     (integer? a)))
 
 (defspec run-float-time 1e3
-  (prop/for-all [a gen/int]
+  (prop/for-all [a gen/small-integer]
     (integer? a)))
 
 ;; verify that the created tests work when called by name with options

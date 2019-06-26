@@ -29,7 +29,7 @@ skip over some of the built-in, basic generators.
 ## An integer or nil
 
 ```clojure
-(def int-or-nil (gen/one-of [gen/int (gen/return nil)]))
+(def int-or-nil (gen/one-of [gen/small-integer (gen/return nil)]))
 (gen/sample int-or-nil)
 ;; => (nil 0 -2 nil nil 3 nil nil 4 2)
 ```
@@ -37,7 +37,7 @@ skip over some of the built-in, basic generators.
 ## An integer 90% of the time, nil 10%
 
 ```clojure
-(def mostly-ints (gen/frequency [[9 gen/int] [1 (gen/return nil)]]))
+(def mostly-ints (gen/frequency [[9 gen/small-integer] [1 (gen/return nil)]]))
 (gen/sample mostly-ints)
 ;; => (0 -1 nil 0 -2 0 6 -6 8 7)
 ```
@@ -45,7 +45,7 @@ skip over some of the built-in, basic generators.
 ## Even, positive integers
 
 ```clojure
-(def even-and-positive (gen/fmap #(* 2 %) gen/pos-int))
+(def even-and-positive (gen/fmap #(* 2 %) gen/nat))
 (gen/sample even-and-positive 20)
 ;; => (0 0 2 0 8 6 4 12 4 18 10 0 8 2 16 16 6 4 10 4)
 ```
@@ -53,18 +53,18 @@ skip over some of the built-in, basic generators.
 ## Powers of two
 
 ```clojure
-;; generate exponents with gen/s-pos-int (strictly positive integers),
+;; generate exponents with gen/nat,
 ;; and then apply the function to them
-(def powers-of-two (gen/fmap #(int (Math/pow 2 %)) gen/s-pos-int))
+(def powers-of-two (gen/fmap #(int (Math/pow 2 %)) gen/nat))
 (gen/sample powers-of-two)
-;; => (2 2 8 16 16 64 16 2 4 4)
+;; => (1 1 4 8 8 32 8 1 2 2)
 ```
 
 ## Sorted seq of integers
 
 ```clojure
 ;; apply the sort function to each generated vector
-(def sorted-vec (gen/fmap sort (gen/vector gen/int)))
+(def sorted-vec (gen/fmap sort (gen/vector gen/small-integer)))
 (gen/sample sorted-vec)
 ;; => (() (-1) (-2 -2) (-1 2 3) (-1 2 4) (-3 2 3 3 4) (1)
 ;; => (-4 0 1 3 4 6) (-5 -4 -1 0 2 8) (1))
@@ -73,7 +73,7 @@ skip over some of the built-in, basic generators.
 ## An integer and a boolean
 
 ```clojure
-(def int-and-boolean (gen/tuple gen/int gen/boolean))
+(def int-and-boolean (gen/tuple gen/small-integer gen/boolean))
 (gen/sample int-and-boolean)
 ;; => ([0 false] [0 true] [0 true] [3 true] [-3 false]
 ;; =>  [0 true] [4 true] [0 true] [-2 true] [-9 false])
@@ -82,7 +82,7 @@ skip over some of the built-in, basic generators.
 ## Any number but 5
 
 ```clojure
-(def anything-but-five (gen/such-that #(not= % 5) gen/int))
+(def anything-but-five (gen/such-that #(not= % 5) gen/small-integer))
 (gen/sample anything-but-five)
 ;; => (0 0 -2 1 -3 1 -4 7 -1 6)
 ```
@@ -96,7 +96,7 @@ unlikely to happen randomly. If you want sorted vectors, just sort them using
 ## A vector and a random element from it
 
 ```clojure
-(def vector-and-elem (gen/bind (gen/not-empty (gen/vector gen/int))
+(def vector-and-elem (gen/bind (gen/not-empty (gen/vector gen/small-integer))
                                #(gen/tuple (gen/return %) (gen/elements %))))
 (gen/sample vector-and-elem)
 ;; =>([[-1] -1]

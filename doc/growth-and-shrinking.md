@@ -230,8 +230,9 @@ Besides the confusing names, the big gotcha is that the range of these
 generators is is more or less strictly bounded by `size`, and so any
 use of them will by default not test numbers bigger than `200`, which
 is unacceptable coverage for a lot of
-applications. `gen/large-integer` should avoid this issue. The
-small-integer generators can still be useful for certain uses.
+applications. `gen/large-integer` should avoid this issue. Most of the
+small integer generators have been deprecated, with the exception of
+`gen/nat` and the new-and-less-confusingly-named `gen/small-integer`.
 
 #### Small Test Count
 

@@ -27,7 +27,7 @@
 
 (defspec test-collapse-rose
   100
-  (prop/for-all [i gen/int]
+  (prop/for-all [i gen/small-integer]
     (let [tree (#'gen/int-rose-tree i)]
       (= (depth-one-and-two-children tree)
          (depth-one-children (rose/collapse tree))))))

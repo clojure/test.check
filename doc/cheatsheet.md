@@ -28,6 +28,7 @@ So far this only documents functions in the generators namespace.
 ### Numbers
 
 - `gen/nat` — generates small non-negative integers (useful for generating sizes of things)
+- `gen/small-integer` — generates small integers, like `gen/nat` but also negative
 - `gen/large-integer` — generates a large range of integers
   - variant with options: `(gen/large-integer* {:min x, :max y})`
 - `gen/double` — generates a large range of doubles (w/ infinities & `NaN`)

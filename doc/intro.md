@@ -21,7 +21,7 @@ the count of the input is preserved. Our test might look like:
          '[clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])])
 
 (def property
-  (prop/for-all [v (gen/vector gen/int)]
+  (prop/for-all [v (gen/vector gen/small-integer)]
     (let [s (sort v)]
       (and (= (count v) (count s))
            (or (empty? s)
@@ -43,7 +43,7 @@ to fail. For example, the function might originally fail with input:
 
 ```clojure
 (def bad-property
-  (prop/for-all [v (gen/vector gen/int)]
+  (prop/for-all [v (gen/vector gen/small-integer)]
     (or (empty? v) (apply <= v))))
 
 (tc/quick-check 100 bad-property)
@@ -80,14 +80,14 @@ generators, we can see them in practice with the `sample` function:
 ```clojure
 (require '[clojure.test.check.generators :as gen])
 
-(gen/sample gen/int)
+(gen/sample gen/small-integer)
 ;; => (0 1 -1 0 -1 4 4 2 7 1)
 ```
 
 we can ask for more samples:
 
 ```clojure
-(gen/sample gen/int 20)
+(gen/sample gen/small-integer 20)
 ;; => (0 1 1 0 2 -4 0 5 -7 -8 4 5 3 11 -9 -4 6 -5 -3 0)
 ```
 
@@ -95,7 +95,7 @@ or get a lazy-seq of values:
 
 
 ```clojure
-(take 1 (gen/sample-seq gen/int))
+(take 1 (gen/sample-seq gen/small-integer))
 ;; => (0)
 ```
 
@@ -258,7 +258,7 @@ generator will be `gen/vector` and our scalar will be `gen/boolean`:
 ```
 
 Now, let's make our own, JSON-like generator. We'll allow `gen/list` and
-`gen/map` as our compound types and `gen/int` and `gen/boolean` as our scalar
+`gen/map` as our compound types and `gen/small-integer` and `gen/boolean` as our scalar
 types. Since `recursive-gen` only accepts one of each type of generator, we'll
 combine our compound types with a simple function, and the two scalars with
 `gen/one-of`.
@@ -267,7 +267,7 @@ combine our compound types with a simple function, and the two scalars with
 (def compound (fn [inner-gen]
                   (gen/one-of [(gen/list inner-gen)
                                (gen/map inner-gen inner-gen)])))
-(def scalars (gen/one-of [gen/int gen/boolean]))
+(def scalars (gen/one-of [gen/small-integer gen/boolean]))
 (def my-json-like-thing (gen/recursive-gen compound scalars))
 (last (gen/sample my-json-like-thing 20))
 ;; =>
@@ -293,7 +293,7 @@ make sure this is the case:
 (require '[clojure.test.check.properties :as prop #?@(:cljs [:include-macros true])])
 
 (def sort-idempotent-prop
-  (prop/for-all [v (gen/vector gen/int)]
+  (prop/for-all [v (gen/vector gen/small-integer)]
     (= (sort v) (sort (sort v)))))
 
 (tc/quick-check 100 sort-idempotent-prop)
@@ -313,7 +313,7 @@ action:
 
 ```clojure
 (def prop-sorted-first-less-than-last
-  (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
+  (prop/for-all [v (gen/not-empty (gen/vector gen/small-integer))]
     (let [s (sort v)]
       (< (first s) (last s)))))
 
@@ -346,7 +346,7 @@ passed a sequence that contains the number 42:
 
 ```clojure
 (def prop-no-42
-  (prop/for-all [v (gen/vector gen/int)]
+  (prop/for-all [v (gen/vector gen/small-integer)]
     (not (some #{42} v))))
 
 (tc/quick-check 100 prop-no-42)
@@ -383,7 +383,7 @@ write properties that run under the `clojure.test` runner, for example:
 ```clojure
 (defspec first-element-is-min-after-sorting ;; the name of the test
   100 ;; the number of iterations for test.check to test
-  (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
+  (prop/for-all [v (gen/not-empty (gen/vector gen/small-integer))]
     (= (apply min v)
        (first (sort v)))))
 ```

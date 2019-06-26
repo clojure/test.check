@@ -187,7 +187,7 @@
 
   Examples:
 
-      (def p (for-all [a gen/pos-int] (> (* a a) a)))
+      (def p (for-all [a gen/nat] (> (* a a) a)))
 
       (quick-check 100 p)
       (quick-check 200 p
