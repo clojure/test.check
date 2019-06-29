@@ -98,7 +98,92 @@
        :result-data  {...}
        :seed         42}
 
-    It will also be called on :complete, :shrink-step and :shrunk.
+    It will also be called on :complete, :shrink-step and :shrunk. Many
+    of the keys also appear in the quick-check return value, and are
+    documented below.
+
+  If the test passes, the return value will be something like:
+
+      {:num-tests       100,
+       :pass?           true,
+       :result          true,
+       :seed            1561826505982,
+       :time-elapsed-ms 24}
+
+  If the test fails, the return value will be something like:
+
+      {:fail            [0],
+       :failed-after-ms 0,
+       :failing-size    0,
+       :num-tests       1,
+       :pass?           false,
+       :result          false,
+       :result-data     nil,
+       :seed            1561826506080,
+       :shrunk
+       {:depth               0,
+        :pass?               false,
+        :result              false,
+        :result-data         nil,
+        :smallest            [0],
+        :time-shrinking-ms   0,
+        :total-nodes-visited 0}}
+
+  The meaning of the individual entries is:
+
+      :num-tests
+      The total number of trials that was were run, not including
+      shrinking (if applicable)
+
+      :pass?
+      A boolean indicating whether the test passed or failed
+
+      :result
+      A legacy entry that is similar to :pass?
+
+      :seed
+      The seed used for the entire test run; can be used to reproduce
+      a test run by passing it as the :seed option to quick-check
+
+      :time-elapsed-ms
+      The total time, in milliseconds, of a successful test run
+
+      :fail
+      The generated values for the first failure; note that this is
+      always a vector, since prop/for-all can have multiple clauses
+
+      :failed-after-ms
+      The total time, in milliseconds, spent finding the first failing
+      trial
+
+      :failing-size
+      The value of the size parameter used to generate the first
+      failure
+
+      :result-data
+      The result data, if any, of the first failing trial (to take
+      advantage of this a property must return an object satisfying
+      the clojure.test.check.results/Result protocol)
+
+      :shrunk
+      A map of data about the shrinking process; nested keys that
+      appear at the top level have the same meaning; other keys are
+      documented next
+
+      :shrunk / :depth
+      The depth in the shrink tree that the smallest failing instance
+      was found; this is essentially the idea of how many times the
+      original failure was successfully shrunk
+
+      :smallest
+      The smallest values found in the shrinking process that still
+      fail the test; this is a vector of the same type as :fail
+
+      :time-shrinking-ms
+      The total time, in milliseconds, spent shrinking
+
+      :total-nodes-visited
+      The total number of steps in the shrinking process
 
   Examples:
 

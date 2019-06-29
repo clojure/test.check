@@ -74,8 +74,9 @@
   side of each binding is a generator.
 
   The body should be an expression of the generated values that will
-  be tested for truthiness. Exceptions in the body will be caught and
-  treated as failures.
+  be tested for truthiness, unless it is a special implementation of
+  the clojure.test.check.results/Result protocol. Exceptions in the
+  body will be caught and treated as failures.
 
   When there are multiple binding pairs, the earlier pairs are not
   visible to the later pairs.
