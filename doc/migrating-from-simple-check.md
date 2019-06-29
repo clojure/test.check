@@ -1,5 +1,8 @@
 # Migrating from simple-check
 
+_test.check_ used to be called
+[_simple-check_](https://github.com/reiddraper/simple-check).
+
 In order to migrate from _simple-check_ to _test.check_, you'll need to do two
 things:
 
