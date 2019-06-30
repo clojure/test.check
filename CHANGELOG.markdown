@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.10.0-RC1 (2019-06-30)
+
+* Docstring improvements
+* Deprecated five small integer generators
+  * `gen/int`
+  * `gen/pos-int`
+  * `gen/neg-int`
+  * `gen/s-pos-int`
+  * `gen/s-neg-int`
+  Added a `gen/small-integer` to replace `gen/int`, and the
+  docstrings for all the deprecated generators suggest alternatives
+* Added `gen/size-bounded-bigint` and `gen/big-ratio`, both jvm-only
+* Added `*-equatable` variants of `gen/simple-type`,
+  `gen/simple-type-printable`, `gen/any`, and `gen/any-printable`;
+  the only current difference is that the new generators never generate
+  a `NaN`, and so they should always be `=` to equivalent objects
+
 ## 0.10.0-alpha4 (2019-03-10)
 
 * Automatically require cljs macros so users don't have to
