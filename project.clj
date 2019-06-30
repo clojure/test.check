@@ -16,6 +16,17 @@
   :global-vars {*warn-on-reflection* true}
   :plugins [[lein-codox "0.10.7"]
             [lein-cljsbuild "1.1.5"]]
+  ;; To generate codox files for a release:
+  ;; 1) checkout the tagged git commit
+  ;; 2) tweak the project.clj version to match, since
+  ;;    jenkins only updates the pom.xml
+  ;; 3) tweak the :source-uri entry below, replacing "master"
+  ;;    with the appropriate tag
+  ;; 4) run `lein codox`
+  ;; 5) copy target/doc into the gh-pages branch source tree
+  ;; 6) optionally also make sure the appropriate version-specific
+  ;;    subdirectories are populated, and linked to from
+  ;;    doc/api-docs-for-older-versions.md
   :codox {:namespaces [clojure.test.check
                        clojure.test.check.clojure-test
                        clojure.test.check.generators
