@@ -144,5 +144,4 @@
     goog.structs.StringSet
     goog.structs.TreeNode
     goog.structs.Trie
-    goog.structs.weak
     goog.text.LoremIpsum))

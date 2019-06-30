@@ -9,8 +9,8 @@
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/clojurescript "1.10.520"]]}
-             :self-host {:dependencies [[org.clojure/clojure "1.8.0"]
-                                        [org.clojure/clojurescript "1.9.854"]]
+             :self-host {:dependencies [[org.clojure/clojure "1.9.0"]
+                                        [org.clojure/clojurescript "1.10.520"]]
                          :main clojure.main
                          :global-vars {*warn-on-reflection* false}}}
   :global-vars {*warn-on-reflection* true}
