@@ -19,7 +19,14 @@
   :codox {:namespaces [clojure.test.check
                        clojure.test.check.clojure-test
                        clojure.test.check.generators
-                       clojure.test.check.properties]}
+                       clojure.test.check.properties
+                       clojure.test.check.results]
+          :source-uri {#".*" "https://github.com/clojure/test.check/blob/master/{filepath}#L{line}"}
+          :doc-files ["doc/api-docs-by-version.md"
+                      "doc/cheatsheet.md"
+                      "doc/generator-examples.md"
+                      "doc/growth-and-shrinking.md"
+                      "doc/intro.md"]}
   :cljsbuild
   {:builds
    [{:id "node-dev"
