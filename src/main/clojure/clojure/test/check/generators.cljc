@@ -1511,7 +1511,7 @@
    (tuple small-integer (fmap inc nat))))
 
 #?(:clj
-   (def big-ratio
+   (def ^{:added "0.10.0"} big-ratio
      "Generates a ratio (or integer) using gen/size-bounded-bigint. Shrinks
   toward simpler ratios, which may be larger or smaller."
      (fmap
