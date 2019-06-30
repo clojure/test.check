@@ -30,7 +30,7 @@
   </developers>
 
   <properties>
-    <clojure.version>1.7.0</clojure.version>
+    <clojure.version>1.9.0</clojure.version>
     <clojure.warnOnReflection>true</clojure.warnOnReflection>
   </properties>
 
@@ -38,7 +38,7 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojurescript</artifactId>
-      <version>1.9.293</version>
+      <version>1.10.520</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
