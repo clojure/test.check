@@ -1,0 +1,63 @@
+<html lang="en">
+  <head>
+    <title>simple-check.core documentation</title>
+    <link href="css/default.css" type="text/css" rel="stylesheet" />
+    <link href="css/codox-md.css" type="text/css" rel="stylesheet" />
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/page_effects.js"></script>
+  </head>
+  <body>
+    <header>
+      <div id="header">
+        <h1 class="project-title">Simple-check 0.5.6 API documentation</h1>
+      </div>
+    </header>
+    <navigation>
+      <div id="namespaces" class="sidebar">
+        <h3>Namespaces</h3>
+        <ul class="ns-links">
+          <li class="ns-list"><a class="ns-link ns-name" href="simple-check.clojure-test.html">simple-check.clojure-test</a></li><li class="ns-list"><a class="ns-link ns-name" href="simple-check.core.html">simple-check.core</a></li><li class="ns-list"><a class="ns-link ns-name" href="simple-check.generators.html">simple-check.generators</a></li><li class="ns-list"><a class="ns-link ns-name" href="simple-check.properties.html">simple-check.properties</a></li>
+        </ul>
+      </div>
+      <div id="vars" class="sidebar">
+        <h3>Public Vars</h3>
+        <ul class="ns-var-links">
+          <li class="ns-var-list"><a class="ns-var-link ns-var-name" href="simple-check.core.html#var-not-falsey-or-exception%3F">not-falsey-or-exception?</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="simple-check.core.html#var-quick-check">quick-check</a></li>
+        </ul>
+      </div>
+    </navigation>
+    <article>
+      <div id="content" class="namespace-docs">
+        <h2 class="namespace-title">simple-check.core documentation</h2>
+        <div class="doc">
+</div>
+        <div class="ns-vars">
+          <div class="public">
+            <h3><a id="var-not-falsey-or-exception%3F" class="source var-name" href="/src/simple_check/core.clj">not-falsey-or-exception?</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[value]</div>
+            
+            
+            <div class="doc"><p>True if the value is not falsy or an exception</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-quick-check" class="source var-name" href="/src/simple_check/core.clj">quick-check</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[num-tests property &amp; {:keys [seed max-size], :or {max-size 200}}]</div>
+            
+            
+            <div class="doc"><p>Tests <code>property</code> <code>num-tests</code> times.</p>
+
+<p>Examples:</p>
+
+<pre><code>(def p (for-all [a gen/pos-int] (&gt; (* a a) a)))
+(quick-check 100 p)
+</code></pre>
+</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </body>
+
+</html>

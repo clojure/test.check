@@ -1,0 +1,116 @@
+<html lang="en">
+  <head>
+    <title>simple-check.clojure-test documentation</title>
+    <link href="css/default.css" type="text/css" rel="stylesheet" />
+    <link href="css/codox-md.css" type="text/css" rel="stylesheet" />
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/page_effects.js"></script>
+  </head>
+  <body>
+    <header>
+      <div id="header">
+        <h1 class="project-title">Simple-check 0.5.6 API documentation</h1>
+      </div>
+    </header>
+    <navigation>
+      <div id="namespaces" class="sidebar">
+        <h3>Namespaces</h3>
+        <ul class="ns-links">
+          <li class="ns-list"><a class="ns-link ns-name" href="simple-check.clojure-test.html">simple-check.clojure-test</a></li><li class="ns-list"><a class="ns-link ns-name" href="simple-check.core.html">simple-check.core</a></li><li class="ns-list"><a class="ns-link ns-name" href="simple-check.generators.html">simple-check.generators</a></li><li class="ns-list"><a class="ns-link ns-name" href="simple-check.properties.html">simple-check.properties</a></li>
+        </ul>
+      </div>
+      <div id="vars" class="sidebar">
+        <h3>Public Vars</h3>
+        <ul class="ns-var-links">
+          <li class="ns-var-list"><a class="ns-var-link ns-var-name" href="simple-check.clojure-test.html#var-*report-shrinking*">*report-shrinking*</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="simple-check.clojure-test.html#var-*report-trials*">*report-trials*</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="simple-check.clojure-test.html#var-*trial-report-period*">*trial-report-period*</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="simple-check.clojure-test.html#var-defspec">defspec</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="simple-check.clojure-test.html#var-trial-report-dots">trial-report-dots</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="simple-check.clojure-test.html#var-trial-report-periodic">trial-report-periodic</a></li>
+        </ul>
+      </div>
+    </navigation>
+    <article>
+      <div id="content" class="namespace-docs">
+        <h2 class="namespace-title">simple-check.clojure-test documentation</h2>
+        <div class="doc">
+</div>
+        <div class="ns-vars">
+          <div class="public">
+            <h3><a id="var-*report-shrinking*" class="source var-name" href="/src/simple_check/clojure_test.clj">*report-shrinking*</a></h3>
+            <h4 class="var-type var" id="var-type">var</h4>
+            
+            
+            
+            <div class="doc"><p>If true, a verbose report of the property being tested, the
+failing return value, and the arguments provoking that failure is emitted
+prior to the start of the shrinking search.</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-*report-trials*" class="source var-name" href="/src/simple_check/clojure_test.clj">*report-trials*</a></h3>
+            <h4 class="var-type var" id="var-type">var</h4>
+            
+            
+            
+            <div class="doc"><p>Controls whether property trials should be reported via clojure.test/report.
+Valid values include:</p>
+
+<ul>
+<li>false - no reporting of trials (default)</li>
+<li>a function - will be passed a clojure.test/report-style map containing
+:simple-check.core/property and :simple-check.core/trial slots</li>
+<li>true - provides quickcheck-style trial reporting (dots) via
+<code>trial-report-dots</code></li>
+</ul>
+
+<p>(Note that all reporting requires running <code>quick-check</code> within the scope of a
+clojure.test run (via <code>test-ns</code>, <code>test-all-vars</code>, etc.)</p>
+
+<p>Reporting functions offered by simple-check include <code>trial-report-dots</code> and
+<code>trial-report-periodic</code> (which prints more verbose trial progress information
+every <code>*trial-report-period*</code> milliseconds.</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-*trial-report-period*" class="source var-name" href="/src/simple_check/clojure_test.clj">*trial-report-period*</a></h3>
+            <h4 class="var-type var" id="var-type">var</h4>
+            
+            
+            
+            <div class="doc"><p>Milliseconds between reports emitted by <code>trial-report-periodic</code>.</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-defspec" class="source var-name" href="/src/simple_check/clojure_test.clj">defspec</a></h3>
+            <h4 class="var-type macro" id="var-type">macro</h4>
+            <div class="usage">[name property]</div><div class="usage">[name default-times property]</div>
+            
+            
+            <div class="doc"><p>Defines a new clojure.test test var that uses <code>quick-check</code> to verify
+[property] with the given [args] (should be a sequence of generators),
+[default-times] times by default.  You can call the function defined as [name]
+with no arguments to trigger this test directly (i.e.  without starting a
+wider clojure.test run), or with a single argument that will override
+[default-times].</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-trial-report-dots" class="source var-name" href="/src/simple_check/clojure_test.clj">trial-report-dots</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[{[so-far total] :simple-check.clojure-test/trial}]</div>
+            
+            
+            <div class="doc"><p>Intended to be bound as the value of <code>*report-trials*</code>; will emit a single
+dot every 1000 trials reported.</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-trial-report-periodic" class="source var-name" href="/src/simple_check/clojure_test.clj">trial-report-periodic</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[m]</div>
+            
+            
+            <div class="doc"><p>Intended to be bound as the value of <code>*report-trials*</code>; will emit a verbose
+status every <code>*trial-report-period*</code> milliseconds, like this one:</p>
+
+<p>Passing trial 3286 / 5000 for (your-test-var-name-here) (:)</p>
+</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </body>
+
+</html>
