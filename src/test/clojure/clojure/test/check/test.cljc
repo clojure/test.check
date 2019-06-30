@@ -662,8 +662,10 @@
   [value]
   (= value (-> value prn-str edn/read-string)))
 
+(def infinities #{1E1000 -1E1000})
+
 (def infinity-syntax?
-  (edn-roundtrip? Double/POSITIVE_INFINITY))
+  (edn-roundtrip? (first infinities)))
 
 (defspec edn-roundtrips 200
   (prop/for-all [a gen/any-equatable]
@@ -672,7 +674,7 @@
         (and (not infinity-syntax?)
              (->> a
                   (tree-seq coll? seq)
-                  (some #{Double/POSITIVE_INFINITY Double/NEGATIVE_INFINITY}))))))
+                  (some infinities))))))
 
 ;; not-empty works
 ;; ---------------------------------------------------------------------------
