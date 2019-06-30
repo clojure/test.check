@@ -22,7 +22,7 @@
                        clojure.test.check.properties
                        clojure.test.check.results]
           :source-uri {#".*" "https://github.com/clojure/test.check/blob/master/{filepath}#L{line}"}
-          :doc-files ["doc/api-docs-by-version.md"
+          :doc-files ["doc/api-docs-for-older-versions.md"
                       "doc/cheatsheet.md"
                       "doc/generator-examples.md"
                       "doc/growth-and-shrinking.md"
