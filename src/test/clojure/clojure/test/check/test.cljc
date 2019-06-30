@@ -662,9 +662,17 @@
   [value]
   (= value (-> value prn-str edn/read-string)))
 
+(def infinity-syntax?
+  (edn-roundtrip? Double/POSITIVE_INFINITY))
+
 (defspec edn-roundtrips 200
   (prop/for-all [a gen/any-equatable]
-    (edn-roundtrip? a)))
+    (or (edn-roundtrip? a)
+        ;; this keeps the tests passing for clojure 1.8 and older
+        (and (not infinity-syntax?)
+             (->> a
+                  (tree-seq coll? seq)
+                  (some #{Double/POSITIVE_INFINITY Double/NEGATIVE_INFINITY}))))))
 
 ;; not-empty works
 ;; ---------------------------------------------------------------------------
