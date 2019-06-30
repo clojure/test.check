@@ -261,9 +261,9 @@ combine our compound types with a simple function, and the two scalars with
 (last (gen/sample my-json-like-thing 20))
 ;; =>
 ;; (()
-;;  {{4 -11, 1 -19} (false),
-;;  {} {1 6},
-;;  (false false) {true -3, false false, -7 1}})
+;;  {(false false)  {true -3, false false, -7 1},
+;;   {4 -11, 1 -19} (false),
+;;   {}             {1 6}})
 ```
 
 And we see we got a list whose first element is the empty the list. The second
