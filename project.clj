@@ -7,9 +7,9 @@
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0"]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.10.1"]
                                   [org.clojure/clojurescript "1.10.520"]]}
-             :self-host {:dependencies [[org.clojure/clojure "1.9.0"]
+             :self-host {:dependencies [[org.clojure/clojure "1.10.1"]
                                         [org.clojure/clojurescript "1.10.520"]]
                          :main clojure.main
                          :global-vars {*warn-on-reflection* false}}}
