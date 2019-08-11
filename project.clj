@@ -16,17 +16,35 @@
   :global-vars {*warn-on-reflection* true}
   :plugins [[lein-codox "0.10.7"]
             [lein-cljsbuild "1.1.5"]]
-  ;; To generate codox files for a release:
-  ;; 1) checkout the tagged git commit
-  ;; 2) tweak the project.clj version to match, since
+  ;; To generate codox files (which are hosted on the gh-pages branch)
+  ;; for a release:
+  ;;
+  ;; 1) if the current content should be preserved as documentation
+  ;;    for an old release, first copy it to a subdirectory and
+  ;;    add a link in doc/api-docs-for-older-versions.md (on the
+  ;;    master branch, I guess, though that won't help when building
+  ;;    from an older tag, so you may also manually add that change
+  ;;    to the api-docs-for-older-versions.html file on the gh-pages
+  ;;    branch as well, which is no fun)
+  ;; 2) checkout the tagged git commit
+  ;; 3) tweak the project.clj version to match, since
   ;;    jenkins only updates the pom.xml
-  ;; 3) tweak the :source-uri entry below, replacing "master"
+  ;; 4) tweak the :source-uri entry below, replacing "master"
   ;;    with the appropriate tag
-  ;; 4) run `lein codox`
-  ;; 5) copy target/doc into the gh-pages branch source tree
-  ;; 6) optionally also make sure the appropriate version-specific
-  ;;    subdirectories are populated, and linked to from
-  ;;    doc/api-docs-for-older-versions.md
+  ;; 5) run `lein codox`
+  ;; 6) copy target/doc into the gh-pages branch source tree, commit
+  ;;    and push; e.g., if you have the gh-pages branch open on a
+  ;;    worktree at gitignored/gh-pages, then this might work:
+  ;;        D1=target/doc
+  ;;        D2=gitignored/gh-pages
+  ;;        for file in $(ls $D1); do
+  ;;          if [[ -e $D2/$file ]]; then
+  ;;            rm -rf $D2/$file
+  ;;          fi
+  ;;          cp -r {$D1,$D2}/$file
+  ;;        done
+  ;; 7) check the result at http://clojure.github.io/test.check/ ;
+  ;;    the source links should go to the correct tag on github
   :codox {:namespaces [clojure.test.check
                        clojure.test.check.clojure-test
                        clojure.test.check.generators
