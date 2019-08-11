@@ -55,7 +55,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 #### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.10.0-alpha4"]
+[org.clojure/test.check "0.10.0"]
 ```
 
 #### Maven
@@ -64,7 +64,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.10.0-alpha4</version>
+  <version>0.10.0</version>
 </dependency>
 ```
 
@@ -73,7 +73,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 #### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.9.0"]
+[org.clojure/test.check "0.10.0"]
 ```
 
 #### Maven
@@ -82,7 +82,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.9.0</version>
+  <version>0.10.0</version>
 </dependency>
 ```
 
