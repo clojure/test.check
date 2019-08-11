@@ -87,6 +87,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 ```
 
 If you'd like to try a SNAPSHOT version, [add the sonatype repository to your
+project](https://clojure.org/community/downloads#_using_clojure_and_contrib_snapshot_releases).
 
 ## Miscellaneous
 
