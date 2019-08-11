@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.0-RC1 (2019-06-30)
+## 0.10.0 (2019-06-30 as RC1, 2019-08-11 as final)
 
 * Docstring improvements
 * Deprecated five small integer generators
