@@ -55,7 +55,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 #### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.10.0"]
+[org.clojure/test.check "1.0.0"]
 ```
 
 #### Maven
@@ -64,7 +64,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.10.0</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 
@@ -73,7 +73,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 #### Leiningen
 
 ```clojure
-[org.clojure/test.check "0.10.0"]
+[org.clojure/test.check "1.0.0"]
 ```
 
 #### Maven
@@ -82,7 +82,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>test.check</artifactId>
-  <version>0.10.0</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 
@@ -105,6 +105,6 @@ YourKit's leading software products:
 
 ### License
 
-Copyright © 2014 Rich Hickey, Reid Draper and contributors
+Copyright © 2014-2020 Rich Hickey, Reid Draper and contributors
 
 Distributed under the Eclipse Public License, the same as Clojure.
