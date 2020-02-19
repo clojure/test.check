@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0 (2020-02-18)
+
+* No changes
+
 ## 0.10.0 (2019-06-30 as RC1, 2019-08-11 as final)
 
 * Docstring improvements
