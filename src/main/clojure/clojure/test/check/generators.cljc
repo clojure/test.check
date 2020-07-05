@@ -526,7 +526,7 @@
 
   Examples:
 
-      (def t (tuple gen/small-integer gen/boolean))
+      (def t (gen/tuple gen/small-integer gen/boolean))
       (sample t)
       ;; => ([1 true] [2 true] [2 false] [1 false] [0 true] [-2 false] [-6 false]
       ;; =>  [3 true] [-4 false] [9 true]))"
