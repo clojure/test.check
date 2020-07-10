@@ -1473,11 +1473,9 @@
 
 (def keyword
   "Generates keywords without namespaces."
-  (frequency [[100
-               (->> symbol-name-or-namespace
-                    (fmap core/keyword)
-                    (resize-symbolish-generator))]
-              [1 (return :/)]]))
+  (->> symbol-name-or-namespace
+       (fmap core/keyword)
+       (resize-symbolish-generator)))
 
 (def
   ^{:added "0.5.9"}
