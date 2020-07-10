@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 (2020-07-10)
+
+* TCHECK-155 - don't generate :/ for keywords
+
 ## 1.0.0 (2020-02-18)
 
 * No changes
