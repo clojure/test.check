@@ -86,8 +86,7 @@
 
 (defn filter
   "Returns a new Rose tree whose values pass `pred`. Values who
-  do not pass `pred` have their children cut out as well.
-  Takes a list of roses, not a rose"
+  do not pass `pred` have their children cut out as well."
   {:no-doc true}
   [pred rose]
   (make-rose (root rose)
