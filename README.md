@@ -25,6 +25,7 @@ hold true for all inputs. This lets you write concise, powerful tests.
     * [collection-check](https://github.com/ztellman/collection-check)
   * Blog posts and videos (some of these may refer to simple-check):
     * [Powerful Testing with test.check - Clojure/West 2014](https://www.youtube.com/watch?v=JMhNINPo__g) -- [Slides](https://speakerdeck.com/reiddraper/powerful-testing-with-test-dot-check)
+    * [Purely Random - Clojure/west 2015](https://www.youtube.com/watch?v=u0t-6lUvXHo)
     * [Building test.check Generators - Clojure/Conj 2017](https://www.youtube.com/watch?v=F4VZPxLZUdA) - [Slides](https://gfredericks.com/speaking/2017-10-12-generators.pdf)
     * [Check your work - 8th Light](http://blog.8thlight.com/connor-mendenhall/2013/10/31/check-your-work.html)
     * [Writing simple-check - Reid Draper](http://reiddraper.com/writing-simple-check/)
