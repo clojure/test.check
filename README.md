@@ -53,6 +53,12 @@ hold true for all inputs. This lets you write concise, powerful tests.
 
 ### Latest Version
 
+#### [CLI/`deps.edn`](https://clojure.org/reference/deps_and_cli) dependency information:
+
+```clojure
+org.clojure/test.check {:mvn/version "1.1.0"}
+```
+
 #### Leiningen
 
 ```clojure
