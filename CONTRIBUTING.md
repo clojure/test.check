@@ -6,10 +6,10 @@ __We cannot accept pull requests.__
 * Patches/contributions can be attached to issues in [Jira]. You can [read more
   about that process](https://clojure.org/community/contributing).
   Contributions need a [signed CA (Contributor
-  Agreement)](http://clojure.org/community/contributing).
+  Agreement)](https://clojure.org/community/contributing).
 
 Don't hesitate to ask if you have questions about this.
 
-[JIRA]: https://dev.clojure.org/jira/browse/TCHECK
+[JIRA]: https://clojure.atlassian.net/browse/TCHECK
 [Clojure CA]: https://clojure.org/community/contributing
 [Clojure contrib]: https://clojure.org/community/contrib_libs

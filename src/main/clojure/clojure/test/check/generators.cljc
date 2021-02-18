@@ -1576,7 +1576,7 @@
   (base-simple-type (double* {:NaN? false}) char-ascii string-ascii))
 
 #?(:cljs
-;; http://dev.clojure.org/jira/browse/CLJS-1594
+;; https://clojure.atlassian.net/browse/CLJS-1594
    (defn ^:private hashable?
      [x]
      (if (number? x)

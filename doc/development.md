@@ -5,9 +5,9 @@ _(i.e., working on test.check itself)_
 ## Links
 
 * [GitHub project](https://github.com/clojure/test.check)
-* [Bug Tracker](http://dev.clojure.org/jira/browse/TCHECK)
-* [Continuous Integration](http://build.clojure.org/job/test.check/)
-* [Compatibility Test Matrix](http://build.clojure.org/job/test.check-test-matrix/)
+* [Bug Tracker](https://clojure.atlassian.net/browse/TCHECK)
+* [Continuous Integration](https://build.clojure.org/job/test.check/)
+* [Compatibility Test Matrix](https://build.clojure.org/job/test.check-test-matrix/)
 
 ## Tests
 

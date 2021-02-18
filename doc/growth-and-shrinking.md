@@ -263,7 +263,7 @@ the distribution of a generator.
 
 #### Collection composition
 
-_See [TCHECK-106](http://dev.clojure.org/jira/browse/TCHECK-106)_
+_See [TCHECK-106](https://clojure.atlassian.net/browse/TCHECK-106)_
 
 test.check's collection generators by default select a size for the
 generated collection that is proportional to the `size` parameter.

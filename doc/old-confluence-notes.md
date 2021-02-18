@@ -325,7 +325,7 @@ to do nothing.
 ## quickcheck refactoring
 
 This is a hopefully temporary page, tracking evaluation of [Nico's
-proposed refactoring](https://dev.clojure.org/jira/browse/TCHECK-126)
+proposed refactoring](https://clojure.atlassian.net/browse/TCHECK-126)
 and any alternatives and related issues.
 
 Organized as (nested) list of questions.
