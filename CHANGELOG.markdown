@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 (2021-12-01)
+
+* Exclude clojure.core/abs (prepping for use with 1.11)
+
 ## 1.1.0 (2020-07-10)
 
 * TCHECK-155 - don't generate :/ for keywords
