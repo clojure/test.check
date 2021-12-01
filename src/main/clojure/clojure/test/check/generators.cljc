@@ -8,7 +8,7 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.test.check.generators
-  (:refer-clojure :exclude [int vector list hash-map map keyword
+  (:refer-clojure :exclude [abs int vector list hash-map map keyword
                             char boolean byte bytes sequence
                             shuffle not-empty symbol namespace
                             set sorted-set uuid double let])
