@@ -5,7 +5,7 @@
   <version>1.1.2-SNAPSHOT</version>
   <name>test.check</name>
   <description>A QuickCheck inspired property-based testing library</description>
-  <url>https://github.com/clojure/build.poms</url>
+  <url>https://github.com/clojure/test.check</url>
 
   <parent>
     <groupId>org.clojure</groupId>
@@ -46,7 +46,7 @@
   <scm>
     <connection>scm:git:git://github.com/clojure/test.check.git</connection>
     <developerConnection>scm:git:git://github.com/clojure/test.check.git</developerConnection>
-    <url>http://github.com/clojure/test.check</url>
+    <url>https://github.com/clojure/test.check</url>
     <tag>HEAD</tag>
   </scm>
 
