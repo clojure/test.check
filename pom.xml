@@ -10,13 +10,13 @@
   <parent>
     <groupId>org.clojure</groupId>
     <artifactId>pom.contrib</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
   </parent>
 
   <licenses>
     <license>
       <name>Eclipse Public License 1.0</name>
-      <url>http://opensource.org/licenses/eclipse-1.0.php</url>
+      <url>https://opensource.org/license/epl-1-0/</url>
       <distribution>repo</distribution>
     </license>
   </licenses>

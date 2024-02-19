@@ -14,7 +14,7 @@
                          :main clojure.main
                          :global-vars {*warn-on-reflection* false}}}
   :global-vars {*warn-on-reflection* true}
-  :plugins [[lein-codox "0.10.7"]
+  :plugins [[lein-codox "0.10.8"]
             [lein-cljsbuild "1.1.5"]]
   ;; To generate codox files (which are hosted on the gh-pages branch)
   ;; for a release:
